@@ -543,7 +543,7 @@ input {
 
 .back-to-top {
   position: fixed;
-  right: max(22px, calc((100vw - 1180px) / 2 + 22px));
+  right: max(22px, calc((100vw - 1180px) / 2 + 88px));
   bottom: 24px;
   z-index: 20;
   display: inline-flex;
