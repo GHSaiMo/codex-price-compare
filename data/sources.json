@@ -147,13 +147,6 @@
       "enabled": true,
       "url": "https://pay.qxvx.cn/shop/OK1",
       "token": "OK1"
-    },
-    {
-      "id": "dujiao-spark-zone",
-      "name": "Spark-zone",
-      "adapter": "dujiao",
-      "enabled": true,
-      "url": "https://spark-zone.org/"
     }
   ]
 }

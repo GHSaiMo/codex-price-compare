@@ -27,7 +27,7 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 20);
+assert.equal(sources.sources.length, 19);
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/HCJW0TDL"));
 assert.ok(sources.sources.some((source) => source.url === "https://gmail91.shop/"));
 assert.ok(sources.sources.some((source) => source.url === "https://ai666.dnxb.cc/"));
