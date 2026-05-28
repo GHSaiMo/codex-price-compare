@@ -2,50 +2,20 @@ const productList = document.querySelector("#productList");
 const summary = document.querySelector("#summary");
 const stats = document.querySelector("#stats");
 const emptyState = document.querySelector("#emptyState");
-const sortSelect = document.querySelector("#sortSelect");
+const sortButton = document.querySelector("#sortButton");
 const includeOutOfStock = document.querySelector("#includeOutOfStock");
 const backToTop = document.querySelector("#backToTop");
-const themeToggle = document.querySelector("#themeToggle");
-const categoryButtons = [...document.querySelectorAll("[data-category]")];
-const subtypeCheckboxes = [...document.querySelectorAll('input[name="subtype"]')];
+const subtypeButtons = [...document.querySelectorAll("[data-subtype]")];
 
 const productsUrl = document.body.dataset.productsUrl || "data/products.json";
 const metaUrl = document.body.dataset.metaUrl || "data/meta.json";
 const DATA_RELOAD_INTERVAL_MS = 60 * 1000;
 const defaultSort = "price-asc";
 const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
-const categorySubtypeMap = {
-  all: visibleSubtypeValues,
-  codex: ["free", "plus", "pro"],
-  plus: ["plus"],
-  sms: ["codex_sms"],
-};
 
 let allProducts = [];
-let currentCategory = "all";
-sortSelect.value = defaultSort;
-
-function storedTheme() {
-  try {
-    return localStorage.getItem("color-theme");
-  } catch {
-    return null;
-  }
-}
-
-function saveTheme(theme) {
-  try {
-    localStorage.setItem("color-theme", theme);
-  } catch {
-    // Theme persistence is a convenience; the switch still works without storage.
-  }
-}
-
-function applyTheme(theme) {
-  document.body.dataset.theme = theme;
-  themeToggle.setAttribute("aria-pressed", String(theme === "dark"));
-  themeToggle.title = theme === "dark" ? "切换为淡色系" : "切换为黑色系";
-}
+let currentSort = defaultSort;
+let currentSubtype = "plus";
 
 function clearElement(element) {
   while (element.firstChild) {
@@ -70,45 +40,34 @@ function sortProducts(items) {
   const price = (item) => (typeof item.price === "number" ? item.price : Number.POSITIVE_INFINITY);
 
   return [...items].sort((a, b) => {
-    const priceDiff = sortSelect.value === "price-desc" ? price(b) - price(a) : price(a) - price(b);
+    const priceDiff = currentSort === "price-desc" ? price(b) - price(a) : price(a) - price(b);
     if (priceDiff !== 0) return priceDiff;
     return (stockRank[a.stockStatus] ?? 1) - (stockRank[b.stockStatus] ?? 1);
   });
 }
 
 function filterProducts() {
-  const selectedSubtypes = new Set(
-    subtypeCheckboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value),
-  );
-
   return allProducts.filter((item) => {
     if (!visibleSubtypeValues.includes(item.subtype)) return false;
-    if (!selectedSubtypes.has(item.subtype)) return false;
+    if (item.subtype !== currentSubtype) return false;
     if (!includeOutOfStock.checked && item.stockStatus === "out_of_stock") return false;
     return true;
   });
 }
 
-function setSubtypeSelection(values) {
-  const selected = new Set(values);
-  for (const checkbox of subtypeCheckboxes) {
-    checkbox.checked = selected.has(checkbox.value);
+function syncSubtypeButtons() {
+  for (const button of subtypeButtons) {
+    const isActive = button.dataset.subtype === currentSubtype;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
   }
 }
 
-function hasExactSubtypeSelection(values) {
-  const selected = subtypeCheckboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value);
-  return selected.length === values.length && values.every((value) => selected.includes(value));
-}
-
-function syncActiveCategory() {
-  const selected = subtypeCheckboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value).sort();
-  const activeCategory = Object.entries(categorySubtypeMap).find(([, values]) => {
-    return values.length === selected.length && values.every((value) => selected.includes(value));
-  })?.[0];
-
-  currentCategory = activeCategory || "custom";
-  categoryButtons.forEach((button) => button.classList.toggle("is-active", button.dataset.category === currentCategory));
+function syncSortButton() {
+  const isDesc = currentSort === "price-desc";
+  sortButton.classList.toggle("is-desc", isDesc);
+  sortButton.setAttribute("aria-label", isDesc ? "价格降序" : "价格升序");
+  sortButton.title = isDesc ? "价格降序" : "价格升序";
 }
 
 function createProductCard(item) {
@@ -186,29 +145,23 @@ async function loadData() {
   }
 }
 
-for (const button of categoryButtons) {
+for (const button of subtypeButtons) {
   button.addEventListener("click", () => {
-    const categoryValues = categorySubtypeMap[button.dataset.category] || visibleSubtypeValues;
-    if (hasExactSubtypeSelection(categoryValues)) {
-      setSubtypeSelection([]);
-    } else {
-      setSubtypeSelection(categoryValues);
-    }
-    syncActiveCategory();
+    currentSubtype = button.dataset.subtype;
+    syncSubtypeButtons();
     render({ animate: true });
   });
 }
 
-for (const control of [...subtypeCheckboxes, sortSelect, includeOutOfStock]) {
-  control.addEventListener("input", () => {
-    syncActiveCategory();
-    render({ animate: true });
-  });
-  control.addEventListener("change", () => {
-    syncActiveCategory();
-    render({ animate: true });
-  });
-}
+sortButton.addEventListener("click", () => {
+  currentSort = currentSort === "price-asc" ? "price-desc" : "price-asc";
+  syncSortButton();
+  render({ animate: true });
+});
+
+includeOutOfStock.addEventListener("change", () => {
+  render({ animate: true });
+});
 
 function syncBackToTop() {
   backToTop.classList.toggle("is-visible", window.scrollY > 360);
@@ -220,14 +173,8 @@ backToTop.addEventListener("click", () => {
 
 window.addEventListener("scroll", syncBackToTop, { passive: true });
 
-themeToggle.addEventListener("click", () => {
-  const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-  applyTheme(nextTheme);
-  saveTheme(nextTheme);
-});
-
-applyTheme(storedTheme() === "dark" ? "dark" : "light");
-syncActiveCategory();
+syncSubtypeButtons();
+syncSortButton();
 syncBackToTop();
 loadData();
 setInterval(loadData, DATA_RELOAD_INTERVAL_MS);

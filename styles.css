@@ -47,11 +47,11 @@ body {
 .page-shell {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 56px 0 80px;
+  padding: 36px 0 80px;
 }
 
 .page-header {
-  padding: 24px 0 34px;
+  padding: 12px 0 18px;
 }
 
 .content-column {
@@ -85,7 +85,7 @@ body {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
 }
 
 .brand-logo {
@@ -105,7 +105,7 @@ h1 {
 .title-row {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
 }
 
@@ -114,6 +114,7 @@ h1 {
   flex-shrink: 0;
   gap: 8px;
   align-items: center;
+  padding-top: 16px;
   margin-left: auto;
 }
 
@@ -141,50 +142,49 @@ h1 {
 
 .summary {
   max-width: 42rem;
-  margin: 18px 0 0;
+  margin: 12px 0 0;
   color: var(--muted);
+}
+
+.meta-line {
+  display: flex;
+  max-width: none;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  font-size: 0.92rem;
 }
 
 .disclaimer {
   max-width: 42rem;
-  margin: 10px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.7;
 }
 
 .toolbar {
-  margin: 10px 0 24px;
+  margin: 8px 0 18px;
 }
 
 .filter-panel {
   display: grid;
-  gap: 12px;
-}
-
-.segment {
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
 }
 
-.segment-button,
-select,
+.subtype-button,
 input {
-  min-height: 42px;
+  min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   color: var(--text);
   font: inherit;
-}
-
-.segment-button {
   padding: 0 16px;
   cursor: pointer;
 }
 
-.segment-button.is-active {
+.subtype-button.is-active {
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent);
@@ -193,13 +193,13 @@ input {
 
 .toolbar-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
 }
 
-.toolbar-row-secondary {
-  align-items: flex-start;
+.toolbar-row-filters {
+  align-items: center;
 }
 
 .toolbar-link {
@@ -233,6 +233,7 @@ input {
 .theme-toggle {
   display: inline-flex;
   width: 42px;
+  height: 42px;
   min-height: 42px;
   align-items: center;
   justify-content: center;
@@ -243,6 +244,22 @@ input {
   cursor: pointer;
 }
 
+.sort-button {
+  flex: 0 0 42px;
+  padding: 0;
+}
+
+.sort-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  transition: transform 0.16s ease;
+}
+
+.sort-button.is-desc svg {
+  transform: rotate(180deg);
+}
+
 .icon-button:hover,
 .theme-toggle:hover {
   border-color: var(--accent);
@@ -250,9 +267,15 @@ input {
 }
 
 .theme-toggle-track {
+  --theme-toggle-track-width: 36px;
+  --theme-toggle-track-height: 20px;
+  --theme-toggle-thumb-size: 14px;
+  --theme-toggle-pad: 3px;
+
   position: relative;
-  width: 36px;
-  height: 20px;
+  display: block;
+  width: var(--theme-toggle-track-width);
+  height: var(--theme-toggle-track-height);
   border-radius: 999px;
   background: linear-gradient(135deg, #facc15, #fef3c7);
   box-shadow: inset 0 0 0 1px rgba(146, 64, 14, 0.12);
@@ -263,10 +286,10 @@ input {
 
 .theme-toggle-thumb {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
+  top: 50%;
+  left: var(--theme-toggle-pad);
+  width: var(--theme-toggle-thumb-size);
+  height: var(--theme-toggle-thumb-size);
   border-radius: 999px;
   background: #ffffff;
   box-shadow:
@@ -276,6 +299,7 @@ input {
     background 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
+  transform: translateY(-50%);
 }
 
 [data-theme="dark"] .theme-toggle-track {
@@ -285,10 +309,11 @@ input {
 
 [data-theme="dark"] .theme-toggle-thumb {
   background: #dbeafe;
-  box-shadow:
-    -4px 0 0 -1px #334155 inset,
-    0 2px 7px rgba(0, 0, 0, 0.34);
-  transform: translateX(16px);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.34);
+  transform: translate(
+    calc(var(--theme-toggle-track-width) - var(--theme-toggle-thumb-size) - (var(--theme-toggle-pad) * 2) - 8px),
+    -50%
+  );
 }
 
 .github-link {
@@ -313,8 +338,8 @@ input {
 }
 
 .github-link svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   fill: currentColor;
 }
 
@@ -324,15 +349,19 @@ input {
 }
 
 .toolbar-link svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
+  width: 24px;
+  height: 24px;
+}
+
+.source-icon-link svg {
+  width: 26px;
+  height: 26px;
 }
 
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   justify-content: flex-end;
 }
@@ -343,38 +372,13 @@ input {
 
 .subtype-group {
   display: flex;
-  min-height: 42px;
+  min-height: 40px;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   margin: 0;
   padding: 0;
   border: 0;
-}
-
-.checkbox-pill {
-  display: inline-flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.checkbox-pill:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 800;
-}
-
-.checkbox-pill input {
-  width: 16px;
-  min-height: 16px;
 }
 
 .field {
@@ -397,16 +401,32 @@ input {
 
 .toggle {
   display: flex;
-  min-height: 42px;
+  height: 40px;
+  min-height: 40px;
   align-items: center;
   gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
   color: var(--muted);
+  cursor: pointer;
   white-space: nowrap;
+}
+
+.toggle:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
 }
 
 .toggle input {
   width: 18px;
-  min-height: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  flex: 0 0 auto;
 }
 
 .stats,
@@ -778,6 +798,11 @@ input {
 
   .title-row {
     flex-wrap: nowrap;
+    align-items: flex-end;
+  }
+
+  .header-tools {
+    padding-top: 0;
   }
 
   h1 {
@@ -804,6 +829,7 @@ input {
   .theme-toggle,
   .toolbar-link {
     width: 34px;
+    height: 34px;
     min-height: 34px;
     padding: 0;
   }
@@ -814,20 +840,21 @@ input {
     height: 17px;
   }
 
+  .github-link svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .source-icon-link svg {
+    width: 20px;
+    height: 20px;
+  }
+
   .theme-toggle-track {
-    width: 28px;
-    height: 16px;
-  }
-
-  .theme-toggle-thumb {
-    top: 2px;
-    left: 2px;
-    width: 12px;
-    height: 12px;
-  }
-
-  [data-theme="dark"] .theme-toggle-thumb {
-    transform: translateX(12px);
+    --theme-toggle-track-width: 28px;
+    --theme-toggle-track-height: 16px;
+    --theme-toggle-thumb-size: 12px;
+    --theme-toggle-pad: 2px;
   }
 
   .header-actions {
@@ -849,40 +876,22 @@ input {
     gap: 8px;
   }
 
-  .toolbar-row-primary {
+  .toolbar-row-filters {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
   }
 
-  .toolbar-row-secondary {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-  }
-
-  .segment,
   .subtype-group,
   .filters {
     flex-wrap: nowrap;
     gap: 6px;
   }
 
-  .segment {
-    min-width: 0;
-  }
-
-  .segment-button,
-  .checkbox-pill,
-  select,
+  .subtype-button,
   input {
     min-height: 34px;
     border-radius: 7px;
     font-size: 0.78rem;
-  }
-
-  .segment-button {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 0 8px;
   }
 
   .toolbar-tools {
@@ -894,17 +903,10 @@ input {
     min-width: 0;
   }
 
-  .checkbox-pill {
+  .subtype-button {
     flex: 1 1 0;
     min-width: 0;
-    justify-content: center;
-    gap: 4px;
     padding: 0 6px;
-  }
-
-  .checkbox-pill input {
-    width: 13px;
-    min-height: 13px;
   }
 
   .filter-actions {
@@ -920,19 +922,22 @@ input {
     flex-shrink: 0;
   }
 
-  .sort-field {
-    width: 52px;
-  }
-
-  .field select {
-    padding: 0 4px;
-    font-size: 0.78rem;
-  }
-
   .toggle {
+    height: 34px;
     min-height: 34px;
     gap: 4px;
+    padding: 0 8px;
     font-size: 0.78rem;
+  }
+
+  .toggle input {
+    width: 14px;
+    height: 14px;
+    min-height: 0;
+  }
+
+  .sort-button {
+    flex-basis: 34px;
   }
 
   .source-link-card {

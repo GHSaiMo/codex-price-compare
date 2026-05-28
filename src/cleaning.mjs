@@ -59,6 +59,7 @@ export function classifyProduct(title, description = "", rules) {
   const descriptionText = stripHtml(description);
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   const titleOnly = titleText.toLowerCase();
+  const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
   const anchorMatches = matchedTerms(combined, rules.anchorTerms || []);
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
@@ -69,6 +70,16 @@ export function classifyProduct(title, description = "", rules) {
   const subtype = Object.entries(rules.subtypeTerms || {}).find(([, terms]) => {
     return matchedTerms(combined, terms).length > 0;
   })?.[0] || "unknown";
+
+  if (exclusionMatches.length > 0) {
+    return buildResult(
+      "other",
+      "unknown",
+      0,
+      [],
+      exclusionMatches.slice(0, 2).map((term) => `命中排除词: ${term}`),
+    );
+  }
 
   if (anchorMatches.length > 0) {
     if (["free", "plus", "pro"].includes(titleSubtype)) {

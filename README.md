@@ -4,6 +4,8 @@
 
 > 本站仅汇总公开商品信息供参考，不代表对任何店铺或商品质量作出背书。
 
+在线体验：https://codex.jiuge.space
+
 ## 项目特性
 
 - 聚合多个店铺的公开商品数据。
@@ -260,4 +262,4 @@ npm test
 
 ## License
 
-当前仓库尚未附带开源许可证。正式开源前建议根据使用预期补充 `LICENSE` 文件。
+本项目基于 MIT License 开源，详见 [LICENSE](LICENSE)。
