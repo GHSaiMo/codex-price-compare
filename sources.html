@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>店铺列表 - Codex比价</title>
+    <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-sources-url="data/sources.json">
+    <main class="page-shell">
+      <header class="page-header">
+        <div class="content-column">
+          <div class="brand-kicker">
+            <img class="brand-logo" src="assets/logo.svg" alt="">
+            <p class="eyebrow">Sources</p>
+          </div>
+          <div class="header-line header-line-copy">
+            <div>
+              <h1>店铺列表</h1>
+              <p class="summary" id="sourceLinksSummary">正在读取店铺列表...</p>
+              <p class="disclaimer">本站仅陈列数据源中的店铺链接，方便核对原始商品页面。</p>
+            </div>
+            <a class="toolbar-link" href="index.html">返回主页</a>
+          </div>
+        </div>
+      </header>
+
+      <section class="source-link-list content-column" id="sourceLinks" aria-live="polite"></section>
+    </main>
+
+    <script src="sources.js"></script>
+  </body>
+</html>

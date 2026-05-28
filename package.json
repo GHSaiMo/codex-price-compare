@@ -1,0 +1,11 @@
+{
+  "name": "codex-price-compare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "refresh": "node scripts/refresh-products.mjs",
+    "test": "node tests/site.test.mjs"
+  }
+}

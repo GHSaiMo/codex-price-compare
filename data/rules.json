@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "categories": ["codex", "sms"],
+  "codexSubtypes": ["free", "plus", "pro", "api", "unknown"],
+  "smsSubtype": "codex_sms",
+  "smsServiceTerms": [
+    "codex接码",
+    "接手机验证码",
+    "单次接码",
+    "接码",
+    "验证码",
+    "手机号",
+    "换号"
+  ],
+  "accountStateTerms": [
+    "已接码",
+    "接过码",
+    "免接码",
+    "已绑定手机",
+    "无需接码"
+  ],
+  "codexTerms": [
+    "codex",
+    "chatgpt",
+    "gpt",
+    "openai",
+    "codexapi",
+    "rt",
+    "refresh token",
+    "刷新令牌",
+    "json",
+    "cpa",
+    "sub",
+    "plus号",
+    "free号",
+    "普号",
+    "api额度",
+    "中转站",
+    "刀额度"
+  ],
+  "anchorTerms": [
+    "codex",
+    "chatgpt",
+    "gpt",
+    "openai"
+  ],
+  "subtypeTerms": {
+    "api": ["codexapi", "api额度", "中转站", "刀额度", "额度/天", "额度 日卡"],
+    "pro": ["pro", "5x", "20x", "200美金"],
+    "plus": ["plus", "可达鸭", "team"],
+    "free": ["free", "fre", "free号", "普号"]
+  }
+}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>后台管理 - Codex比价</title>
+    <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body
+    data-products-url="data/products.json"
+    data-sources-url="data/sources.json"
+    data-meta-url="data/meta.json"
+  >
+    <main class="page-shell">
+      <header class="page-header">
+        <p class="eyebrow">Admin</p>
+        <h1>后台管理</h1>
+        <p class="summary" id="adminSummary">正在读取店铺数据...</p>
+        <a class="admin-link" href="index.html">返回商品页</a>
+      </header>
+
+      <section class="admin-panel refresh-panel" aria-label="刷新设置">
+        <h2>刷新设置</h2>
+        <form class="refresh-form" id="refreshForm">
+          <label class="field">
+            <span>刷新间隔</span>
+            <input id="refreshIntervalMinutes" name="intervalMinutes" type="number" min="1" max="1440" step="1">
+            <span>分钟</span>
+          </label>
+          <button class="toolbar-link" type="submit">保存间隔</button>
+          <button class="toolbar-link" id="refreshNow" type="button">立即刷新</button>
+        </form>
+        <p class="form-message" id="refreshStatus" role="status">正在读取刷新状态...</p>
+      </section>
+
+      <section class="admin-panel" aria-label="按店铺列出的 unknown 商品">
+        <h2>unknown 商品</h2>
+        <div class="source-list" id="sourceList"></div>
+      </section>
+    </main>
+
+    <script src="admin.js"></script>
+  </body>
+</html>
