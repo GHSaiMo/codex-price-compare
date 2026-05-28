@@ -26,6 +26,25 @@ const contentTypes = {
   ".svg": "image/svg+xml; charset=utf-8",
 };
 
+function formatGmt8Timestamp(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `GMT+8 ${values.year}-${values.month}-${values.day} ${values.hour}:${values.minute}:${values.second}`;
+}
+
+function logWithTimestamp(level, message) {
+  console[level](`[${formatGmt8Timestamp()}] ${message}`);
+}
+
 function resolvePath(requestUrl, defaultFile, port) {
   const { pathname } = new URL(requestUrl, `http://127.0.0.1:${port}`);
   const decodedPath = decodeURIComponent(pathname);
@@ -97,7 +116,7 @@ async function updateRefreshMeta(nextRefreshAt) {
     meta.nextRefreshAt = nextRefreshAt;
     await writeFile(metaPath, `${JSON.stringify(meta, null, 2)}\n`);
   } catch (error) {
-    console.error(`刷新状态写入失败：${error.message}`);
+    logWithTimestamp("error", `刷新状态写入失败：${error.message}`);
   }
 }
 
@@ -119,10 +138,10 @@ async function runScheduledRefresh() {
   const nextRefreshAt = new Date(Date.now() + refreshIntervalMs).toISOString();
   try {
     const meta = await refreshProducts({ nextRefreshAt });
-    console.log(`自动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
-    if (meta.errors.length > 0) console.log(JSON.stringify(meta.errors, null, 2));
+    logWithTimestamp("log", `自动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
+    if (meta.errors.length > 0) logWithTimestamp("log", JSON.stringify(meta.errors, null, 2));
   } catch (error) {
-    console.error(`自动刷新失败：${error.message}`);
+    logWithTimestamp("error", `自动刷新失败：${error.message}`);
     await updateRefreshMeta(nextRefreshAt);
   } finally {
     refreshInProgress = false;
@@ -176,7 +195,7 @@ async function handleRefreshNow(response) {
   const nextRefreshAt = new Date(Date.now() + refreshIntervalMs).toISOString();
   try {
     const meta = await refreshProducts({ nextRefreshAt });
-    console.log(`手动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
+    logWithTimestamp("log", `手动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
     refreshInProgress = false;
     scheduleNextRefresh(refreshIntervalMs);
     sendJson(response, 200, await refreshStatus());
@@ -280,9 +299,9 @@ await loadRefreshSettings();
 scheduleNextRefresh(5 * 1000);
 
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`Codex Price Compare: http://127.0.0.1:${PORT}`);
+  logWithTimestamp("log", `Codex Price Compare: http://127.0.0.1:${PORT}`);
 });
 
 adminServer.listen(ADMIN_PORT, "127.0.0.1", () => {
-  console.log(`Codex Price Compare Admin: http://127.0.0.1:${ADMIN_PORT}`);
+  logWithTimestamp("log", `Codex Price Compare Admin: http://127.0.0.1:${ADMIN_PORT}`);
 });

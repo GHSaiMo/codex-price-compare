@@ -5,6 +5,7 @@ const emptyState = document.querySelector("#emptyState");
 const sortSelect = document.querySelector("#sortSelect");
 const includeOutOfStock = document.querySelector("#includeOutOfStock");
 const backToTop = document.querySelector("#backToTop");
+const themeToggle = document.querySelector("#themeToggle");
 const categoryButtons = [...document.querySelectorAll("[data-category]")];
 const subtypeCheckboxes = [...document.querySelectorAll('input[name="subtype"]')];
 
@@ -16,12 +17,35 @@ const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
 const categorySubtypeMap = {
   all: visibleSubtypeValues,
   codex: ["free", "plus", "pro"],
+  plus: ["plus"],
   sms: ["codex_sms"],
 };
 
 let allProducts = [];
 let currentCategory = "all";
 sortSelect.value = defaultSort;
+
+function storedTheme() {
+  try {
+    return localStorage.getItem("color-theme");
+  } catch {
+    return null;
+  }
+}
+
+function saveTheme(theme) {
+  try {
+    localStorage.setItem("color-theme", theme);
+  } catch {
+    // Theme persistence is a convenience; the switch still works without storage.
+  }
+}
+
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  themeToggle.setAttribute("aria-pressed", String(theme === "dark"));
+  themeToggle.title = theme === "dark" ? "切换为淡色系" : "切换为黑色系";
+}
 
 function clearElement(element) {
   while (element.firstChild) {
@@ -112,11 +136,17 @@ function createProductCard(item) {
   link.textContent = item.title;
 
   title.append(link);
-  card.append(title, source, price, stock);
+  card.append(title, source, stock, price);
   return card;
 }
 
-function render() {
+function triggerFilterAnimation() {
+  productList.classList.remove("is-filtering");
+  void productList.offsetWidth;
+  productList.classList.add("is-filtering");
+}
+
+function render({ animate = false } = {}) {
   const items = sortProducts(filterProducts());
   clearElement(productList);
   emptyState.hidden = items.length > 0;
@@ -128,6 +158,8 @@ function render() {
   for (const item of items) {
     productList.appendChild(createProductCard(item));
   }
+
+  if (animate) triggerFilterAnimation();
 }
 
 async function loadData() {
@@ -163,18 +195,18 @@ for (const button of categoryButtons) {
       setSubtypeSelection(categoryValues);
     }
     syncActiveCategory();
-    render();
+    render({ animate: true });
   });
 }
 
 for (const control of [...subtypeCheckboxes, sortSelect, includeOutOfStock]) {
   control.addEventListener("input", () => {
     syncActiveCategory();
-    render();
+    render({ animate: true });
   });
   control.addEventListener("change", () => {
     syncActiveCategory();
-    render();
+    render({ animate: true });
   });
 }
 
@@ -188,6 +220,13 @@ backToTop.addEventListener("click", () => {
 
 window.addEventListener("scroll", syncBackToTop, { passive: true });
 
+themeToggle.addEventListener("click", () => {
+  const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(nextTheme);
+  saveTheme(nextTheme);
+});
+
+applyTheme(storedTheme() === "dark" ? "dark" : "light");
 syncActiveCategory();
 syncBackToTop();
 loadData();
