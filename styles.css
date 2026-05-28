@@ -60,6 +60,18 @@ body {
   margin-left: auto;
 }
 
+.sr-only {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .eyebrow {
   margin: 0;
   color: var(--accent);
@@ -90,11 +102,31 @@ h1 {
   letter-spacing: 0;
 }
 
+.title-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.header-tools {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
 .header-line {
   display: flex;
   gap: 16px;
   align-items: center;
   justify-content: space-between;
+}
+
+.header-line > div {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .header-line-copy {
@@ -192,13 +224,15 @@ input {
 
 .toolbar-tools {
   display: inline-flex;
+  flex-shrink: 0;
   gap: 8px;
   align-items: center;
 }
 
+.icon-button,
 .theme-toggle {
   display: inline-flex;
-  width: 54px;
+  width: 42px;
   min-height: 42px;
   align-items: center;
   justify-content: center;
@@ -209,6 +243,7 @@ input {
   cursor: pointer;
 }
 
+.icon-button:hover,
 .theme-toggle:hover {
   border-color: var(--accent);
   color: var(--accent);
@@ -278,6 +313,17 @@ input {
 }
 
 .github-link svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.github-link.icon-button,
+.toolbar-link.icon-button {
+  padding: 0;
+}
+
+.toolbar-link svg {
   width: 20px;
   height: 20px;
   fill: currentColor;
@@ -707,6 +753,10 @@ input {
     padding-top: 20px;
   }
 
+  .page-header {
+    padding-bottom: 12px;
+  }
+
   .filters,
   .product-list,
   .filter-panel {
@@ -717,19 +767,67 @@ input {
     justify-self: start;
   }
 
-  .toolbar-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .header-line {
     align-items: flex-start;
-    flex-direction: column;
     width: 100%;
   }
 
+  .brand-kicker {
+    transform: translateY(-4px);
+  }
+
+  .title-row {
+    flex-wrap: nowrap;
+  }
+
+  h1 {
+    font-size: clamp(1.95rem, 10vw, 2.6rem);
+  }
+
+  .summary {
+    margin-top: 14px;
+  }
+
+  .disclaimer {
+    margin-top: 5px;
+    max-width: none;
+    font-size: 0.68rem;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  .toolbar {
+    margin-top: 8px;
+  }
+
+  .icon-button,
+  .theme-toggle,
   .toolbar-link {
-    width: 100%;
+    width: 34px;
+    min-height: 34px;
+    padding: 0;
+  }
+
+  .github-link svg,
+  .toolbar-link svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .theme-toggle-track {
+    width: 28px;
+    height: 16px;
+  }
+
+  .theme-toggle-thumb {
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+  }
+
+  [data-theme="dark"] .theme-toggle-thumb {
+    transform: translateX(12px);
   }
 
   .header-actions {
@@ -740,12 +838,101 @@ input {
     width: auto;
   }
 
-  .toolbar-tools {
-    width: 100%;
+  .source-back-link {
+    min-height: 40px;
+    padding: 0 16px;
   }
 
-  .toolbar-tools .toolbar-link {
-    flex: 1;
+  .toolbar-row {
+    display: grid;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .toolbar-row-primary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .toolbar-row-secondary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .segment,
+  .subtype-group,
+  .filters {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .segment {
+    min-width: 0;
+  }
+
+  .segment-button,
+  .checkbox-pill,
+  select,
+  input {
+    min-height: 34px;
+    border-radius: 7px;
+    font-size: 0.78rem;
+  }
+
+  .segment-button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 8px;
+  }
+
+  .toolbar-tools {
+    justify-content: flex-end;
+  }
+
+  .subtype-group {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .checkbox-pill {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 6px;
+  }
+
+  .checkbox-pill input {
+    width: 13px;
+    min-height: 13px;
+  }
+
+  .filter-actions {
+    width: auto;
+  }
+
+  .filters {
+    justify-content: flex-start;
+  }
+
+  .field {
+    width: 58px;
+    flex-shrink: 0;
+  }
+
+  .sort-field {
+    width: 52px;
+  }
+
+  .field select {
+    padding: 0 4px;
+    font-size: 0.78rem;
+  }
+
+  .toggle {
+    min-height: 34px;
+    gap: 4px;
+    font-size: 0.78rem;
   }
 
   .source-link-card {
