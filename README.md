@@ -187,11 +187,11 @@ npm test
 ├── app.js                  # 主页面逻辑
 ├── assets/logo.svg         # 站点图标
 ├── data/
-│   ├── meta.json           # 刷新元信息
-│   ├── products.json       # 商品数据
-│   ├── refresh-settings.json
 │   ├── rules.json          # 分类规则
-│   └── sources.json        # 店铺数据源
+│   ├── sources.json        # 店铺数据源
+│   ├── meta.json           # 运行时生成，已忽略
+│   ├── products.json       # 运行时生成，已忽略
+│   └── refresh-settings.json # 运行时生成，已忽略
 ├── index.html              # 主页面
 ├── scripts/refresh-products.mjs
 ├── server.mjs              # 本地 HTTP 服务与刷新 API
