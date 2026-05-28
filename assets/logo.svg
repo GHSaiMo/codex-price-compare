@@ -1,8 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Codex比价 logo">
-  <rect width="64" height="64" rx="16" fill="#0f766e"/>
-  <path d="M25 20 13 32l12 12" fill="none" stroke="#e4f5f1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="m39 20 12 12-12 12" fill="none" stroke="#e4f5f1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="32" cy="32" r="13" fill="#ffffff"/>
-  <path d="M32 22v20" fill="none" stroke="#0f766e" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M25 27c0-2.8 2.8-4.8 7-4.8s7 2 7 4.8c0 7.3-14 3.6-14 10.2 0 2.7 2.8 4.6 7 4.6s7-1.9 7-4.6" fill="none" stroke="#0f766e" stroke-width="3.5" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="logo-bg" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12a594"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#logo-bg)"/>
+  <path
+    d="m22 22 9.5 10L22 42"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M37 42h9"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
 </svg>

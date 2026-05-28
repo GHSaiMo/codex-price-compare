@@ -53,6 +53,19 @@ function resolvePath(requestUrl, defaultFile, port) {
   return join(ROOT, relativePath);
 }
 
+function isAdminStaticPath(pathname) {
+  return new Set([
+    "/",
+    "/admin.html",
+    "/admin.js",
+    "/styles.css",
+    "/assets/logo.svg",
+    "/data/products.json",
+    "/data/sources.json",
+    "/data/meta.json",
+  ]).has(pathname);
+}
+
 async function existingFileOrDefault(filePath, defaultFile) {
   try {
     const fileStat = await stat(filePath);
@@ -269,6 +282,12 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     }
     if (allowApi && request.method === "POST" && pathname === "/api/sources") {
       await addSource(request, response);
+      return;
+    }
+
+    if (allowApi && !pathname.startsWith("/api/") && !isAdminStaticPath(pathname)) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not Found");
       return;
     }
 
