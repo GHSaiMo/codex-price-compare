@@ -13,7 +13,7 @@ const payload = JSON.parse(Buffer.from(process.argv[1], "base64").toString("utf8
 const source = payload.source;
 const base = new URL(source.url);
 
-async function postJson(page, path, body) {
+async function postJsonOnce(page, path, body) {
   const target = new URL(path, base).href;
   const result = await page.evaluate(async ({ target, body }) => {
     const response = await fetch(target, {
@@ -42,6 +42,24 @@ async function postJson(page, path, body) {
   }
 }
 
+async function postJson(page, path, body) {
+  const attempts = Math.max(1, Number(payload.requestRetryAttempts || 1));
+  const delayMs = Math.max(0, Number(payload.requestRetryDelayMs || 0));
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await postJsonOnce(page, path, body);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts) break;
+      await page.waitForTimeout(delayMs);
+    }
+  }
+
+  throw lastError;
+}
+
 const context = await chromium.launchPersistentContext(payload.userDataDir, {
   channel: payload.channel,
   headless: payload.headless,
@@ -52,6 +70,7 @@ const context = await chromium.launchPersistentContext(payload.userDataDir, {
 try {
   const page = context.pages()[0] || await context.newPage();
   await page.goto(source.url, { waitUntil: "domcontentloaded", timeout: payload.timeoutMs });
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
   if (payload.manualWaitMs > 0) {
     await page.waitForTimeout(payload.manualWaitMs);
   }
@@ -131,6 +150,8 @@ export function buildLdxpPlaywrightPayload(source, runner, env = process.env) {
     channel: String(env.LDXP_PLAYWRIGHT_CHANNEL || "chrome"),
     headless: boolFromEnv(env.LDXP_PLAYWRIGHT_HEADLESS, false),
     manualWaitMs: Number(env.LDXP_PLAYWRIGHT_MANUAL_WAIT_MS || 0),
+    requestRetryAttempts: Number(env.LDXP_PLAYWRIGHT_REQUEST_RETRY_ATTEMPTS || 4),
+    requestRetryDelayMs: Number(env.LDXP_PLAYWRIGHT_REQUEST_RETRY_DELAY_MS || 3000),
     timeoutMs: Number(env.LDXP_PLAYWRIGHT_TIMEOUT_MS || 60000),
     remoteCwd: String(env.LDXP_PLAYWRIGHT_REMOTE_CWD || DEFAULT_REMOTE_CWD),
     userDataDir: runner.kind === "ssh"

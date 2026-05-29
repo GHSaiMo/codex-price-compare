@@ -70,10 +70,34 @@ assert.deepEqual(
     channel: "chrome",
     headless: false,
     manualWaitMs: 30000,
+    requestRetryAttempts: 4,
+    requestRetryDelayMs: 3000,
     timeoutMs: 60000,
     remoteCwd: "/root/codex-price-compare",
     userDataDir: ".playwright-ldxp-profile",
   },
+);
+assert.equal(
+  buildLdxpPlaywrightPayload(
+    { url: "https://pay.ldxp.cn/shop/echo_dream", token: "echo_dream" },
+    { id: "local", kind: "local" },
+    {
+      LDXP_PLAYWRIGHT_REQUEST_RETRY_ATTEMPTS: "6",
+      LDXP_PLAYWRIGHT_REQUEST_RETRY_DELAY_MS: "500",
+    },
+  ).requestRetryAttempts,
+  6,
+);
+assert.equal(
+  buildLdxpPlaywrightPayload(
+    { url: "https://pay.ldxp.cn/shop/echo_dream", token: "echo_dream" },
+    { id: "local", kind: "local" },
+    {
+      LDXP_PLAYWRIGHT_REQUEST_RETRY_ATTEMPTS: "6",
+      LDXP_PLAYWRIGHT_REQUEST_RETRY_DELAY_MS: "500",
+    },
+  ).requestRetryDelayMs,
+  500,
 );
 assert.equal(
   shouldProtectRefreshResult({
