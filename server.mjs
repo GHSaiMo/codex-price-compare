@@ -5,6 +5,14 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { refreshProducts } from "./src/refresh.mjs";
+import {
+  buildStockWatchView,
+  createStockWatchEntryFromUrl,
+  readStockWatch,
+  removeStockWatchEntry,
+  upsertStockWatchEntry,
+  writeStockWatch,
+} from "./src/stock-watch.mjs";
 
 const PORT = 49173;
 const ADMIN_PORT = 49174;
@@ -12,7 +20,9 @@ const DEFAULT_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const sourcesPath = join(ROOT, "data/sources.json");
 const metaPath = join(ROOT, "data/meta.json");
+const productsPath = join(ROOT, "data/products.json");
 const refreshSettingsPath = join(ROOT, "data/refresh-settings.json");
+const stockWatchPath = join(ROOT, "data/stock-watch.json");
 const knownAdapters = new Set(["ldxp", "acg", "dujiao"]);
 let refreshTimer = null;
 let refreshInProgress = false;
@@ -105,6 +115,11 @@ async function readRequestJson(request) {
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+}
+
+async function readProducts() {
+  const products = JSON.parse(await readFile(productsPath, "utf8"));
+  return Array.isArray(products.items) ? products.items : [];
 }
 
 async function loadRefreshSettings() {
@@ -261,6 +276,87 @@ async function addSource(request, response) {
   }
 }
 
+async function handleStockWatchList(response) {
+  const [watchData, products] = await Promise.all([
+    readStockWatch(stockWatchPath),
+    readProducts(),
+  ]);
+  sendJson(response, 200, { items: buildStockWatchView(watchData.items, products) });
+}
+
+async function handleStockWatchAdd(request, response) {
+  try {
+    const body = await readRequestJson(request);
+    const products = await readProducts();
+    const entry = createStockWatchEntryFromUrl({ products, url: body.url });
+    const watchData = await readStockWatch(stockWatchPath);
+    const nextData = upsertStockWatchEntry(watchData, entry);
+    await writeStockWatch(stockWatchPath, nextData);
+    sendJson(response, 201, { entry: buildStockWatchView([entry], products)[0] });
+  } catch (error) {
+    sendJson(response, errorStatusCode(error), { message: error.message });
+  }
+}
+
+async function handleStockWatchDelete(productId, response) {
+  const watchData = await readStockWatch(stockWatchPath);
+  const nextData = removeStockWatchEntry(watchData, productId);
+  await writeStockWatch(stockWatchPath, nextData);
+  sendJson(response, 200, { ok: true });
+}
+
+async function handleStockWatchTest(productId, response) {
+  try {
+    const [watchData, products] = await Promise.all([
+      readStockWatch(stockWatchPath),
+      readProducts(),
+    ]);
+    const entry = watchData.items.find((item) => item.productId === productId);
+    if (!entry) {
+      const err = new Error("未找到这个关注商品");
+      err.statusCode = 404;
+      throw err;
+    }
+    const product = products.find((item) => item.id === productId) || entry;
+    const gatewayUrl = process.env.WEIXIN_GATEWAY_ALERT_URL || "http://127.0.0.1:8787/alerts/send";
+    const target = process.env.WEIXIN_GATEWAY_ALERT_TARGET || "self";
+    const notifyText = [
+      "补货通知测试",
+      `商品：${product.title || entry.title}`,
+      `来源：${product.sourceName || entry.sourceName}`,
+      `状态：${product.stockStatus || entry.lastStockStatus || "unknown"}`,
+      `链接：${product.url || entry.url}`,
+    ].join("\n");
+    const gatewayResponse = await fetch(gatewayUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        target,
+        text: notifyText,
+        alertId: `stock-test:${productId}:${Date.now()}`,
+      }),
+    });
+    const raw = await gatewayResponse.text();
+    if (!gatewayResponse.ok) throw new Error(raw || `gateway HTTP ${gatewayResponse.status}`);
+    sendJson(response, 200, { ok: true, gateway: raw ? safeJson(raw) : {} });
+  } catch (error) {
+    sendJson(response, errorStatusCode(error), { message: error.message });
+  }
+}
+
+function safeJson(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return { raw };
+  }
+}
+
+function errorStatusCode(error) {
+  const statusCode = Number(error?.statusCode || 500);
+  return Number.isInteger(statusCode) && statusCode >= 400 && statusCode <= 599 ? statusCode : 500;
+}
+
 function createStaticServer(defaultFile, port, allowApi = false) {
   return createServer(async (request, response) => {
     if (!request.url) {
@@ -284,6 +380,24 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     }
     if (allowApi && request.method === "POST" && pathname === "/api/sources") {
       await addSource(request, response);
+      return;
+    }
+    if (allowApi && request.method === "GET" && pathname === "/api/stock-watch") {
+      await handleStockWatchList(response);
+      return;
+    }
+    if (allowApi && request.method === "POST" && pathname === "/api/stock-watch") {
+      await handleStockWatchAdd(request, response);
+      return;
+    }
+    const stockWatchTestMatch = pathname.match(/^\/api\/stock-watch\/([^/]+)\/test$/);
+    if (allowApi && request.method === "POST" && stockWatchTestMatch) {
+      await handleStockWatchTest(decodeURIComponent(stockWatchTestMatch[1]), response);
+      return;
+    }
+    const stockWatchDeleteMatch = pathname.match(/^\/api\/stock-watch\/([^/]+)$/);
+    if (allowApi && request.method === "DELETE" && stockWatchDeleteMatch) {
+      await handleStockWatchDelete(decodeURIComponent(stockWatchDeleteMatch[1]), response);
       return;
     }
 

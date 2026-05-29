@@ -13,6 +13,7 @@ import {
   shouldUseFallbackForError,
 } from "./fallback-proxy.mjs";
 import { fetchLdxpViaPlaywright } from "./ldxp-playwright.mjs";
+import { processStockWatchNotifications } from "./stock-watch.mjs";
 
 const root = new URL("../", import.meta.url);
 const dataDir = new URL("data/", root);
@@ -20,6 +21,7 @@ const backupDir = new URL("backups/", dataDir);
 const cooldownPath = new URL("refresh-cooldown.json", dataDir);
 const PRODUCTS_PATH = "data/products.json";
 const META_PATH = "data/meta.json";
+const STOCK_WATCH_PATH = "data/stock-watch.json";
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
 const DOMAIN_SKIP_ERROR_PATTERNS = [
   /HTTP 403\b/,
@@ -290,6 +292,18 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     meta.protected = false;
     meta.backup = backup;
     await writeFile(new URL("products.json", dataDir), `${JSON.stringify(products, null, 2)}\n`);
+    try {
+      meta.stockWatch = await processStockWatchNotifications({
+        watchPath: new URL(STOCK_WATCH_PATH, root),
+        previousProducts: previousProducts?.items || [],
+        currentProducts: sortedItems,
+      });
+    } catch (error) {
+      meta.stockWatch = {
+        enabled: process.env.STOCK_NOTIFY_ENABLED !== "0",
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
   await writeFile(new URL("meta.json", dataDir), `${JSON.stringify(meta, null, 2)}\n`);
 

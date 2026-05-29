@@ -151,6 +151,11 @@ h1 {
   line-height: 1.6;
 }
 
+#adminSummary {
+  max-width: none;
+  white-space: nowrap;
+}
+
 .page-footer {
   margin-top: 22px;
   text-align: center;
@@ -705,14 +710,20 @@ input {
   margin-bottom: 18px;
 }
 
-.refresh-form {
+.stock-watch-panel {
+  margin-bottom: 18px;
+}
+
+.refresh-form,
+.stock-watch-form {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
 }
 
-.refresh-form .field {
+.refresh-form .field,
+.stock-watch-form .field {
   flex: 1 1 220px;
 }
 
@@ -720,13 +731,50 @@ input {
   max-width: 120px;
 }
 
-.refresh-form button {
+.stock-watch-form input {
+  width: min(100%, 520px);
+}
+
+.refresh-form button,
+.stock-watch-form button,
+.stock-watch-actions button {
   cursor: pointer;
 }
 
-.refresh-form button:disabled {
+.refresh-form button:disabled,
+.stock-watch-form button:disabled,
+.stock-watch-actions button:disabled {
   cursor: wait;
   opacity: 0.55;
+}
+
+.stock-watch-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.stock-watch-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.stock-watch-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stock-watch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: end;
 }
 
 .admin-product-row {

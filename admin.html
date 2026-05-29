@@ -45,6 +45,19 @@
         <p class="form-message" id="refreshStatus" role="status">正在读取刷新状态...</p>
       </section>
 
+      <section class="admin-panel stock-watch-panel" aria-label="补货通知">
+        <h2>补货通知</h2>
+        <form class="stock-watch-form" id="stockWatchForm">
+          <label class="field">
+            <span>商品链接</span>
+            <input id="stockWatchUrl" name="url" type="url" placeholder="https://..." required>
+          </label>
+          <button class="toolbar-link" type="submit">查找并关注</button>
+        </form>
+        <p class="form-message" id="stockWatchStatus" role="status">正在读取关注列表...</p>
+        <div class="stock-watch-list" id="stockWatchList"></div>
+      </section>
+
       <section class="admin-panel" aria-label="按店铺列出的 unknown 商品">
         <h2>unknown 商品</h2>
         <div class="source-list" id="sourceList"></div>

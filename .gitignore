@@ -2,6 +2,7 @@ data/meta.json
 data/products.json
 data/refresh-settings.json
 data/refresh-cooldown.json
+data/stock-watch.json
 data/backups/
 .playwright-ldxp-profile/
 .playwright-ldxp-worker-profile/

@@ -17,6 +17,10 @@ import {
   buildLdxpPlaywrightPayload,
   buildLdxpPlaywrightRunners,
 } from "../src/ldxp-playwright.mjs";
+import {
+  buildStockWatchNotificationUpdates,
+  createStockWatchEntryFromUrl,
+} from "../src/stock-watch.mjs";
 
 const root = new URL("../", import.meta.url);
 
@@ -32,6 +36,65 @@ const sourcesHtml = await readFile(new URL("sources.html", root), "utf8");
 const sourcesApp = await readFile(new URL("sources.js", root), "utf8");
 const packageJson = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 const server = await readFile(new URL("server.mjs", root), "utf8");
+
+const stockWatchProducts = [
+  {
+    id: "ldxp-xiaoba:2mlvd7",
+    title: "Gpt Free",
+    sourceName: "Ai小八",
+    price: 0.85,
+    stockStatus: "out_of_stock",
+    stockCount: 0,
+    url: "https://pay.ldxp.cn/item/2mlvd7",
+  },
+];
+
+assert.deepEqual(
+  createStockWatchEntryFromUrl({
+    products: stockWatchProducts,
+    url: "https://pay.ldxp.cn/item/2mlvd7?utm_source=test#detail",
+    now: new Date("2026-05-29T08:00:00.000Z"),
+  }),
+  {
+    productId: "ldxp-xiaoba:2mlvd7",
+    url: "https://pay.ldxp.cn/item/2mlvd7",
+    title: "Gpt Free",
+    sourceName: "Ai小八",
+    enabled: true,
+    createdAt: "2026-05-29T08:00:00.000Z",
+    updatedAt: "2026-05-29T08:00:00.000Z",
+    lastSeenAt: "2026-05-29T08:00:00.000Z",
+    lastStockStatus: "out_of_stock",
+    lastStockCount: 0,
+    lastNotifiedAt: null,
+    lastNotifyStatus: null,
+    lastNotifyError: null,
+    lastNotifiedStockStatus: null,
+  },
+);
+assert.throws(
+  () => createStockWatchEntryFromUrl({ products: stockWatchProducts, url: "https://pay.ldxp.cn/item/not-found" }),
+  /未在当前商品数据中找到这个链接/,
+);
+assert.deepEqual(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      lastStockStatus: "out_of_stock",
+      lastStockCount: 0,
+      lastNotifyStatus: null,
+    }],
+    previousProducts: stockWatchProducts,
+    currentProducts: [{
+      ...stockWatchProducts[0],
+      stockStatus: "in_stock",
+      stockCount: 124,
+    }],
+    now: new Date("2026-05-29T08:30:00.000Z"),
+  }).notifications.map((notification) => notification.entry.productId),
+  ["ldxp-xiaoba:2mlvd7"],
+);
 
 assert.equal(buildFallbackProxyConfig({}).enabled, false);
 assert.deepEqual(
@@ -477,6 +540,10 @@ assert.match(adminHtml, /id="refreshForm"/);
 assert.match(adminHtml, /id="refreshIntervalMinutes"/);
 assert.match(adminHtml, /id="refreshNow"/);
 assert.match(adminHtml, /id="refreshStatus"/);
+assert.match(adminHtml, /补货通知/);
+assert.match(adminHtml, /id="stockWatchForm"/);
+assert.match(adminHtml, /id="stockWatchUrl"/);
+assert.match(adminHtml, /id="stockWatchList"/);
 assert.match(adminHtml, /id="sourceList"/);
 assert.doesNotMatch(adminHtml, /id="unknownProductList"/);
 assert.doesNotMatch(adminHtml, /id="sourceForm"/);
@@ -492,6 +559,10 @@ assert.match(adminApp, /nextRefreshAt/);
 assert.match(adminApp, /refreshStatusUrl/);
 assert.match(adminApp, /refreshSettingsUrl/);
 assert.match(adminApp, /refreshNowUrl/);
+assert.match(adminApp, /stockWatchUrlApi/);
+assert.match(adminApp, /查找商品/);
+assert.match(adminApp, /测试通知/);
+assert.match(adminApp, /取消关注/);
 assert.match(adminApp, /renderRefreshStatus/);
 assert.match(adminApp, /refreshForm/);
 assert.match(adminApp, /refreshNow/);
@@ -500,6 +571,13 @@ assert.match(adminApp, /setInterval\(loadAdminData/);
 assert.match(adminApp, /下次刷新/);
 assert.match(adminApp, /MAX_VISIBLE_PRICE/);
 assert.match(adminApp, /item\.price >= MAX_VISIBLE_PRICE/);
+assert.match(server, /\/api\/stock-watch/);
+assert.match(server, /handleStockWatchAdd/);
+assert.match(server, /handleStockWatchTest/);
+assert.match(server, /WEIXIN_GATEWAY_ALERT_URL/);
 assert.match(styles, /\.source-products/);
+assert.match(styles, /\.stock-watch-panel/);
+assert.match(styles, /\.stock-watch-list/);
+assert.match(styles, /\.stock-watch-row/);
 assert.match(styles, /\.source-card-empty/);
 assert.match(styles, /\.match-reasons/);
