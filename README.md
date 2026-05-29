@@ -139,6 +139,27 @@ npm test
 - `acg`：ACG 类商品接口。
 - `dujiao`：独角数卡 / 同类公开商品接口。
 
+### ldxp / 链动小铺刷新策略
+
+`ldxp` 类型站点默认使用 Playwright 浏览器上下文采集，复用 `.playwright-ldxp-profile/` 中的 cookie 和验证状态。首次遇到 WAF / 真人验证时，可以用有头模式打开页面手动处理：
+
+```bash
+LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
+```
+
+刷新顺序为：本机 Playwright、VPS Playwright、Windows Tailscale 探测。VPS 需要远端有同一份项目和依赖，默认路径为 `/root/codex-price-compare`，可用 `LDXP_PLAYWRIGHT_REMOTE_CWD` 覆盖；Windows 节点通过 `LDXP_WINDOWS_TAILSCALE_IP` 配置，当前仅做在线探测，未配置远程执行通道时会跳过。
+
+常用环境变量：
+
+- `LDXP_PLAYWRIGHT_HEADLESS=0`：有头模式，方便手动验证。
+- `LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000`：打开页面后等待 120 秒，让用户手动点击验证。
+- `LDXP_PLAYWRIGHT_PROFILE=.playwright-ldxp-profile`：指定本机持久化浏览器 profile。
+- `LDXP_PLAYWRIGHT_VPS_HOST=vps`：本机失败后通过 SSH 到 VPS 运行 Playwright。
+- `LDXP_PLAYWRIGHT_REMOTE_CWD=/root/codex-price-compare`：VPS 上的项目目录。
+- `LDXP_WINDOWS_TAILSCALE_IP=100.127.136.64`：最后探测 Windows 节点是否在线。
+
+刷新前会自动备份 `data/products.json` 和 `data/meta.json` 到 `data/backups/`。如果检测到 WAF、HTTP 5xx/403/429、大面积失败或商品数量骤降，会保留旧 `products.json`，只更新 `meta.json` 并写入 `data/refresh-cooldown.json` 进入冷却。
+
 ### `data/rules.json`
 
 商品分类规则配置。主要包含：

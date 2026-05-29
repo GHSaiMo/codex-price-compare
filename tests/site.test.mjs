@@ -8,6 +8,15 @@ import {
   normalizeLdxpProduct,
   sortProductsForDisplay,
 } from "../src/cleaning.mjs";
+import {
+  buildFallbackProxyConfig,
+  shouldProtectRefreshResult,
+  shouldUseFallbackForError,
+} from "../src/fallback-proxy.mjs";
+import {
+  buildLdxpPlaywrightPayload,
+  buildLdxpPlaywrightRunners,
+} from "../src/ldxp-playwright.mjs";
 
 const root = new URL("../", import.meta.url);
 
@@ -23,6 +32,69 @@ const sourcesHtml = await readFile(new URL("sources.html", root), "utf8");
 const sourcesApp = await readFile(new URL("sources.js", root), "utf8");
 const packageJson = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 const server = await readFile(new URL("server.mjs", root), "utf8");
+
+assert.equal(buildFallbackProxyConfig({}).enabled, false);
+assert.deepEqual(
+  buildFallbackProxyConfig({ FALLBACK_SSH_HOST: "vps" }),
+  {
+    enabled: true,
+    sshHost: "vps",
+    localHost: "127.0.0.1",
+    localPort: 7891,
+    proxyUrl: "socks5h://127.0.0.1:7891",
+  },
+);
+assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 520"), { status: 520 })), true);
+assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 404"), { status: 404 })), false);
+assert.equal(shouldUseFallbackForError(new Error("fetch failed")), true);
+assert.deepEqual(buildLdxpPlaywrightRunners({}), [{ id: "local", kind: "local" }]);
+assert.deepEqual(
+  buildLdxpPlaywrightRunners({
+    FALLBACK_SSH_HOST: "vps",
+    LDXP_WINDOWS_TAILSCALE_IP: "100.127.136.64",
+  }),
+  [
+    { id: "local", kind: "local" },
+    { id: "vps", kind: "ssh", host: "vps" },
+    { id: "windows", kind: "windows-tailscale", host: "100.127.136.64" },
+  ],
+);
+assert.deepEqual(
+  buildLdxpPlaywrightPayload(
+    { url: "https://pay.ldxp.cn/shop/echo_dream", token: "echo_dream" },
+    { id: "local", kind: "local" },
+    { LDXP_PLAYWRIGHT_MANUAL_WAIT_MS: "30000" },
+  ),
+  {
+    source: { url: "https://pay.ldxp.cn/shop/echo_dream", token: "echo_dream" },
+    channel: "chrome",
+    headless: false,
+    manualWaitMs: 30000,
+    timeoutMs: 60000,
+    remoteCwd: "/root/codex-price-compare",
+    userDataDir: ".playwright-ldxp-profile",
+  },
+);
+assert.equal(
+  shouldProtectRefreshResult({
+    previousItemCount: 200,
+    nextItemCount: 52,
+    sourceCount: 30,
+    failureCount: 22,
+    errors: [{ message: "HTTP 520" }],
+  }),
+  true,
+);
+assert.equal(
+  shouldProtectRefreshResult({
+    previousItemCount: 52,
+    nextItemCount: 120,
+    sourceCount: 30,
+    failureCount: 2,
+    errors: [{ message: "HTTP 404" }],
+  }),
+  false,
+);
 
 assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));

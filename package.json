@@ -8,5 +8,8 @@
     "start": "node server.mjs",
     "refresh": "node scripts/refresh-products.mjs",
     "test": "node tests/site.test.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
   }
 }

@@ -152,6 +152,7 @@ async function runScheduledRefresh() {
   try {
     const meta = await refreshProducts({ nextRefreshAt });
     logWithTimestamp("log", `自动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
+    if (meta.protected) logWithTimestamp("log", `刷新保护生效：${meta.protectionReason || "冷却中，保留旧数据"}`);
     if (meta.errors.length > 0) logWithTimestamp("log", JSON.stringify(meta.errors, null, 2));
   } catch (error) {
     logWithTimestamp("error", `自动刷新失败：${error.message}`);
@@ -209,6 +210,7 @@ async function handleRefreshNow(response) {
   try {
     const meta = await refreshProducts({ nextRefreshAt });
     logWithTimestamp("log", `手动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
+    if (meta.protected) logWithTimestamp("log", `刷新保护生效：${meta.protectionReason || "冷却中，保留旧数据"}`);
     refreshInProgress = false;
     scheduleNextRefresh(refreshIntervalMs);
     sendJson(response, 200, await refreshStatus());
