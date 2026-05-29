@@ -105,6 +105,86 @@
       "token": "1I2Y9GEC"
     },
     {
+      "id": "ldxp-catcoder",
+      "name": "CatCoder AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/catcoder",
+      "token": "catcoder"
+    },
+    {
+      "id": "ldxp-ai-yuantou",
+      "name": "AI 源头厂家",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/YQUOBIW1",
+      "token": "YQUOBIW1"
+    },
+    {
+      "id": "ldxp-maomao-ai",
+      "name": "毛毛AI货源",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/9S9N5V82",
+      "token": "9S9N5V82"
+    },
+    {
+      "id": "ldxp-hug-ai",
+      "name": "Hug AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/4UOATQTU",
+      "token": "4UOATQTU"
+    },
+    {
+      "id": "ldxp-kaka",
+      "name": "咔咔",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/D92VW084",
+      "token": "D92VW084"
+    },
+    {
+      "id": "ldxp-ai1998",
+      "name": "ai1998",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/ai1998",
+      "token": "ai1998"
+    },
+    {
+      "id": "ldxp-yoloo",
+      "name": "yoloo的小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/haozi719",
+      "token": "haozi719"
+    },
+    {
+      "id": "ldxp-yuanzhu-ai",
+      "name": "元筑AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/laoyang",
+      "token": "laoyang"
+    },
+    {
+      "id": "ldxp-zhegetinghao",
+      "name": "这个挺好",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/ULT21PVZ",
+      "token": "ULT21PVZ"
+    },
+    {
+      "id": "ldxp-xiaojiu",
+      "name": "小久",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/VUOJQOHY",
+      "token": "VUOJQOHY"
+    },
+    {
       "id": "dujiao-gmail91",
       "name": "91的小店",
       "adapter": "dujiao",
@@ -132,6 +212,13 @@
       "enabled": true,
       "url": "https://kelaode.vip/",
       "apiBase": "https://api.kelaode.vip/"
+    },
+    {
+      "id": "dujiao-mufeng",
+      "name": "沐风小铺",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://shop.mfttai.com/"
     },
     {
       "id": "acg-ai666",

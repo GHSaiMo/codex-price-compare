@@ -38,7 +38,7 @@ async function loadSourceLinks() {
     const data = await response.json();
     const sources = Array.isArray(data.sources) ? data.sources : [];
     clearElement(sourceLinks);
-    sourceLinksSummary.textContent = `共 ${sources.length} 个店铺链接。`;
+    sourceLinksSummary.textContent = `共 ${sources.length} 个店铺链接`;
 
     for (const source of sources) {
       sourceLinks.appendChild(createSourceLinkCard(source));

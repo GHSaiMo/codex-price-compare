@@ -35,6 +35,10 @@ function normalizePrice(value) {
   return Number.isFinite(price) ? price : null;
 }
 
+function isBlockedPrice(price) {
+  return typeof price === "number" && price >= 2000;
+}
+
 function normalizeStockStatus(stockCount, explicitStatus, isSoldOut = false) {
   if (isSoldOut || explicitStatus === "out_of_stock" || stockCount === 0) return "out_of_stock";
   if (explicitStatus === "low_stock") return "low_stock";
@@ -114,6 +118,8 @@ export function classifyProduct(title, description = "", rules) {
 function withCommonFields(raw, source, rules, fields) {
   const classification = classifyProduct(fields.title, fields.descriptionText, rules);
   if (classification.category === "other") return null;
+  const price = normalizePrice(fields.price);
+  if (isBlockedPrice(price)) return null;
 
   return {
     id: `${source.id || source.name}:${fields.sourceProductId}`,
@@ -123,7 +129,7 @@ function withCommonFields(raw, source, rules, fields) {
     tags: classification.tags,
     matchReasons: classification.matchReasons,
     title: fields.title,
-    price: normalizePrice(fields.price),
+    price,
     currency: "CNY",
     stockStatus: normalizeStockStatus(fields.stockCount, fields.stockStatus, fields.isSoldOut),
     stockCount: typeof fields.stockCount === "number" ? fields.stockCount : null,

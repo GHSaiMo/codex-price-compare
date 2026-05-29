@@ -27,11 +27,13 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 19);
+assert.equal(sources.sources.length, 30);
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/HCJW0TDL"));
+assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
 assert.ok(sources.sources.some((source) => source.url === "https://gmail91.shop/"));
 assert.ok(sources.sources.some((source) => source.url === "https://ai666.dnxb.cc/"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.qxvx.cn/shop/OK1"));
+assert.ok(sources.sources.some((source) => source.url === "https://shop.mfttai.com/"));
 assert.ok(
   sources.sources.some((source) => source.url === "https://kelaode.vip/" && source.apiBase === "https://api.kelaode.vip/"),
 );
@@ -124,6 +126,18 @@ assert.equal(
   "plus",
 );
 assert.equal(
+  classifyProduct("GPT puls 成品号 质保首登", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("GPT半成品账号 质保首登", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("ChatGPT土区直充月卡", "", rules).subtype,
+  "plus",
+);
+assert.equal(
   classifyProduct("【日抛】PLUS未接码-仅网页-icloud📭（质保三小时内首登）", "ChatGPT Codex 可用", rules).subtype,
   "plus",
 );
@@ -160,6 +174,20 @@ const ldxp = normalizeLdxpProduct(
 assert.equal(ldxp.category, "sms");
 assert.equal(ldxp.stockStatus, "out_of_stock");
 assert.equal(ldxp.stockCount, 0);
+
+const highPriceLdxp = normalizeLdxpProduct(
+  {
+    link: "https://pay.ldxp.cn/item/high-price",
+    goods_key: "high-price",
+    name: "ChatGPT Plus 土区直充",
+    price: 2000,
+    category: { name: "ChatGPT" },
+    extend: { stock_count: 8 },
+  },
+  { name: "AI小铺", url: "https://pay.ldxp.cn/shop/echo_dream", adapter: "ldxp" },
+  rules,
+);
+assert.equal(highPriceLdxp, null);
 
 const acg = normalizeAcgProduct(
   {

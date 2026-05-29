@@ -801,6 +801,10 @@ input {
     width: 100%;
   }
 
+  .header-line-copy {
+    align-items: flex-end;
+  }
+
   .brand-kicker {
     transform: translateY(-4px);
   }
@@ -868,6 +872,11 @@ input {
 
   .header-actions {
     width: 100%;
+  }
+
+  .header-line-copy .header-actions {
+    width: auto;
+    padding-bottom: 5px;
   }
 
   .header-actions .toolbar-link {
@@ -956,7 +965,32 @@ input {
   }
 
   .source-link-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 8px 10px;
+    align-items: center;
+  }
+
+  .source-link-card strong {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .source-link-url {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .source-link-card .adapter-pill {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    justify-self: end;
+    white-space: nowrap;
+  }
+
+  .header-line-copy h1,
+  .header-line-copy .summary {
+    white-space: nowrap;
   }
 
   .admin-grid {
