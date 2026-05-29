@@ -10,6 +10,7 @@ const subtypeButtons = [...document.querySelectorAll("[data-subtype]")];
 const productsUrl = document.body.dataset.productsUrl || "data/products.json";
 const metaUrl = document.body.dataset.metaUrl || "data/meta.json";
 const DATA_RELOAD_INTERVAL_MS = 60 * 1000;
+const MAX_VISIBLE_PRICE = 2000;
 const defaultSort = "price-asc";
 const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
 
@@ -50,6 +51,7 @@ function filterProducts() {
   return allProducts.filter((item) => {
     if (!visibleSubtypeValues.includes(item.subtype)) return false;
     if (item.subtype !== currentSubtype) return false;
+    if (typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE) return false;
     if (!includeOutOfStock.checked && item.stockStatus === "out_of_stock") return false;
     return true;
   });

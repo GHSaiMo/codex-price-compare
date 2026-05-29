@@ -12,6 +12,7 @@ const refreshStatusUrl = "/api/refresh";
 const refreshSettingsUrl = "/api/refresh-settings";
 const refreshNowUrl = "/api/refresh";
 const DATA_RELOAD_INTERVAL_MS = 60 * 1000;
+const MAX_VISIBLE_PRICE = 2000;
 
 let products = [];
 let sources = [];
@@ -25,6 +26,10 @@ function clearElement(element) {
 
 function unknownProductsForSource(sourceId) {
   return products.filter((item) => item.sourceId === sourceId && item.subtype === "unknown");
+}
+
+function visibleProducts(items) {
+  return items.filter((item) => !(typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE));
 }
 
 function displayMatchReasons(item) {
@@ -142,7 +147,7 @@ async function loadAdminData() {
     const sourcesData = await sourcesResponse.json();
     const metaData = await metaResponse.json();
     const refreshData = await refreshResponse.json();
-    products = Array.isArray(productsData.items) ? productsData.items : [];
+    products = Array.isArray(productsData.items) ? visibleProducts(productsData.items) : [];
     sources = Array.isArray(sourcesData.sources) ? sourcesData.sources : [];
     meta = metaData && typeof metaData === "object" ? metaData : {};
     renderRefreshStatus(refreshData);

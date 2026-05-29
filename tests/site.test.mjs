@@ -13,6 +13,7 @@ const root = new URL("../", import.meta.url);
 
 const rules = JSON.parse(await readFile(new URL("data/rules.json", root), "utf8"));
 const sources = JSON.parse(await readFile(new URL("data/sources.json", root), "utf8"));
+const productsData = JSON.parse(await readFile(new URL("data/products.json", root), "utf8"));
 const html = await readFile(new URL("index.html", root), "utf8");
 const app = await readFile(new URL("app.js", root), "utf8");
 const themeApp = await readFile(new URL("theme.js", root), "utf8");
@@ -188,6 +189,12 @@ const highPriceLdxp = normalizeLdxpProduct(
   rules,
 );
 assert.equal(highPriceLdxp, null);
+assert.deepEqual(
+  productsData.items
+    .filter((item) => typeof item.price === "number" && item.price >= 2000)
+    .map((item) => ({ url: item.url, price: item.price })),
+  [],
+);
 
 const acg = normalizeAcgProduct(
   {
@@ -287,6 +294,8 @@ assert.doesNotMatch(app, /selectedSubtypes/);
 assert.doesNotMatch(app, /setSubtypeSelection/);
 assert.doesNotMatch(app, /hasExactSubtypeSelection/);
 assert.match(app, /visibleSubtypeValues/);
+assert.match(app, /MAX_VISIBLE_PRICE/);
+assert.match(app, /item\.price >= MAX_VISIBLE_PRICE/);
 assert.doesNotMatch(app, /themeToggle/);
 assert.match(themeApp, /themeToggle/);
 assert.match(themeApp, /localStorage\.setItem\("color-theme"/);
@@ -393,6 +402,8 @@ assert.match(adminApp, /refreshNow/);
 assert.match(adminApp, /DATA_RELOAD_INTERVAL_MS/);
 assert.match(adminApp, /setInterval\(loadAdminData/);
 assert.match(adminApp, /下次刷新/);
+assert.match(adminApp, /MAX_VISIBLE_PRICE/);
+assert.match(adminApp, /item\.price >= MAX_VISIBLE_PRICE/);
 assert.match(styles, /\.source-products/);
 assert.match(styles, /\.source-card-empty/);
 assert.match(styles, /\.match-reasons/);
