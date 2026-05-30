@@ -250,6 +250,22 @@ assert.equal(
   "other",
 );
 assert.equal(
+  classifyProduct("随机地区2020--2024年邮箱【包GCP资格】（适合做piexl，家庭组，挖矿,注册GPT）", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("美区 Apple ID 成品号 可注册GPT", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("苹果ID账号带邮箱，适合注册ChatGPT", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("ChatGPT GO 会员账号 成品号", "", rules).category,
+  "other",
+);
+assert.equal(
   classifyProduct("paypal实卡手机号", "", rules).category,
   "other",
 );
@@ -275,6 +291,10 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GPT普号|Free Plan成品✅|账密直登+RT|长效邮箱|带接码地址|适合业务", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("Codex|账密直登+RT|Codex/GPT已经过手机验证解锁✅|长效邮箱|带接码地址【接码成本上涨，无奈涨价】", "", rules).subtype,
   "free",
 );
 assert.equal(
