@@ -192,7 +192,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/VUOJQOHY",
-      "token": "VUOJQOHY"
+      "token": "VUOJQOHY",
+      "core": true
     },
     {
       "id": "dujiao-gmail91",
