@@ -463,6 +463,14 @@ assert.equal(
   classifyProduct("gpt team【成品号json反代专用】", "", rules).subtype,
   "plus",
 );
+assert.equal(
+  classifyProduct("GPT成品号（三天内封号换新号，30天内质保掉订阅）", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("GPT成品号（三天内封号换新号，中转可用）", "", rules).subtype,
+  "plus",
+);
 
 const ldxp = normalizeLdxpProduct(
   {

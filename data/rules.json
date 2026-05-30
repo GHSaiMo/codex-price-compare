@@ -59,7 +59,7 @@
   "subtypeTerms": {
     "api": ["codexapi", "api额度", "中转站", "刀额度", "额度/天", "额度 日卡"],
     "pro": ["pro", "5x", "20x", "200美金"],
-    "plus": ["plus", "puls", "半成品", "土区", "可达鸭", "team"],
+    "plus": ["plus", "puls", "半成品", "土区", "可达鸭", "team", "GPT成品号"],
     "free": ["free", "fre", "free号", "普号", "手机验证解锁"]
   }
 }
