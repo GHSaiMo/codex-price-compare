@@ -1,4 +1,7 @@
+import { loadDotEnv } from "../src/env.mjs";
 import { refreshProducts } from "../src/refresh.mjs";
+
+await loadDotEnv();
 
 const meta = await refreshProducts();
 

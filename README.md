@@ -141,24 +141,34 @@ npm test
 
 ### ldxp / 链动小铺刷新策略
 
-`ldxp` 类型站点默认使用 Playwright 浏览器上下文采集，复用 `.playwright-ldxp-profile/` 中的 cookie 和验证状态。首次遇到 WAF / 真人验证时，可以用有头模式打开页面手动处理：
+`ldxp` 类型站点默认使用专用调度策略：每轮最多刷新 15 家，核心店铺优先，非核心店铺按游标轮转；同一轮的 ldxp 店铺之间随机等待 8-25 秒；同域名触发 WAF / 非 JSON / 403 / 429 后会进入 6 小时冷却。未排到、冷却中或单店失败时，会保留该店铺上一次成功采集的旧商品，不会用空结果覆盖。
+
+默认采集模式为 Playwright 浏览器上下文，复用 `.playwright-ldxp-profile/` 中的 cookie 和验证状态。首次遇到 WAF / 真人验证时，可以用有头模式打开页面手动处理：
 
 ```bash
 LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 ```
 
-刷新顺序为：本机 Playwright、VPS Playwright、Windows Tailscale 探测。VPS 需要远端有同一份项目和依赖，默认路径为 `/root/codex-price-compare`，可用 `LDXP_PLAYWRIGHT_REMOTE_CWD` 覆盖；Windows 节点通过 `LDXP_WINDOWS_TAILSCALE_IP` 配置，当前仅做在线探测，未配置远程执行通道时会跳过。
+刷新顺序为：本机 Playwright、VPS Playwright、Windows Tailscale 探测。VPS 需要远端有同一份项目和依赖，默认路径为 `/root/codex-price-compare`，可用 `LDXP_PLAYWRIGHT_REMOTE_CWD` 覆盖；Windows 节点通过 `LDXP_WINDOWS_TAILSCALE_IP` 配置，当前仅做在线探测，未配置远程执行通道时会跳过。本项目当前不建议使用多 VPS / 代理池分流绕过 WAF，优先通过低频、冷却和旧数据保留保证长期稳定。
 
 常用环境变量：
 
+- 配置入口：项目根目录 `.env`。可以参考 `.env.example`，刷新脚本和服务启动时会自动读取；命令行临时传入的环境变量优先级更高。
 - `LDXP_PLAYWRIGHT_HEADLESS=0`：有头模式，方便手动验证。
 - `LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000`：打开页面后等待 120 秒，让用户手动点击验证。
 - `LDXP_PLAYWRIGHT_PROFILE=.playwright-ldxp-profile`：指定本机持久化浏览器 profile。
+- `LDXP_FETCH_MODE=playwright`：默认模式，使用浏览器上下文采集。
+- `LDXP_FETCH_MODE=fetch`：直接请求 ldxp 接口，不打开浏览器；用于测试直连接口是否可用，仍遵守 15 家上限、6 小时冷却、8-25 秒随机间隔和旧数据保留策略。
+- `LDXP_MAX_SOURCES_PER_RUN=15`：每轮最多刷新的 ldxp 店铺数。
+- `LDXP_DOMAIN_COOLDOWN_HOURS=6`：同域名触发 WAF 后的冷却小时数。
+- `LDXP_DELAY_MIN_MS=8000` / `LDXP_DELAY_MAX_MS=25000`：ldxp 店铺之间的随机等待区间。
 - `LDXP_PLAYWRIGHT_VPS_HOST=vps`：本机失败后通过 SSH 到 VPS 运行 Playwright。
 - `LDXP_PLAYWRIGHT_REMOTE_CWD=/root/codex-price-compare`：VPS 上的项目目录。
 - `LDXP_WINDOWS_TAILSCALE_IP=100.127.136.64`：最后探测 Windows 节点是否在线。
 
-刷新前会自动备份 `data/products.json` 和 `data/meta.json` 到 `data/backups/`。如果检测到 WAF、HTTP 5xx/403/429、大面积失败或商品数量骤降，会保留旧 `products.json`，只更新 `meta.json` 并写入 `data/refresh-cooldown.json` 进入冷却。
+后台管理页会在 ldxp 店铺右侧显示“核心”勾选。勾选后会在 `data/sources.json` 中写入 `core: true`，下次刷新时这些店铺优先进入每轮 15 家名单。
+
+刷新前会自动备份 `data/products.json` 和 `data/meta.json` 到 `data/backups/`。全局检测到 WAF、HTTP 5xx/403/429、大面积失败或商品数量骤降时，会保留旧 `products.json`，只更新 `meta.json` 并写入 `data/refresh-cooldown.json` 进入全局冷却；ldxp 域名级冷却状态单独保存在 `data/ldxp-scheduler.json`。
 
 ### `data/rules.json`
 

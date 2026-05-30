@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { loadDotEnv } from "./src/env.mjs";
 import { refreshProducts } from "./src/refresh.mjs";
 import {
   buildStockWatchView,
@@ -276,6 +277,25 @@ async function addSource(request, response) {
   }
 }
 
+async function handleSourceUpdate(sourceId, request, response) {
+  try {
+    const body = await readRequestJson(request);
+    const sourcesConfig = JSON.parse(await readFile(sourcesPath, "utf8"));
+    const source = sourcesConfig.sources.find((entry) => entry.id === sourceId);
+    if (!source) {
+      const error = new Error("未找到店铺");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (source.adapter !== "ldxp") throw new Error("仅 ldxp 店铺支持设置核心店铺");
+    source.core = body.core === true;
+    await writeFile(sourcesPath, `${JSON.stringify(sourcesConfig, null, 2)}\n`);
+    sendJson(response, 200, { source });
+  } catch (error) {
+    sendJson(response, errorStatusCode(error), { message: error.message });
+  }
+}
+
 async function handleStockWatchList(response) {
   const [watchData, products] = await Promise.all([
     readStockWatch(stockWatchPath),
@@ -382,6 +402,11 @@ function createStaticServer(defaultFile, port, allowApi = false) {
       await addSource(request, response);
       return;
     }
+    const sourceUpdateMatch = pathname.match(/^\/api\/sources\/([^/]+)$/);
+    if (allowApi && request.method === "PATCH" && sourceUpdateMatch) {
+      await handleSourceUpdate(decodeURIComponent(sourceUpdateMatch[1]), request, response);
+      return;
+    }
     if (allowApi && request.method === "GET" && pathname === "/api/stock-watch") {
       await handleStockWatchList(response);
       return;
@@ -408,7 +433,7 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     }
 
     if (request.method !== "GET" && request.method !== "HEAD") {
-      response.writeHead(405, { Allow: "GET, HEAD, POST" });
+      response.writeHead(405, { Allow: "GET, HEAD, POST, PATCH" });
       response.end("Method Not Allowed");
       return;
     }
@@ -430,6 +455,7 @@ function createStaticServer(defaultFile, port, allowApi = false) {
 const server = createStaticServer("index.html", PORT);
 const adminServer = createStaticServer("admin.html", ADMIN_PORT, true);
 
+await loadDotEnv();
 await loadRefreshSettings();
 scheduleNextRefresh(5 * 1000);
 

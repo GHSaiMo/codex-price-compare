@@ -14,6 +14,15 @@ import {
   shouldUseFallbackForError,
 } from "../src/fallback-proxy.mjs";
 import {
+  buildLdxpRefreshPlan,
+  mergeProductsWithStaleSourceItems,
+  resolveLdxpFetchMode,
+  resolveLdxpSchedulerConfig,
+} from "../src/refresh.mjs";
+import {
+  parseDotEnv,
+} from "../src/env.mjs";
+import {
   buildLdxpPlaywrightPayload,
   buildLdxpPlaywrightRunners,
 } from "../src/ldxp-playwright.mjs";
@@ -48,6 +57,23 @@ const stockWatchProducts = [
     url: "https://pay.ldxp.cn/item/2mlvd7",
   },
 ];
+
+assert.deepEqual(
+  parseDotEnv([
+    "LDXP_FETCH_MODE=fetch",
+    "LDXP_PLAYWRIGHT_HEADLESS=0",
+    "QUOTED=\"hello world\"",
+    "COMMENTED=value # trailing comment",
+    "# ignored",
+    "",
+  ].join("\n")),
+  {
+    LDXP_FETCH_MODE: "fetch",
+    LDXP_PLAYWRIGHT_HEADLESS: "0",
+    QUOTED: "hello world",
+    COMMENTED: "value",
+  },
+);
 
 assert.deepEqual(
   createStockWatchEntryFromUrl({
@@ -110,6 +136,106 @@ assert.deepEqual(
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 520"), { status: 520 })), true);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 404"), { status: 404 })), false);
 assert.equal(shouldUseFallbackForError(new Error("fetch failed")), true);
+assert.equal(resolveLdxpFetchMode({}), "playwright");
+assert.equal(resolveLdxpFetchMode({ LDXP_FETCH_MODE: "fetch" }), "fetch");
+assert.equal(resolveLdxpFetchMode({ LDXP_FETCH_MODE: "playwright" }), "playwright");
+assert.equal(resolveLdxpFetchMode({ LDXP_PLAYWRIGHT_DISABLED: "1" }), "fetch");
+assert.throws(() => resolveLdxpFetchMode({ LDXP_FETCH_MODE: "curl" }), /LDXP_FETCH_MODE/);
+assert.deepEqual(resolveLdxpSchedulerConfig({}), {
+  domainCooldownMs: 21600000,
+  maxSourcesPerRun: 15,
+  delayMinMs: 8000,
+  delayMaxMs: 25000,
+});
+assert.deepEqual(
+  resolveLdxpSchedulerConfig({
+    LDXP_MAX_SOURCES_PER_RUN: "12",
+    LDXP_DOMAIN_COOLDOWN_HOURS: "3",
+    LDXP_DELAY_MIN_MS: "1000",
+    LDXP_DELAY_MAX_MS: "2000",
+  }),
+  {
+    domainCooldownMs: 10800000,
+    maxSourcesPerRun: 12,
+    delayMinMs: 1000,
+    delayMaxMs: 2000,
+  },
+);
+assert.deepEqual(
+  buildLdxpRefreshPlan({
+    sources: [
+      { id: "normal-1", adapter: "ldxp", url: "https://pay.ldxp.cn/shop/a" },
+      { id: "core-1", adapter: "ldxp", core: true, url: "https://pay.ldxp.cn/shop/b" },
+      { id: "normal-2", adapter: "ldxp", url: "https://pay.ldxp.cn/shop/c" },
+      { id: "acg-1", adapter: "acg", url: "https://example.com/" },
+    ],
+    state: { cursorByHost: { "pay.ldxp.cn": 1 } },
+    now: new Date("2026-05-30T00:00:00.000Z"),
+    maxSourcesPerRun: 2,
+  }).sources.map((source) => source.id),
+  ["core-1", "normal-2"],
+);
+assert.deepEqual(
+  buildLdxpRefreshPlan({
+    sources: [
+      { id: "core-1", adapter: "ldxp", core: true, url: "https://pay.ldxp.cn/shop/b" },
+      { id: "normal-1", adapter: "ldxp", url: "https://pay.ldxp.cn/shop/a" },
+    ],
+    state: {
+      cooldowns: {
+        "pay.ldxp.cn": {
+          until: "2026-05-30T06:00:00.000Z",
+          reason: "WAF",
+        },
+      },
+    },
+    now: new Date("2026-05-30T00:00:00.000Z"),
+  }).skipped.map((entry) => entry.source.id),
+  ["core-1", "normal-1"],
+);
+assert.deepEqual(
+  mergeProductsWithStaleSourceItems({
+    previousItems: [
+      { id: "ldxp-a:old", sourceId: "ldxp-a", title: "old-a" },
+      { id: "ldxp-b:old", sourceId: "ldxp-b", title: "old-b" },
+      { id: "acg-a:old", sourceId: "acg-a", title: "old-acg" },
+    ],
+    currentItems: [
+      { id: "ldxp-a:new", sourceId: "ldxp-a", title: "new-a" },
+      { id: "acg-a:new", sourceId: "acg-a", title: "new-acg" },
+    ],
+    failedSourceIds: new Set(["ldxp-b"]),
+  }).map((item) => item.id),
+  ["ldxp-a:new", "acg-a:new", "ldxp-b:old"],
+);
+assert.deepEqual(
+  mergeProductsWithStaleSourceItems({
+    previousItems: [
+      {
+        id: "ldxp-apple:old",
+        sourceId: "ldxp-apple",
+        title: "土耳奇苹果ID｜未开通iCloud｜下载APP |",
+        descriptionText: "土耳奇苹果Apple ID账号批发零售 GPT",
+      },
+      {
+        id: "ldxp-go:old",
+        sourceId: "ldxp-go",
+        title: "ChatGPT GO 三个月！！！质保1个月！！！",
+        descriptionText: "账号密码验证码登录",
+      },
+      {
+        id: "ldxp-plus:old",
+        sourceId: "ldxp-plus",
+        title: "ChatGPT Plus 成品号",
+        descriptionText: "",
+      },
+    ],
+    currentItems: [],
+    failedSourceIds: new Set(["ldxp-apple", "ldxp-go", "ldxp-plus"]),
+    rules,
+  }).map((item) => item.id),
+  ["ldxp-plus:old"],
+);
 assert.deepEqual(buildLdxpPlaywrightRunners({}), [{ id: "local", kind: "local" }]);
 assert.deepEqual(
   buildLdxpPlaywrightRunners({
@@ -565,11 +691,16 @@ assert.match(adminHtml, /id="stockWatchForm"/);
 assert.match(adminHtml, /id="stockWatchUrl"/);
 assert.match(adminHtml, /id="stockWatchList"/);
 assert.match(adminHtml, /id="sourceList"/);
+assert.match(adminApp, /coreSourceUrl/);
+assert.match(adminApp, /核心/);
+assert.match(adminApp, /source\.adapter === "ldxp"/);
+assert.match(server, /PATCH/);
+assert.match(server, /handleSourceUpdate/);
+assert.match(server, /core/);
 assert.doesNotMatch(adminHtml, /id="unknownProductList"/);
 assert.doesNotMatch(adminHtml, /id="sourceForm"/);
 assert.doesNotMatch(adminHtml, /导入新店铺/);
 assert.doesNotMatch(adminApp, /detectAdapter/);
-assert.doesNotMatch(adminApp, /api\/sources/);
 assert.match(adminApp, /unknown/);
 assert.match(adminApp, /unknownProductsForSource/);
 assert.match(adminApp, /createProductRow/);

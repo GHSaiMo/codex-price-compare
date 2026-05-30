@@ -14,7 +14,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/echo_dream",
-      "token": "echo_dream"
+      "token": "echo_dream",
+      "core": true
     },
     {
       "id": "ldxp-xiaomao",
@@ -22,7 +23,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/1D0LD6BR",
-      "token": "1D0LD6BR"
+      "token": "1D0LD6BR",
+      "core": true
     },
     {
       "id": "ldxp-xiaoba",
@@ -30,7 +32,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/xiaoba",
-      "token": "xiaoba"
+      "token": "xiaoba",
+      "core": true
     },
     {
       "id": "ldxp-xiaopiao",
@@ -38,7 +41,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/HCJW0TDL",
-      "token": "HCJW0TDL"
+      "token": "HCJW0TDL",
+      "core": true
     },
     {
       "id": "ldxp-464",
@@ -46,7 +50,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/7HVUEC3Y",
-      "token": "7HVUEC3Y"
+      "token": "7HVUEC3Y",
+      "core": true
     },
     {
       "id": "ldxp-shenqibaobei",
@@ -54,7 +59,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/6Q8DVZ9B",
-      "token": "6Q8DVZ9B"
+      "token": "6Q8DVZ9B",
+      "core": true
     },
     {
       "id": "ldxp-lanyy",
@@ -62,7 +68,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/lanyy",
-      "token": "lanyy"
+      "token": "lanyy",
+      "core": true
     },
     {
       "id": "ldxp-shangjia9237",
@@ -70,7 +77,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/RXKT7LFX",
-      "token": "RXKT7LFX"
+      "token": "RXKT7LFX",
+      "core": true
     },
     {
       "id": "ldxp-fengxin-ai",
@@ -110,7 +118,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/catcoder",
-      "token": "catcoder"
+      "token": "catcoder",
+      "core": true
     },
     {
       "id": "ldxp-ai-yuantou",
@@ -118,7 +127,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/YQUOBIW1",
-      "token": "YQUOBIW1"
+      "token": "YQUOBIW1",
+      "core": true
     },
     {
       "id": "ldxp-maomao-ai",

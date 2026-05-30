@@ -16,6 +16,7 @@ const refreshStatusUrl = "/api/refresh";
 const refreshSettingsUrl = "/api/refresh-settings";
 const refreshNowUrl = "/api/refresh";
 const stockWatchUrlApi = "/api/stock-watch";
+const coreSourceUrl = (sourceId) => `/api/sources/${encodeURIComponent(sourceId)}`;
 const DATA_RELOAD_INTERVAL_MS = 60 * 1000;
 const MAX_VISIBLE_PRICE = 2000;
 
@@ -86,6 +87,22 @@ function createEmptyRow() {
   return empty;
 }
 
+function createCoreSourceToggle(source) {
+  const label = document.createElement("label");
+  label.className = "core-source-toggle";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = source.core === true;
+  input.addEventListener("change", () => updateCoreSource(source.id, input.checked, input));
+
+  const text = document.createElement("span");
+  text.textContent = "核心";
+
+  label.append(input, text);
+  return label;
+}
+
 function renderSources() {
   clearElement(sourceList);
   const lastRefresh = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
@@ -123,6 +140,9 @@ function renderSources() {
     }
 
     header.append(name, adapter, count);
+    if (source.adapter === "ldxp") {
+      header.appendChild(createCoreSourceToggle(source));
+    }
     card.append(header, productRows);
     sourceList.appendChild(card);
   }
@@ -253,6 +273,26 @@ async function addStockWatch(url) {
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
   return result;
+}
+
+async function updateCoreSource(sourceId, core, input) {
+  input.disabled = true;
+  try {
+    const response = await fetch(coreSourceUrl(sourceId), {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ core }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
+    const source = sources.find((entry) => entry.id === sourceId);
+    if (source) source.core = result.source.core === true;
+  } catch (error) {
+    input.checked = !core;
+    adminSummary.textContent = `核心店铺保存失败：${error.message}`;
+  } finally {
+    input.disabled = false;
+  }
 }
 
 async function removeStockWatch(productId, button) {

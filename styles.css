@@ -679,6 +679,21 @@ input {
   margin-right: auto;
 }
 
+.core-source-toggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.core-source-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
 .adapter-pill,
 .count-pill {
   padding: 3px 7px;
