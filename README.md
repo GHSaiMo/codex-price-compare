@@ -162,6 +162,7 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 - `LDXP_MAX_SOURCES_PER_RUN=15`：每轮最多刷新的 ldxp 店铺数。
 - `LDXP_DOMAIN_COOLDOWN_HOURS=6`：同域名触发 WAF 后的冷却小时数。
 - `LDXP_DELAY_MIN_MS=8000` / `LDXP_DELAY_MAX_MS=25000`：ldxp 店铺之间的随机等待区间。
+- `FALLBACK_PROXY_URL=http://127.0.0.1:7890`：直连请求失败时，通过本机代理重试一次；直连成功时不会使用代理。
 - `LDXP_PLAYWRIGHT_VPS_HOST=vps`：本机失败后通过 SSH 到 VPS 运行 Playwright。
 - `LDXP_PLAYWRIGHT_REMOTE_CWD=/root/codex-price-compare`：VPS 上的项目目录。
 - `LDXP_WINDOWS_TAILSCALE_IP=100.127.136.64`：最后探测 Windows 节点是否在线。
