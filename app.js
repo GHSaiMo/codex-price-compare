@@ -5,12 +5,18 @@ const emptyState = document.querySelector("#emptyState");
 const sortButton = document.querySelector("#sortButton");
 const includeOutOfStock = document.querySelector("#includeOutOfStock");
 const backToTop = document.querySelector("#backToTop");
+const shareButton = document.querySelector("#shareButton");
+const shareOverlay = document.querySelector("#shareOverlay");
+const shareImage = document.querySelector("#shareImage");
 const subtypeButtons = [...document.querySelectorAll("[data-subtype]")];
 
 const productsUrl = document.body.dataset.productsUrl || "data/products.json";
 const metaUrl = document.body.dataset.metaUrl || "data/meta.json";
 const DATA_RELOAD_INTERVAL_MS = 60 * 1000;
 const MAX_VISIBLE_PRICE = 2000;
+const SHARE_VISIBLE_ITEMS = 5;
+const SHARE_IMAGE_WIDTH = 390;
+const SHARE_IMAGE_HEIGHT = 844;
 const defaultSort = "price-asc";
 const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
 
@@ -107,6 +113,193 @@ function triggerFilterAnimation() {
   productList.classList.add("is-filtering");
 }
 
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+function canvasColor(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+}
+
+function fillRoundRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle) {
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function truncateCanvasText(ctx, text, maxWidth) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let output = text;
+  while (output.length > 1 && ctx.measureText(`${output}...`).width > maxWidth) {
+    output = output.slice(0, -1);
+  }
+  return `${output}...`;
+}
+
+function lockShareImageSize() {
+  const maxWidth = Math.max(220, window.innerWidth - 72);
+  const maxHeight = Math.max(420, window.innerHeight - 96);
+  const width = Math.floor(Math.min(SHARE_IMAGE_WIDTH, maxWidth, (maxHeight * SHARE_IMAGE_WIDTH) / SHARE_IMAGE_HEIGHT));
+  const height = Math.floor((width * SHARE_IMAGE_HEIGHT) / SHARE_IMAGE_WIDTH);
+  shareImage.style.width = `${width}px`;
+  shareImage.style.height = `${height}px`;
+}
+
+async function createShareSnapshotImage() {
+  const items = sortProducts(filterProducts());
+  const subtypeText = subtypeButtons.find((button) => button.dataset.subtype === currentSubtype)?.textContent || currentSubtype;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=${encodeURIComponent(window.location.href)}`;
+  const [qr, logo] = await Promise.all([
+    loadImage(qrUrl),
+    loadImage("assets/logo.svg"),
+  ]);
+  const scale = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = SHARE_IMAGE_WIDTH * scale;
+  canvas.height = SHARE_IMAGE_HEIGHT * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+
+  const bg = canvasColor("--bg");
+  const panel = canvasColor("--panel");
+  const panelMuted = canvasColor("--panel-muted");
+  const outPanel = canvasColor("--out-panel");
+  const text = canvasColor("--text");
+  const muted = canvasColor("--muted");
+  const line = canvasColor("--line");
+  const accent = canvasColor("--accent");
+  const warn = canvasColor("--warn");
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, SHARE_IMAGE_WIDTH, SHARE_IMAGE_HEIGHT);
+
+  ctx.textAlign = "center";
+  const logoSize = 18;
+  const logoGap = 8;
+  const logoY = 36;
+  ctx.font = "800 12px Inter, system-ui, sans-serif";
+  const brandWidth = logoSize + logoGap + ctx.measureText("CODEX").width;
+  const logoX = (SHARE_IMAGE_WIDTH - brandWidth) / 2;
+  ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+
+  ctx.fillStyle = accent;
+  ctx.textAlign = "left";
+  ctx.fillText("CODEX", logoX + logoSize + logoGap, 50);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = text;
+  ctx.font = "800 42px Inter, system-ui, sans-serif";
+  ctx.fillText("Codex 比价", SHARE_IMAGE_WIDTH / 2, 94);
+
+  ctx.fillStyle = muted;
+  ctx.font = "15px Inter, system-ui, sans-serif";
+  ctx.fillText(`${subtypeText} · ${currentSort === "price-desc" ? "价格降序" : "价格升序"}`, SHARE_IMAGE_WIDTH / 2, 124);
+
+  ctx.textAlign = "left";
+  const rowX = 28;
+  const rowWidth = 334;
+  const rowHeight = 68;
+  let y = 160;
+  for (const item of items.slice(0, SHARE_VISIBLE_ITEMS)) {
+    fillRoundRect(ctx, rowX, y, rowWidth, rowHeight, 8, item.stockStatus === "out_of_stock" ? outPanel : panel, line);
+
+    ctx.fillStyle = text;
+    ctx.font = "700 15px Inter, system-ui, sans-serif";
+    ctx.fillText(truncateCanvasText(ctx, item.title, 220), rowX + 16, y + 27);
+
+    ctx.fillStyle = muted;
+    ctx.font = "13px Inter, system-ui, sans-serif";
+    ctx.fillText(truncateCanvasText(ctx, `${item.sourceName} · ${stockLabel(item)}`, 220), rowX + 16, y + 50);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = item.stockStatus === "out_of_stock" ? warn : accent;
+    ctx.font = "800 18px Inter, system-ui, sans-serif";
+    ctx.fillText(formatPrice(item.price), rowX + rowWidth - 16, y + 42);
+    ctx.textAlign = "left";
+
+    y += rowHeight + 10;
+  }
+
+  ctx.textAlign = "center";
+  const moreRowHeight = 48;
+  fillRoundRect(ctx, rowX, 550, rowWidth, moreRowHeight, 8, panel, line);
+  ctx.fillStyle = text;
+  ctx.font = "700 15px Inter, system-ui, sans-serif";
+  if (items.length > SHARE_VISIBLE_ITEMS) {
+    ctx.fillText(`另有 ${items.length - SHARE_VISIBLE_ITEMS} 条商品可以查看`, SHARE_IMAGE_WIDTH / 2, 580);
+  } else if (items.length === 0) {
+    ctx.fillText("没有匹配的商品", SHARE_IMAGE_WIDTH / 2, 580);
+  } else {
+    ctx.fillText("已显示全部匹配商品", SHARE_IMAGE_WIDTH / 2, 580);
+  }
+
+  fillRoundRect(ctx, 115, 620, 160, 160, 10, "#ffffff", line);
+  ctx.drawImage(qr, 127, 632, 136, 136);
+
+  ctx.fillStyle = muted;
+  ctx.font = "14px Inter, system-ui, sans-serif";
+  ctx.fillText("长按图片扫码或者分享", SHARE_IMAGE_WIDTH / 2, 808);
+
+  ctx.fillStyle = panelMuted;
+  ctx.fillRect(0, SHARE_IMAGE_HEIGHT - 1, SHARE_IMAGE_WIDTH, 1);
+  return canvas.toDataURL("image/png");
+}
+
+async function openShareOverlay() {
+  const image = shareImage.querySelector("img");
+  shareButton.disabled = true;
+  shareButton.setAttribute("aria-busy", "true");
+  image.removeAttribute("src");
+  lockShareImageSize();
+
+  try {
+    image.src = await createShareSnapshotImage();
+    image.alt = "Codex 比价分享截图";
+    shareOverlay.hidden = false;
+    requestAnimationFrame(() => {
+      document.body.classList.add("is-share-open");
+      shareOverlay.classList.add("is-visible");
+    });
+  } catch (error) {
+    console.error(error);
+  } finally {
+    shareButton.disabled = false;
+    shareButton.removeAttribute("aria-busy");
+  }
+}
+
+function closeShareOverlay() {
+  shareOverlay.classList.remove("is-visible");
+  document.body.classList.remove("is-share-open");
+  setTimeout(() => {
+    if (!shareOverlay.classList.contains("is-visible")) {
+      shareOverlay.hidden = true;
+      shareImage.querySelector("img").removeAttribute("src");
+    }
+  }, 180);
+}
+
 function render({ animate = false } = {}) {
   const items = sortProducts(filterProducts());
   clearElement(productList);
@@ -171,6 +364,16 @@ function syncBackToTop() {
 
 backToTop.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+shareButton.addEventListener("click", openShareOverlay);
+
+shareOverlay.addEventListener("click", (event) => {
+  if (event.target === shareOverlay) closeShareOverlay();
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && shareOverlay.classList.contains("is-visible")) closeShareOverlay();
 });
 
 window.addEventListener("scroll", syncBackToTop, { passive: true });

@@ -24,9 +24,19 @@
                 <h1>Codex 比价</h1>
                 <div class="header-tools">
                   <button class="theme-toggle icon-button" id="themeToggle" type="button" aria-label="切换黑色和淡色系" aria-pressed="false" title="切换黑色和淡色系">
-                    <span class="theme-toggle-track">
-                      <span class="theme-toggle-thumb"></span>
-                    </span>
+                    <svg class="theme-icon theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                      <circle cx="12" cy="12" r="4"></circle>
+                      <path d="M12 2.75v2M12 19.25v2M4.75 12h-2M21.25 12h-2M5.64 5.64 4.22 4.22M19.78 19.78l-1.42-1.42M18.36 5.64l1.42-1.42M4.22 19.78l1.42-1.42"></path>
+                    </svg>
+                    <svg class="theme-icon theme-icon-moon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                      <path d="M20.6 15.25A8.75 8.75 0 1 1 8.75 3.4 7 7 0 0 0 20.6 15.25Z"></path>
+                    </svg>
+                  </button>
+                  <button class="share-button icon-button" id="shareButton" type="button" aria-label="生成分享截图" title="生成分享截图">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                      <path d="M18 16.1c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 1 0 15 5c0 .24.04.47.09.7L8.04 9.81A3 3 0 1 0 8.04 14l7.12 4.18c-.05.21-.08.43-.08.65a2.92 2.92 0 1 0 2.92-2.73Z"></path>
+                    </svg>
+                    <span class="sr-only">分享</span>
                   </button>
                   <a class="toolbar-link icon-button source-icon-link" href="sources.html" aria-label="店铺列表" title="店铺列表">
                     <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
@@ -89,6 +99,12 @@
         <path d="M12 5 5.5 11.5l1.4 1.4 4.1-4.1V20h2V8.8l4.1 4.1 1.4-1.4L12 5Z"></path>
       </svg>
     </button>
+
+    <div class="share-overlay" id="shareOverlay" role="dialog" aria-modal="true" aria-label="分享截图预览" hidden>
+      <div class="share-image" id="shareImage">
+        <img alt="分享截图">
+      </div>
+    </div>
 
     <script src="theme.js"></script>
     <script src="app.js"></script>
