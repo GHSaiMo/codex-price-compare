@@ -8,6 +8,7 @@ const backToTop = document.querySelector("#backToTop");
 const shareButton = document.querySelector("#shareButton");
 const shareOverlay = document.querySelector("#shareOverlay");
 const shareImage = document.querySelector("#shareImage");
+const shareToast = document.querySelector("#shareToast");
 const subtypeButtons = [...document.querySelectorAll("[data-subtype]")];
 
 const productsUrl = document.body.dataset.productsUrl || "data/products.json";
@@ -23,6 +24,8 @@ const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
 let allProducts = [];
 let currentSort = defaultSort;
 let currentSubtype = "plus";
+let shareToastFrame = 0;
+let shareToastTimer = 0;
 
 function clearElement(element) {
   while (element.firstChild) {
@@ -166,14 +169,33 @@ function lockShareImageSize() {
   shareImage.style.height = `${height}px`;
 }
 
+function showShareToast() {
+  cancelAnimationFrame(shareToastFrame);
+  clearTimeout(shareToastTimer);
+  shareToast.hidden = false;
+  shareToastFrame = requestAnimationFrame(() => {
+    shareToastFrame = 0;
+    shareToast.classList.add("is-visible");
+  });
+}
+
+function hideShareToast() {
+  cancelAnimationFrame(shareToastFrame);
+  shareToastFrame = 0;
+  clearTimeout(shareToastTimer);
+  shareToast.classList.remove("is-visible");
+  shareToastTimer = setTimeout(() => {
+    shareToastTimer = 0;
+    if (!shareToast.classList.contains("is-visible")) {
+      shareToast.hidden = true;
+    }
+  }, 160);
+}
+
 async function createShareSnapshotImage() {
   const items = sortProducts(filterProducts());
   const subtypeText = subtypeButtons.find((button) => button.dataset.subtype === currentSubtype)?.textContent || currentSubtype;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=${encodeURIComponent(window.location.href)}`;
-  const [qr, logo] = await Promise.all([
-    loadImage(qrUrl),
-    loadImage("assets/logo.svg"),
-  ]);
+  const qr = await loadImage("assets/share-qr.png");
   const scale = 2;
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_IMAGE_WIDTH * scale;
@@ -195,17 +217,9 @@ async function createShareSnapshotImage() {
   ctx.fillRect(0, 0, SHARE_IMAGE_WIDTH, SHARE_IMAGE_HEIGHT);
 
   ctx.textAlign = "center";
-  const logoSize = 18;
-  const logoGap = 8;
-  const logoY = 36;
   ctx.font = "800 12px Inter, system-ui, sans-serif";
-  const brandWidth = logoSize + logoGap + ctx.measureText("CODEX").width;
-  const logoX = (SHARE_IMAGE_WIDTH - brandWidth) / 2;
-  ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-
   ctx.fillStyle = accent;
-  ctx.textAlign = "left";
-  ctx.fillText("CODEX", logoX + logoSize + logoGap, 50);
+  ctx.fillText("CODEX", SHARE_IMAGE_WIDTH / 2, 50);
 
   ctx.textAlign = "center";
   ctx.fillStyle = text;
@@ -272,10 +286,12 @@ async function openShareOverlay() {
   shareButton.setAttribute("aria-busy", "true");
   image.removeAttribute("src");
   lockShareImageSize();
+  showShareToast();
 
   try {
     image.src = await createShareSnapshotImage();
     image.alt = "Codex 比价分享截图";
+    hideShareToast();
     shareOverlay.hidden = false;
     requestAnimationFrame(() => {
       document.body.classList.add("is-share-open");
@@ -283,6 +299,7 @@ async function openShareOverlay() {
     });
   } catch (error) {
     console.error(error);
+    hideShareToast();
   } finally {
     shareButton.disabled = false;
     shareButton.removeAttribute("aria-busy");

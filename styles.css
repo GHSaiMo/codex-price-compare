@@ -640,6 +640,35 @@ input {
   -webkit-touch-callout: default;
 }
 
+.share-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 70;
+  max-width: min(340px, calc(100vw - 48px));
+  padding: 14px 22px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, #ffffff);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 76%, transparent);
+  box-shadow: 0 22px 64px rgba(15, 23, 42, 0.26), 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -50%) scale(0.98);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.share-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .stock-in_stock {
   border-color: #bbf7d0;
   background: #f0fdf4;
