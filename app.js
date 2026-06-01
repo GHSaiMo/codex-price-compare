@@ -20,6 +20,11 @@ const SHARE_IMAGE_WIDTH = 390;
 const SHARE_IMAGE_HEIGHT = 844;
 const defaultSort = "price-asc";
 const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
+const urlStateKeys = {
+  subtype: "type",
+  stock: "stock",
+  sort: "sort",
+};
 
 let allProducts = [];
 let currentSort = defaultSort;
@@ -126,6 +131,51 @@ function loadImage(src) {
   });
 }
 
+function readStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const subtype = params.get(urlStateKeys.subtype);
+  const stock = params.get(urlStateKeys.stock);
+  const sort = params.get(urlStateKeys.sort);
+
+  if (visibleSubtypeValues.includes(subtype)) {
+    currentSubtype = subtype;
+  }
+  if (stock === "all") {
+    includeOutOfStock.checked = true;
+  } else if (stock === "available") {
+    includeOutOfStock.checked = false;
+  }
+  if (sort === "desc") {
+    currentSort = "price-desc";
+  } else if (sort === "asc") {
+    currentSort = "price-asc";
+  }
+}
+
+function writeStateToUrl() {
+  if (!window.history?.replaceState) return;
+  const url = createShareUrl();
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function createShareUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set(urlStateKeys.subtype, currentSubtype);
+  url.searchParams.set(urlStateKeys.stock, includeOutOfStock.checked ? "all" : "available");
+  url.searchParams.set(urlStateKeys.sort, currentSort === "price-desc" ? "desc" : "asc");
+  return url;
+}
+
+function createQrImage(url) {
+  if (typeof qrcode !== "function") {
+    throw new Error("二维码生成器未加载");
+  }
+  const qr = qrcode(0, "M");
+  qr.addData(url.toString());
+  qr.make();
+  return loadImage(qr.createDataURL(6, 1));
+}
+
 function canvasColor(name) {
   return getComputedStyle(document.body).getPropertyValue(name).trim();
 }
@@ -195,7 +245,7 @@ function hideShareToast() {
 async function createShareSnapshotImage() {
   const items = sortProducts(filterProducts());
   const subtypeText = subtypeButtons.find((button) => button.dataset.subtype === currentSubtype)?.textContent || currentSubtype;
-  const qr = await loadImage("assets/share-qr.png");
+  const qr = await createQrImage(createShareUrl());
   const scale = 2;
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_IMAGE_WIDTH * scale;
@@ -361,6 +411,7 @@ for (const button of subtypeButtons) {
   button.addEventListener("click", () => {
     currentSubtype = button.dataset.subtype;
     syncSubtypeButtons();
+    writeStateToUrl();
     render({ animate: true });
   });
 }
@@ -368,10 +419,12 @@ for (const button of subtypeButtons) {
 sortButton.addEventListener("click", () => {
   currentSort = currentSort === "price-asc" ? "price-desc" : "price-asc";
   syncSortButton();
+  writeStateToUrl();
   render({ animate: true });
 });
 
 includeOutOfStock.addEventListener("change", () => {
+  writeStateToUrl();
   render({ animate: true });
 });
 
@@ -395,6 +448,7 @@ window.addEventListener("keydown", (event) => {
 
 window.addEventListener("scroll", syncBackToTop, { passive: true });
 
+readStateFromUrl();
 syncSubtypeButtons();
 syncSortButton();
 syncBackToTop();

@@ -10,6 +10,7 @@
     "test": "node tests/site.test.mjs"
   },
   "dependencies": {
-    "playwright": "^1.60.0"
+    "playwright": "^1.60.0",
+    "qrcode-generator": "^2.0.4"
   }
 }

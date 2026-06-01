@@ -72,15 +72,6 @@
       "core": true
     },
     {
-      "id": "ldxp-shangjia9237",
-      "name": "商家9237",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/RXKT7LFX",
-      "token": "RXKT7LFX",
-      "core": true
-    },
-    {
       "id": "ldxp-fengxin-ai",
       "name": "风心AI小店",
       "adapter": "ldxp",
