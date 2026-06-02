@@ -223,13 +223,6 @@
       "url": "https://shop.mfttai.com/"
     },
     {
-      "id": "acg-ai666",
-      "name": "T佬的gmail批发渠道",
-      "adapter": "acg",
-      "enabled": true,
-      "url": "https://ai666.dnxb.cc/"
-    },
-    {
       "id": "ldxp-qxvx-jike",
       "name": "即刻智联AI",
       "adapter": "ldxp",
