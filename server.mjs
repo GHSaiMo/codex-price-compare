@@ -340,11 +340,14 @@ async function handleStockWatchTest(productId, response) {
     const product = products.find((item) => item.id === productId) || entry;
     const gatewayUrl = process.env.WEIXIN_GATEWAY_ALERT_URL || "http://127.0.0.1:8787/alerts/send";
     const target = process.env.WEIXIN_GATEWAY_ALERT_TARGET || "self";
+    const price = typeof product.price === "number" ? `¥${product.price}` : "价格未知";
+    const stockCount = typeof product.stockCount === "number" ? ` ${product.stockCount}` : "";
     const notifyText = [
-      "补货通知测试",
+      "价格/库存变动通知测试",
       `商品：${product.title || entry.title}`,
       `来源：${product.sourceName || entry.sourceName}`,
-      `状态：${product.stockStatus || entry.lastStockStatus || "unknown"}`,
+      `价格：${price}`,
+      `库存：${product.stockStatus || entry.lastStockStatus || "unknown"}${stockCount}`,
       `链接：${product.url || entry.url}`,
     ].join("\n");
     const gatewayResponse = await fetch(gatewayUrl, {

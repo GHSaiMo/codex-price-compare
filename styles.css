@@ -829,7 +829,7 @@ input {
 
 .stock-watch-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto auto auto;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 8px;
@@ -848,6 +848,10 @@ input {
   flex-wrap: wrap;
   gap: 6px;
   justify-content: end;
+}
+
+.stock-watch-price {
+  white-space: nowrap;
 }
 
 .admin-product-row {
@@ -1114,6 +1118,14 @@ input {
 
   .admin-product-row {
     grid-template-columns: 1fr;
+  }
+
+  .stock-watch-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-watch-actions {
+    justify-content: start;
   }
 }
 

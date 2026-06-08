@@ -34,12 +34,16 @@ export function createStockWatchEntryFromUrl({ products, url, now = new Date() }
     createdAt: timestamp,
     updatedAt: timestamp,
     lastSeenAt: timestamp,
+    lastPrice: productPrice(product),
     lastStockStatus: product.stockStatus || "unknown",
     lastStockCount: typeof product.stockCount === "number" ? product.stockCount : null,
     lastNotifiedAt: null,
     lastNotifyStatus: null,
     lastNotifyError: null,
+    lastNotifiedPrice: null,
     lastNotifiedStockStatus: null,
+    lastNotifiedStockCount: null,
+    lastNotifyChangeKey: null,
   };
 }
 
@@ -71,7 +75,10 @@ export function upsertStockWatchEntry(watchData, entry) {
     lastNotifiedAt: data.items[index].lastNotifiedAt ?? entry.lastNotifiedAt,
     lastNotifyStatus: data.items[index].lastNotifyStatus ?? entry.lastNotifyStatus,
     lastNotifyError: data.items[index].lastNotifyError ?? entry.lastNotifyError,
+    lastNotifiedPrice: data.items[index].lastNotifiedPrice ?? entry.lastNotifiedPrice,
     lastNotifiedStockStatus: data.items[index].lastNotifiedStockStatus ?? entry.lastNotifiedStockStatus,
+    lastNotifiedStockCount: data.items[index].lastNotifiedStockCount ?? entry.lastNotifiedStockCount,
+    lastNotifyChangeKey: data.items[index].lastNotifyChangeKey ?? entry.lastNotifyChangeKey,
   };
   return data;
 }
@@ -111,8 +118,10 @@ export function buildStockWatchNotificationUpdates({
     const current = currentById.get(entry.productId);
     if (!current) return { ...entry, updatedAt: timestamp };
 
-    const previousStatus = previous?.stockStatus || entry.lastStockStatus || "unknown";
+    const previousSnapshot = watchSnapshot(previous, entry);
     const currentStatus = current.stockStatus || "unknown";
+    const currentCount = typeof current.stockCount === "number" ? current.stockCount : null;
+    const currentPrice = productPrice(current);
     const nextEntry = {
       ...entry,
       title: current.title || entry.title,
@@ -120,18 +129,34 @@ export function buildStockWatchNotificationUpdates({
       url: current.url || entry.url,
       updatedAt: timestamp,
       lastSeenAt: timestamp,
+      lastPrice: currentPrice,
       lastStockStatus: currentStatus,
-      lastStockCount: typeof current.stockCount === "number" ? current.stockCount : null,
-      ...(currentStatus === "out_of_stock" ? { lastNotifiedStockStatus: null } : {}),
+      lastStockCount: currentCount,
     };
 
-    const becameAvailable = previousStatus === "out_of_stock" && isAvailableStatus(currentStatus);
-    const canRetry = entry.lastNotifyStatus === "failed" && isAvailableStatus(currentStatus)
-      && shouldRetry(entry.updatedAt, now, retryAfterMs);
-    const alreadyNotified = entry.lastNotifyStatus === "sent" && entry.lastNotifiedStockStatus === currentStatus;
-    if ((becameAvailable || canRetry) && !alreadyNotified) {
+    const changes = buildWatchChanges(previousSnapshot, {
+      hasPrice: true,
+      price: currentPrice,
+      stockStatus: currentStatus,
+      stockCount: currentCount,
+    });
+    const changeKey = changes.length > 0
+      ? `${formatChangeKey(changes)}:${timestamp}`
+      : entry.lastNotifyChangeKey || formatSnapshotKey({
+        price: currentPrice,
+        stockStatus: currentStatus,
+        stockCount: currentCount,
+      });
+    const canRetry = entry.lastNotifyStatus === "failed" && shouldRetry(entry.updatedAt, now, retryAfterMs);
+    const alreadyNotified = entry.lastNotifyStatus === "sent"
+      && entry.lastNotifiedPrice === currentPrice
+      && entry.lastNotifiedStockStatus === currentStatus
+      && normalizeStockCount(entry.lastNotifiedStockCount) === currentCount;
+    if ((changes.length > 0 || canRetry) && !alreadyNotified) {
       notifications.push({
         entry: nextEntry,
+        changes,
+        changeKey,
         previous: previous ? publicProductFields(previous) : null,
         current: publicProductFields(current),
       });
@@ -187,8 +212,8 @@ async function sendStockNotification({ items, notification, gatewayUrl, target, 
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         target,
-        text: formatNotificationText(current),
-        alertId: `stock:${entry.productId}:${current.stockStatus}`,
+        text: formatNotificationText(notification),
+        alertId: `watch:${entry.productId}:${notification.changeKey}`,
       }),
     });
     const body = await response.text();
@@ -197,12 +222,16 @@ async function sendStockNotification({ items, notification, gatewayUrl, target, 
       lastNotifiedAt: timestamp,
       lastNotifyStatus: "sent",
       lastNotifyError: null,
+      lastNotifiedPrice: productPrice(current),
       lastNotifiedStockStatus: current.stockStatus,
+      lastNotifiedStockCount: normalizeStockCount(current.stockCount),
+      lastNotifyChangeKey: notification.changeKey,
     });
   } catch (error) {
     return updateNotificationStatus(items, entry.productId, {
       lastNotifyStatus: "failed",
       lastNotifyError: error instanceof Error ? error.message : String(error),
+      lastNotifyChangeKey: notification.changeKey,
     });
   }
 }
@@ -211,26 +240,102 @@ function updateNotificationStatus(items, productId, fields) {
   return items.map((entry) => entry.productId === productId ? { ...entry, ...fields } : entry);
 }
 
-function formatNotificationText(product) {
-  const price = typeof product.price === "number" ? `¥${product.price}` : "价格未知";
-  const stock = product.stockCount == null ? product.stockStatus : `${product.stockStatus} ${product.stockCount}`;
+function formatNotificationText(notification) {
+  const { current, changes = [] } = notification;
+  const changeLines = changes.map((change) => {
+    if (change.type === "price") {
+      return `价格变化：${formatPrice(change.previous)} -> ${formatPrice(change.current)}`;
+    }
+    return `库存变化：${formatStock(change.previous)} -> ${formatStock(change.current)}`;
+  });
   return [
-    "补货提醒",
-    `商品：${product.title}`,
-    `来源：${product.sourceName}`,
-    `价格：${price}`,
-    `库存：${stock}`,
-    `链接：${product.url}`,
+    "价格/库存变动提醒",
+    `商品：${current.title}`,
+    `来源：${current.sourceName}`,
+    ...changeLines,
+    `当前价格：${formatPrice(current.price)}`,
+    `当前库存：${formatStock(current)}`,
+    `链接：${current.url}`,
   ].join("\n");
-}
-
-function isAvailableStatus(status) {
-  return status === "in_stock" || status === "low_stock";
 }
 
 function shouldRetry(lastUpdatedAt, now, retryAfterMs) {
   const last = new Date(lastUpdatedAt || 0).getTime();
   return !Number.isFinite(last) || now.getTime() - last >= retryAfterMs;
+}
+
+function buildWatchChanges(previous, current) {
+  const changes = [];
+  if (previous.hasPrice && previous.price !== current.price) {
+    changes.push({ type: "price", previous: previous.price, current: current.price });
+  }
+  if (previous.stockStatus !== current.stockStatus || previous.stockCount !== current.stockCount) {
+    changes.push({
+      type: "stock",
+      previous: { status: previous.stockStatus, count: previous.stockCount },
+      current: { status: current.stockStatus, count: current.stockCount },
+    });
+  }
+  return changes;
+}
+
+function watchSnapshot(product, entry = null) {
+  const hasProduct = product && typeof product === "object";
+  const hasEntryPrice = entry ? Object.hasOwn(entry, "lastPrice") : false;
+  return {
+    hasPrice: hasProduct || hasEntryPrice,
+    price: hasProduct ? productPrice(product) : entry.lastPrice ?? null,
+    stockStatus: hasProduct ? product.stockStatus || "unknown" : entry.lastStockStatus || "unknown",
+    stockCount: normalizeStockCount(hasProduct ? product.stockCount : entry.lastStockCount),
+  };
+}
+
+function productPrice(product) {
+  return typeof product?.price === "number" && Number.isFinite(product.price) ? product.price : null;
+}
+
+function normalizeStockCount(value) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function formatPrice(price) {
+  return typeof price === "number" ? `¥${price}` : "价格未知";
+}
+
+function formatStock(value) {
+  const status = value?.stockStatus || value?.status || "unknown";
+  const count = normalizeStockCount(value?.stockCount ?? value?.count);
+  const label = {
+    in_stock: "有货",
+    low_stock: "低库存",
+    out_of_stock: "缺货",
+    unknown: "库存未知",
+  }[status] || status;
+  return count == null ? label : `${label} ${count}`;
+}
+
+function formatChangeKey(changes) {
+  return changes.map((change) => {
+    if (change.type === "price") {
+      return `price:${formatKeyValue(change.previous)}>${formatKeyValue(change.current)}`;
+    }
+    return [
+      "stock",
+      `${formatKeyValue(change.previous.status)}-${formatKeyValue(change.previous.count)}`,
+      `${formatKeyValue(change.current.status)}-${formatKeyValue(change.current.count)}`,
+    ].join(":");
+  }).join("|");
+}
+
+function formatSnapshotKey(snapshot) {
+  return [
+    `price:${formatKeyValue(snapshot.price)}`,
+    `stock:${formatKeyValue(snapshot.stockStatus)}-${formatKeyValue(snapshot.stockCount)}`,
+  ].join("|");
+}
+
+function formatKeyValue(value) {
+  return value == null ? "null" : String(value).replace(/[^a-z0-9._-]/giu, "_");
 }
 
 function productMap(products) {

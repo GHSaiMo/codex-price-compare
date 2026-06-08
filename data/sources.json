@@ -69,7 +69,7 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/lanyy",
       "token": "lanyy",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-fengxin-ai",
@@ -127,7 +127,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/9S9N5V82",
-      "token": "9S9N5V82"
+      "token": "9S9N5V82",
+      "core": true
     },
     {
       "id": "ldxp-hug-ai",
@@ -192,7 +193,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/JBJJWNA5",
-      "token": "JBJJWNA5"
+      "token": "JBJJWNA5",
+      "core": true
     },
     {
       "id": "dujiao-gmail91",

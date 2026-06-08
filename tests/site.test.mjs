@@ -90,12 +90,16 @@ assert.deepEqual(
     createdAt: "2026-05-29T08:00:00.000Z",
     updatedAt: "2026-05-29T08:00:00.000Z",
     lastSeenAt: "2026-05-29T08:00:00.000Z",
+    lastPrice: 0.85,
     lastStockStatus: "out_of_stock",
     lastStockCount: 0,
     lastNotifiedAt: null,
     lastNotifyStatus: null,
     lastNotifyError: null,
+    lastNotifiedPrice: null,
     lastNotifiedStockStatus: null,
+    lastNotifiedStockCount: null,
+    lastNotifyChangeKey: null,
   },
 );
 assert.throws(
@@ -120,6 +124,31 @@ assert.deepEqual(
     now: new Date("2026-05-29T08:30:00.000Z"),
   }).notifications.map((notification) => notification.entry.productId),
   ["ldxp-xiaoba:2mlvd7"],
+);
+assert.deepEqual(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      lastPrice: 0.85,
+      lastStockStatus: "out_of_stock",
+      lastStockCount: 0,
+      lastNotifyStatus: null,
+    }],
+    previousProducts: stockWatchProducts,
+    currentProducts: [{
+      ...stockWatchProducts[0],
+      price: 0.95,
+    }],
+    now: new Date("2026-05-29T08:35:00.000Z"),
+  }).notifications.map((notification) => ({
+    productId: notification.entry.productId,
+    changes: notification.changes,
+  })),
+  [{
+    productId: "ldxp-xiaoba:2mlvd7",
+    changes: [{ type: "price", previous: 0.85, current: 0.95 }],
+  }],
 );
 
 assert.equal(buildFallbackProxyConfig({}).enabled, false);
@@ -798,7 +827,7 @@ assert.match(adminHtml, /id="refreshForm"/);
 assert.match(adminHtml, /id="refreshIntervalMinutes"/);
 assert.match(adminHtml, /id="refreshNow"/);
 assert.match(adminHtml, /id="refreshStatus"/);
-assert.match(adminHtml, /补货通知/);
+assert.match(adminHtml, /价格\/库存变动通知/);
 assert.match(adminHtml, /id="stockWatchForm"/);
 assert.match(adminHtml, /id="stockWatchUrl"/);
 assert.match(adminHtml, /id="stockWatchList"/);
@@ -824,8 +853,10 @@ assert.match(adminApp, /refreshSettingsUrl/);
 assert.match(adminApp, /refreshNowUrl/);
 assert.match(adminApp, /stockWatchUrlApi/);
 assert.match(adminApp, /查找商品/);
+assert.match(adminApp, /加入观察区/);
+assert.match(adminApp, /lastPrice/);
 assert.match(adminApp, /测试通知/);
-assert.match(adminApp, /取消关注/);
+assert.match(adminApp, /移出观察区/);
 assert.match(adminApp, /renderRefreshStatus/);
 assert.match(adminApp, /refreshForm/);
 assert.match(adminApp, /refreshNow/);

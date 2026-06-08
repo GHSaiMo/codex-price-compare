@@ -53,6 +53,10 @@ function stockLabel(item) {
   return "库存未知";
 }
 
+function formatPrice(price) {
+  return typeof price === "number" ? `¥${price}` : "价格未知";
+}
+
 function createProductRow(item) {
   const row = document.createElement("a");
   row.className = "admin-product-row is-unknown";
@@ -70,7 +74,7 @@ function createProductRow(item) {
 
   const price = document.createElement("span");
   price.className = "admin-product-price";
-  price.textContent = typeof item.price === "number" ? `¥${item.price}` : "价格未知";
+  price.textContent = formatPrice(item.price);
 
   const reasons = document.createElement("span");
   reasons.className = "match-reasons";
@@ -179,6 +183,10 @@ function renderStockWatch() {
 
     main.append(title, metaLine);
 
+    const price = document.createElement("span");
+    price.className = "admin-product-price stock-watch-price";
+    price.textContent = formatPrice(typeof current.price === "number" ? current.price : entry.lastPrice);
+
     const stock = document.createElement("span");
     stock.className = `stock-pill stock-${current.stockStatus || entry.lastStockStatus || "unknown"}`;
     stock.textContent = stockLabel(current.stockStatus ? current : {
@@ -206,11 +214,11 @@ function renderStockWatch() {
     const remove = document.createElement("button");
     remove.className = "toolbar-link";
     remove.type = "button";
-    remove.textContent = "取消关注";
+    remove.textContent = "移出观察区";
     remove.addEventListener("click", () => removeStockWatch(entry.productId, remove));
 
     actions.append(test, remove);
-    row.append(main, stock, notify, actions);
+    row.append(main, price, stock, notify, actions);
     stockWatchList.appendChild(row);
   }
 }
@@ -297,15 +305,15 @@ async function updateCoreSource(sourceId, core, input) {
 
 async function removeStockWatch(productId, button) {
   button.disabled = true;
-  stockWatchStatus.textContent = "正在取消关注...";
+  stockWatchStatus.textContent = "正在移出观察区...";
   try {
     const response = await fetch(`${stockWatchUrlApi}/${encodeURIComponent(productId)}`, { method: "DELETE" });
     const result = await response.json();
     if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
-    stockWatchStatus.textContent = "已取消关注。";
+    stockWatchStatus.textContent = "已移出观察区。";
     await loadAdminData();
   } catch (error) {
-    stockWatchStatus.textContent = `取消失败：${error.message}`;
+    stockWatchStatus.textContent = `移出失败：${error.message}`;
   } finally {
     button.disabled = false;
   }
@@ -365,7 +373,7 @@ stockWatchForm.addEventListener("submit", async (event) => {
   try {
     await addStockWatch(stockWatchUrl.value);
     stockWatchUrl.value = "";
-    stockWatchStatus.textContent = "已匹配商品 ID 并加入关注列表。";
+    stockWatchStatus.textContent = "已匹配商品 ID 并加入观察区。";
     await loadAdminData();
   } catch (error) {
     stockWatchStatus.textContent = `关注失败：${error.message}`;
