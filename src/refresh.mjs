@@ -239,12 +239,25 @@ export function mergeProductsWithStaleSourceItems({
   rules = null,
 } = {}) {
   const currentSourceIds = new Set(currentItems.map((item) => item.sourceId).filter(Boolean));
-  const staleItems = previousItems.filter((item) => (
-    item.sourceId
-    && failedSourceIds.has(item.sourceId)
-    && !currentSourceIds.has(item.sourceId)
-    && (!rules || classifyProduct(item.title, item.descriptionText, rules).category !== "other")
-  ));
+  const staleItems = previousItems
+    .filter((item) => (
+      item.sourceId
+      && failedSourceIds.has(item.sourceId)
+      && !currentSourceIds.has(item.sourceId)
+    ))
+    .map((item) => {
+      if (!rules) return item;
+      const classification = classifyProduct(item.title, item.descriptionText, rules);
+      return {
+        ...item,
+        category: classification.category,
+        subtype: classification.subtype,
+        confidence: classification.confidence,
+        tags: classification.tags,
+        matchReasons: classification.matchReasons,
+      };
+    })
+    .filter((item) => !rules || item.category !== "other");
   return [...currentItems, ...staleItems];
 }
 

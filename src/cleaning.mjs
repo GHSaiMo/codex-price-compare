@@ -26,6 +26,10 @@ function matchedTerms(haystack, terms) {
   return terms.filter((term) => includesTerm(haystack, term));
 }
 
+function stripPlusUpgradeContext(text) {
+  return text.replace(/可\s*(?:升级|开通|开)\s*(?:plus|puls)/g, "可");
+}
+
 function hasSmsNegation(text) {
   return /不支持.{0,8}接码|不能.{0,8}接码|无法.{0,8}接码|禁止.{0,8}接码|如需.{0,8}自行接码|自行接码|自己接码/.test(text);
 }
@@ -63,16 +67,18 @@ export function classifyProduct(title, description = "", rules) {
   const descriptionText = stripHtml(description);
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   const titleOnly = titleText.toLowerCase();
+  const subtypeCombined = stripPlusUpgradeContext(combined);
+  const subtypeTitleOnly = stripPlusUpgradeContext(titleOnly);
   const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
   const anchorMatches = matchedTerms(combined, rules.anchorTerms || []);
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
   const codexMatches = matchedTerms(combined, rules.codexTerms || []);
   const titleSubtype = Object.entries(rules.subtypeTerms || {}).find(([, terms]) => {
-    return matchedTerms(titleOnly, terms).length > 0;
+    return matchedTerms(subtypeTitleOnly, terms).length > 0;
   })?.[0] || "unknown";
   const subtype = Object.entries(rules.subtypeTerms || {}).find(([, terms]) => {
-    return matchedTerms(combined, terms).length > 0;
+    return matchedTerms(subtypeCombined, terms).length > 0;
   })?.[0] || "unknown";
 
   if (exclusionMatches.length > 0) {

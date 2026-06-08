@@ -236,6 +236,37 @@ assert.deepEqual(
   }).map((item) => item.id),
   ["ldxp-plus:old"],
 );
+assert.deepEqual(
+  mergeProductsWithStaleSourceItems({
+    previousItems: [
+      {
+        id: "ldxp-maomao-ai:x5zl5e",
+        sourceId: "ldxp-maomao-ai",
+        title: "gpt free 优质货已接码 可升级plus",
+        descriptionText: "质保首登 gptfree 接码号",
+        category: "codex",
+        subtype: "plus",
+        confidence: 0.9,
+        tags: ["plus"],
+        matchReasons: ["命中套餐词: plus"],
+      },
+    ],
+    currentItems: [],
+    failedSourceIds: new Set(["ldxp-maomao-ai"]),
+    rules,
+  }).map((item) => ({
+    id: item.id,
+    category: item.category,
+    subtype: item.subtype,
+    tags: item.tags,
+  })),
+  [{
+    id: "ldxp-maomao-ai:x5zl5e",
+    category: "codex",
+    subtype: "free",
+    tags: ["free"],
+  }],
+);
 assert.deepEqual(buildLdxpPlaywrightRunners({}), [{ id: "local", kind: "local" }]);
 assert.deepEqual(
   buildLdxpPlaywrightRunners({
@@ -313,9 +344,15 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 28);
+assert.equal(sources.sources.length, 29);
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/HCJW0TDL"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
+assert.ok(sources.sources.some((source) => (
+  source.id === "ldxp-doghubx"
+  && source.name === "doghubx"
+  && source.url === "https://pay.ldxp.cn/shop/JBJJWNA5"
+  && source.token === "JBJJWNA5"
+)));
 assert.ok(sources.sources.some((source) => source.url === "https://gmail91.shop/"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.qxvx.cn/shop/OK1"));
 assert.ok(sources.sources.some((source) => source.url === "https://shop.mfttai.com/"));
@@ -424,6 +461,18 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Gpt Fre 🔥100个（已接码）| outlook.com | 日本", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("gpt free 优质货已接码 可升级plus", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("gpt free 优质货已接码 可升级puls", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("gpt free（90％可开plus）", "", rules).subtype,
   "free",
 );
 assert.equal(
