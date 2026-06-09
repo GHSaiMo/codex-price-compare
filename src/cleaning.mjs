@@ -26,6 +26,19 @@ function matchedTerms(haystack, terms) {
   return terms.filter((term) => includesTerm(haystack, term));
 }
 
+function firstMatchedSubtype(haystack, subtypeTerms = {}) {
+  return Object.entries(subtypeTerms).find(([, terms]) => {
+    return matchedTerms(haystack, terms).length > 0;
+  })?.[0] || "unknown";
+}
+
+function titleReasonTermsForSubtype(rules, subtype) {
+  return [
+    ...(rules.titleSubtypeTerms?.[subtype] || []),
+    ...(rules.subtypeTerms?.[subtype] || []),
+  ];
+}
+
 function stripPlusUpgradeContext(text) {
   return text.replace(/可\s*(?:升级|开通|开)\s*(?:plus|puls)/g, "可");
 }
@@ -74,12 +87,11 @@ export function classifyProduct(title, description = "", rules) {
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
   const codexMatches = matchedTerms(combined, rules.codexTerms || []);
-  const titleSubtype = Object.entries(rules.subtypeTerms || {}).find(([, terms]) => {
-    return matchedTerms(subtypeTitleOnly, terms).length > 0;
-  })?.[0] || "unknown";
-  const subtype = Object.entries(rules.subtypeTerms || {}).find(([, terms]) => {
-    return matchedTerms(subtypeCombined, terms).length > 0;
-  })?.[0] || "unknown";
+  const titleOnlySubtype = firstMatchedSubtype(subtypeTitleOnly, rules.titleSubtypeTerms);
+  const titleSubtype = titleOnlySubtype !== "unknown"
+    ? titleOnlySubtype
+    : firstMatchedSubtype(subtypeTitleOnly, rules.subtypeTerms);
+  const subtype = firstMatchedSubtype(subtypeCombined, rules.subtypeTerms);
 
   if (exclusionMatches.length > 0) {
     return buildResult(
@@ -95,7 +107,7 @@ export function classifyProduct(title, description = "", rules) {
     if (["free", "plus", "pro"].includes(titleSubtype)) {
       const reasons = [
         ...anchorMatches.slice(0, 2).map((term) => `命中Codex锚点词: ${term}`),
-        ...matchedTerms(titleOnly, rules.subtypeTerms?.[titleSubtype] || []).slice(0, 2).map((term) => `命中套餐词: ${term}`),
+        ...matchedTerms(titleOnly, titleReasonTermsForSubtype(rules, titleSubtype)).slice(0, 2).map((term) => `命中套餐词: ${term}`),
       ];
       return buildResult("codex", titleSubtype, 0.9, [titleSubtype], reasons);
     }

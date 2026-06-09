@@ -538,6 +538,10 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("gpt team【成品号json反代专用】", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("GPT Plus新号CDK充值（pix渠道）", "请勿使用team空间的token充值", rules).subtype,
   "plus",
 );
 assert.equal(

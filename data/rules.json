@@ -56,6 +56,9 @@
     "只支持安卓",
     "安卓"
   ],
+  "titleSubtypeTerms": {
+    "free": ["team"]
+  },
   "subtypeTerms": {
     "api": ["codexapi", "api额度", "中转站", "刀额度", "额度/天", "额度 日卡"],
     "pro": ["pro", "5x", "20x", "200美金"],
