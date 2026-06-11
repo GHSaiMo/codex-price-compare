@@ -373,7 +373,7 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 29);
+assert.equal(sources.sources.length, 30);
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/HCJW0TDL"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
 assert.ok(sources.sources.some((source) => (
@@ -387,6 +387,14 @@ assert.ok(sources.sources.some((source) => source.url === "https://pay.qxvx.cn/s
 assert.ok(sources.sources.some((source) => source.url === "https://shop.mfttai.com/"));
 assert.ok(
   sources.sources.some((source) => source.url === "https://kelaode.vip/" && source.apiBase === "https://api.kelaode.vip/"),
+);
+assert.ok(
+  sources.sources.some((source) => (
+    source.id === "dujiao-spark-zone"
+    && source.name === "Spark-zone"
+    && source.url === "https://spark-zone.org/"
+    && source.adapter === "dujiao"
+  )),
 );
 
 assert.deepEqual(
@@ -427,6 +435,20 @@ assert.equal(
 assert.equal(
   classifyProduct("ChatGPT Pro 20x 月卡 正价官方直充", "codex 额度刷新", rules).subtype,
   "pro",
+);
+for (const title of [
+  "Openai Codex 10美金额度🔥卡俄斯x1",
+  "Openai Codex 100美金额度🔥创世纪x1",
+  "Openai Codex 500美金额度🔥洛基x1 200并发x1",
+  "100刀-ChatGPT Codex纯Pro线路-不限时",
+  "200刀-ChatGPT Codex纯Pro线路-不限时",
+  "🇺🇸 美国私人住宅IP ｜ 独享原生 ｜ 年付套餐",
+]) {
+  assert.equal(classifyProduct(title, "", rules).category, "other");
+}
+assert.equal(
+  classifyProduct("ChatGPT Plus 月卡 正价官方直充", "稳定性仅次于纯Pro线路", rules).subtype,
+  "plus",
 );
 assert.equal(
   classifyProduct("Perplexity Pro max功能都有，破解版软件，只支持安卓系统", "ChatGPT 分类", rules).category,

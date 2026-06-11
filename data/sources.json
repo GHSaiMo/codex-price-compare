@@ -233,6 +233,13 @@
       "url": "https://shop.mfttai.com/"
     },
     {
+      "id": "dujiao-spark-zone",
+      "name": "Spark-zone",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://spark-zone.org/"
+    },
+    {
       "id": "ldxp-qxvx-jike",
       "name": "即刻智联AI",
       "adapter": "ldxp",

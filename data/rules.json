@@ -56,6 +56,14 @@
     "只支持安卓",
     "安卓"
   ],
+  "titleExclusionTerms": [
+    "美金额度",
+    "纯pro线路",
+    "pro线路",
+    "住宅ip",
+    "原生ip",
+    "独享原生"
+  ],
   "titleSubtypeTerms": {
     "free": ["team"]
   },

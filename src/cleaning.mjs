@@ -82,6 +82,7 @@ export function classifyProduct(title, description = "", rules) {
   const titleOnly = titleText.toLowerCase();
   const subtypeCombined = stripPlusUpgradeContext(combined);
   const subtypeTitleOnly = stripPlusUpgradeContext(titleOnly);
+  const titleExclusionMatches = matchedTerms(titleOnly, rules.titleExclusionTerms || []);
   const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
   const anchorMatches = matchedTerms(combined, rules.anchorTerms || []);
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
@@ -93,13 +94,16 @@ export function classifyProduct(title, description = "", rules) {
     : firstMatchedSubtype(subtypeTitleOnly, rules.subtypeTerms);
   const subtype = firstMatchedSubtype(subtypeCombined, rules.subtypeTerms);
 
-  if (exclusionMatches.length > 0) {
+  if (titleExclusionMatches.length > 0 || exclusionMatches.length > 0) {
     return buildResult(
       "other",
       "unknown",
       0,
       [],
-      exclusionMatches.slice(0, 2).map((term) => `命中排除词: ${term}`),
+      [
+        ...titleExclusionMatches.slice(0, 2).map((term) => `命中标题排除词: ${term}`),
+        ...exclusionMatches.slice(0, 2).map((term) => `命中排除词: ${term}`),
+      ],
     );
   }
 
