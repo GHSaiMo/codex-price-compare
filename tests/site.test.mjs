@@ -163,6 +163,7 @@ assert.deepEqual(
   },
 );
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 520"), { status: 520 })), true);
+assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 403"), { status: 403 })), true);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 404"), { status: 404 })), false);
 assert.equal(shouldUseFallbackForError(new Error("fetch failed")), true);
 assert.equal(resolveLdxpFetchMode({}), "playwright");
@@ -373,7 +374,8 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 30);
+assert.equal(sources.sources.length, 29);
+assert.ok(!sources.sources.some((source) => source.id === "acg-caowo" || source.url === "https://caowo.store/"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/HCJW0TDL"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
 assert.ok(sources.sources.some((source) => (
@@ -644,12 +646,12 @@ const acg = normalizeAcgProduct(
     stock: 56,
     category: { name: "TC中转站" },
   },
-  { name: "GPT专卖-cw", url: "https://caowo.store/", adapter: "acg" },
+  { name: "ACG测试源", url: "https://acg.example/", adapter: "acg" },
   rules,
 );
 assert.equal(acg.category, "codex");
 assert.equal(acg.subtype, "api");
-assert.equal(acg.url, "https://caowo.store/item/51");
+assert.equal(acg.url, "https://acg.example/item/51");
 
 const dujiao = normalizeDujiaoProduct(
   {

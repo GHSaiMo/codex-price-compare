@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const DEFAULT_LOCAL_HOST = "127.0.0.1";
 const DEFAULT_LOCAL_PORT = 7891;
-const HTTP_FALLBACK_STATUSES = new Set([408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
+const HTTP_FALLBACK_STATUSES = new Set([403, 408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
 const PROTECTIVE_ERROR_PATTERNS = [
   /HTTP 4(?:03|08|29)\b/,
   /HTTP 5\d\d\b/,

@@ -2,13 +2,6 @@
   "version": 1,
   "sources": [
     {
-      "id": "acg-caowo",
-      "name": "GPT专卖-cw",
-      "adapter": "acg",
-      "enabled": true,
-      "url": "https://caowo.store/"
-    },
-    {
       "id": "ldxp-ai-shop",
       "name": "AI小铺",
       "adapter": "ldxp",
