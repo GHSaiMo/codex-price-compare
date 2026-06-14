@@ -415,6 +415,22 @@ assert.equal(
   classifyProduct("codex接码，美国实卡（一般可绑3个号）", "此商品为Codex接码额度卡，适用于Free/Plus/Pro接码", rules).subtype,
   "codex_sms",
 );
+assert.equal(
+  classifyProduct("Gpt短效码🔥包接到", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("Gpt短效码🔥包接到", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("【美区30天T-Mobile实体卡】", "ChatGPT接码，期限内可无限次接码", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("反代教程【不要下单，直接点开看就行】记得看到最后", "json直接导入反代软件就能用，反代后使用codex，完全体gpt", rules).category,
+  "other",
+);
 
 assert.equal(
   classifyProduct("CHATGPT FREE号 （已经接过码）", "RT JSON 包含账号密码", rules).category,
@@ -524,6 +540,14 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("gpt free（90％可开plus）", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("GPT Free 的 RT｜已接码｜支持 sub / cpa  / JSON 3个号=5小时plus", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("GPT Free 成品号｜已接码｜可刷新 RT｜支持 sub / cpa  / JSON 3个号=5小时plus", "", rules).subtype,
   "free",
 );
 assert.equal(

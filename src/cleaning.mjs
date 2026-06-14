@@ -40,7 +40,9 @@ function titleReasonTermsForSubtype(rules, subtype) {
 }
 
 function stripPlusUpgradeContext(text) {
-  return text.replace(/可\s*(?:升级|开通|开)\s*(?:plus|puls)/g, "可");
+  return text
+    .replace(/可\s*(?:升级|开通|开)\s*(?:plus|puls)/g, "可")
+    .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "");
 }
 
 function hasSmsNegation(text) {
