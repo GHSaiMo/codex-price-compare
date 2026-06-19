@@ -433,6 +433,25 @@ assert.equal(
   classifyProduct("反代教程【不要下单，直接点开看就行】记得看到最后", "json直接导入反代软件就能用，反代后使用codex，完全体gpt", rules).category,
   "other",
 );
+for (const title of [
+  "【GPT-K12充值】理论2年，可用codex，无需接码",
+  "【GPT-K12充值】理论2年，可用codex",
+  "【GPT-K12充值】质保首登，无需接码，可用codex",
+  "ChatGPT K12充值 理论2年 可用codex",
+]) {
+  assert.equal(classifyProduct(title, "", rules).category, "other");
+  assert.equal(
+    normalizeLdxpProduct({
+      goods_key: "k12-test",
+      name: title,
+      description: "",
+      price: "39.90",
+      extend: { stock_count: "4" },
+      link: "/item/k12-test",
+    }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+    null,
+  );
+}
 
 assert.equal(
   classifyProduct("CHATGPT FREE号 （已经接过码）", "RT JSON 包含账号密码", rules).category,
