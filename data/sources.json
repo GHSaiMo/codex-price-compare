@@ -190,6 +190,14 @@
       "core": true
     },
     {
+      "id": "ldxp-akkkk",
+      "name": "Akkkk",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/1PTC0Z1B",
+      "token": "1PTC0Z1B"
+    },
+    {
       "id": "dujiao-gmail91",
       "name": "91的小店",
       "adapter": "dujiao",
