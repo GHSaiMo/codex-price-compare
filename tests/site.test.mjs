@@ -374,9 +374,8 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 30);
+assert.equal(sources.sources.length, 29);
 assert.ok(!sources.sources.some((source) => source.id === "acg-caowo" || source.url === "https://caowo.store/"));
-assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/HCJW0TDL"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-doghubx"

@@ -29,15 +29,6 @@
       "core": true
     },
     {
-      "id": "ldxp-xiaopiao",
-      "name": "小票的ai小铺",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/HCJW0TDL",
-      "token": "HCJW0TDL",
-      "core": true
-    },
-    {
       "id": "ldxp-464",
       "name": "464",
       "adapter": "ldxp",
