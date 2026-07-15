@@ -457,6 +457,13 @@ for (const title of [
     null,
   );
 }
+for (const title of [
+  "谷歌GPT K12 成品1个｜Sub2API/CPA JSON可选｜首登质保｜可刷AT",
+  "《精品》谷歌GPTK12/json成品/可刷AT/基本能用完周限100-150刀",
+]) {
+  assert.equal(classifyProduct(title, "", rules).category, "codex");
+  assert.equal(classifyProduct(title, "", rules).subtype, "free");
+}
 
 assert.equal(
   classifyProduct("CHATGPT FREE号 （已经接过码）", "RT JSON 包含账号密码", rules).category,
@@ -770,6 +777,9 @@ assert.match(app, /shareImage\.style\.height = `\$\{height\}px`/);
 assert.match(app, /function readStateFromUrl/);
 assert.match(app, /function writeStateToUrl/);
 assert.match(app, /function createShareUrl/);
+assert.match(app, /\["sms", "codex_sms"\]/);
+assert.doesNotMatch(app, /\["codex_sms", "codex_sms"\]/);
+assert.match(app, /currentSubtype === "codex_sms" \? "sms" : currentSubtype/);
 assert.match(app, /function createQrImage/);
 assert.match(app, /qrcode/);
 assert.match(app, /createShareUrl\(\)/);

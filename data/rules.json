@@ -69,7 +69,7 @@
     "独享原生"
   ],
   "titleSubtypeTerms": {
-    "free": ["team"]
+    "free": ["team", "k12"]
   },
   "subtypeTerms": {
     "api": ["codexapi", "api额度", "中转站", "刀额度", "额度/天", "额度 日卡"],

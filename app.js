@@ -20,6 +20,12 @@ const SHARE_IMAGE_WIDTH = 390;
 const SHARE_IMAGE_HEIGHT = 844;
 const defaultSort = "price-asc";
 const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
+const subtypeValuesFromUrl = new Map([
+  ["free", "free"],
+  ["plus", "plus"],
+  ["pro", "pro"],
+  ["sms", "codex_sms"],
+]);
 const urlStateKeys = {
   subtype: "type",
   stock: "stock",
@@ -133,11 +139,11 @@ function loadImage(src) {
 
 function readStateFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const subtype = params.get(urlStateKeys.subtype);
+  const subtype = subtypeValuesFromUrl.get(params.get(urlStateKeys.subtype));
   const stock = params.get(urlStateKeys.stock);
   const sort = params.get(urlStateKeys.sort);
 
-  if (visibleSubtypeValues.includes(subtype)) {
+  if (subtype) {
     currentSubtype = subtype;
   }
   if (stock === "all") {
@@ -160,7 +166,7 @@ function writeStateToUrl() {
 
 function createShareUrl() {
   const url = new URL(window.location.href);
-  url.searchParams.set(urlStateKeys.subtype, currentSubtype);
+  url.searchParams.set(urlStateKeys.subtype, currentSubtype === "codex_sms" ? "sms" : currentSubtype);
   url.searchParams.set(urlStateKeys.stock, includeOutOfStock.checked ? "all" : "available");
   url.searchParams.set(urlStateKeys.sort, currentSort === "price-desc" ? "desc" : "asc");
   return url;
