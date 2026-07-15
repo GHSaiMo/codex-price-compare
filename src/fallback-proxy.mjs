@@ -5,6 +5,8 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const DEFAULT_LOCAL_HOST = "127.0.0.1";
 const DEFAULT_LOCAL_PORT = 7891;
+const DEFAULT_REQUEST_ATTEMPTS = 3;
+const DEFAULT_RETRY_DELAY_MS = 1000;
 const HTTP_FALLBACK_STATUSES = new Set([403, 408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
 const PROTECTIVE_ERROR_PATTERNS = [
   /HTTP 4(?:03|08|29)\b/,
@@ -22,6 +24,8 @@ export function buildFallbackProxyConfig(env = process.env) {
   const localHost = String(env.FALLBACK_PROXY_LOCAL_HOST || DEFAULT_LOCAL_HOST).trim();
   const localPort = Number(env.FALLBACK_PROXY_LOCAL_PORT || DEFAULT_LOCAL_PORT);
   const proxyUrl = String(env.FALLBACK_PROXY_URL || `socks5h://${localHost}:${localPort}`).trim();
+  const requestAttempts = positiveInteger(env.FALLBACK_PROXY_REQUEST_ATTEMPTS, DEFAULT_REQUEST_ATTEMPTS);
+  const retryDelayMs = nonNegativeInteger(env.FALLBACK_PROXY_RETRY_DELAY_MS, DEFAULT_RETRY_DELAY_MS);
 
   if (!sshHost && !env.FALLBACK_PROXY_URL) return { enabled: false };
   return {
@@ -30,7 +34,19 @@ export function buildFallbackProxyConfig(env = process.env) {
     localHost,
     localPort,
     proxyUrl,
+    requestAttempts,
+    retryDelayMs,
   };
+}
+
+function positiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function nonNegativeInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 export function shouldUseFallbackForError(error) {
@@ -118,8 +134,10 @@ function shellQuote(value) {
 }
 
 export class FallbackProxyContext {
-  constructor(config = buildFallbackProxyConfig()) {
+  constructor(config = buildFallbackProxyConfig(), dependencies = {}) {
     this.config = config;
+    this.execFileAsync = dependencies.execFileAsync || execFileAsync;
+    this.wait = dependencies.wait || wait;
     this.child = null;
     this.ownsTunnel = false;
   }
@@ -149,6 +167,23 @@ export class FallbackProxyContext {
     }
   }
 
+  async runCommand(command, args, options) {
+    const attempts = positiveInteger(this.config.requestAttempts, DEFAULT_REQUEST_ATTEMPTS);
+    const retryDelayMs = nonNegativeInteger(this.config.retryDelayMs, DEFAULT_RETRY_DELAY_MS);
+    let lastError;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return await this.execFileAsync(command, args, options);
+      } catch (error) {
+        lastError = error;
+        if (attempt < attempts) await this.wait(retryDelayMs * attempt);
+      }
+    }
+
+    throw lastError;
+  }
+
   async fetchJson(url, { method = "GET", headers = {}, body = null } = {}) {
     if (this.config.sshHost) {
       return this.fetchJsonOverSsh(url, { method, headers, body });
@@ -172,7 +207,7 @@ export class FallbackProxyContext {
     if (body !== null) args.push("--data", body);
     args.push(String(url));
 
-    const { stdout } = await execFileAsync("curl", args, { maxBuffer: 20 * 1024 * 1024 });
+    const { stdout } = await this.runCommand("curl", args, { maxBuffer: 20 * 1024 * 1024 });
     const { body: responseBody, status } = splitCurlOutput(stdout);
     if (status < 200 || status >= 300) throw createHttpError(status, url);
     return parseJsonResponse(responseBody, url);
@@ -196,7 +231,7 @@ export class FallbackProxyContext {
     args.push(String(url));
 
     const command = args.map(shellQuote).join(" ");
-    const { stdout } = await execFileAsync("ssh", [this.config.sshHost, command], {
+    const { stdout } = await this.runCommand("ssh", [this.config.sshHost, command], {
       maxBuffer: 20 * 1024 * 1024,
     });
     const { body: responseBody, status } = splitCurlOutput(stdout);

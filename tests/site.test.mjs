@@ -9,6 +9,7 @@ import {
   sortProductsForDisplay,
 } from "../src/cleaning.mjs";
 import {
+  FallbackProxyContext,
   buildFallbackProxyConfig,
   shouldProtectRefreshResult,
   shouldUseFallbackForError,
@@ -160,8 +161,43 @@ assert.deepEqual(
     localHost: "127.0.0.1",
     localPort: 7891,
     proxyUrl: "socks5h://127.0.0.1:7891",
+    requestAttempts: 3,
+    retryDelayMs: 1000,
   },
 );
+assert.deepEqual(
+  buildFallbackProxyConfig({
+    FALLBACK_PROXY_URL: "http://127.0.0.1:7890",
+    FALLBACK_PROXY_REQUEST_ATTEMPTS: "5",
+    FALLBACK_PROXY_RETRY_DELAY_MS: "250",
+  }),
+  {
+    enabled: true,
+    localHost: "127.0.0.1",
+    localPort: 7891,
+    proxyUrl: "http://127.0.0.1:7890",
+    requestAttempts: 5,
+    retryDelayMs: 250,
+  },
+);
+let fallbackCommandAttempts = 0;
+const fallbackRetryWaits = [];
+const retryingFallback = new FallbackProxyContext({
+  enabled: true,
+  proxyUrl: "http://127.0.0.1:7890",
+  requestAttempts: 3,
+  retryDelayMs: 100,
+}, {
+  execFileAsync: async () => {
+    fallbackCommandAttempts += 1;
+    if (fallbackCommandAttempts < 3) throw new Error("SSL_ERROR_SYSCALL");
+    return { stdout: '{"ok":true}\n__HTTP_STATUS__:200' };
+  },
+  wait: async (delayMs) => fallbackRetryWaits.push(delayMs),
+});
+assert.deepEqual(await retryingFallback.fetchJson("https://example.com/data"), { ok: true });
+assert.equal(fallbackCommandAttempts, 3);
+assert.deepEqual(fallbackRetryWaits, [100, 200]);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 520"), { status: 520 })), true);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 403"), { status: 403 })), true);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 404"), { status: 404 })), false);
