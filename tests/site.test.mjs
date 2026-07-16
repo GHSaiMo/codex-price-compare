@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   classifyProduct,
@@ -30,7 +32,13 @@ import {
 import {
   buildStockWatchNotificationUpdates,
   createStockWatchEntryFromUrl,
+  processStockWatchNotifications,
 } from "../src/stock-watch.mjs";
+import {
+  DEFAULT_WECHATBRIDGE_TARGET,
+  resolveWeChatBridgeConfig,
+  sendWeChatBridgeText,
+} from "../src/wechatbridge.mjs";
 
 const root = new URL("../", import.meta.url);
 
@@ -151,6 +159,65 @@ assert.deepEqual(
     changes: [{ type: "price", previous: 0.85, current: 0.95 }],
   }],
 );
+
+assert.equal(DEFAULT_WECHATBRIDGE_TARGET, "陶九镇");
+assert.deepEqual(resolveWeChatBridgeConfig({}), {
+  url: "http://127.0.0.1:5033/",
+  target: "陶九镇",
+});
+let bridgeRequest = null;
+const bridgeResult = await sendWeChatBridgeText({
+  text: "测试通知",
+  fetchImpl: async (url, options) => {
+    bridgeRequest = { url, options };
+    return new Response('{"ok":true}', { status: 200 });
+  },
+});
+assert.equal(bridgeRequest.url, "http://127.0.0.1:5033/");
+assert.deepEqual(JSON.parse(bridgeRequest.options.body), {
+  target: "陶九镇",
+  text: "测试通知",
+});
+assert.deepEqual(bridgeResult, { target: "陶九镇", response: '{"ok":true}' });
+await assert.rejects(
+  sendWeChatBridgeText({
+    text: "测试通知",
+    fetchImpl: async () => new Response("bridge unavailable", { status: 503 }),
+  }),
+  /bridge unavailable/,
+);
+
+const watchTestDir = await mkdtemp(join(tmpdir(), "codex-price-compare-"));
+try {
+  const watchPath = join(watchTestDir, "stock-watch.json");
+  const entry = createStockWatchEntryFromUrl({
+    products: stockWatchProducts,
+    url: stockWatchProducts[0].url,
+    now: new Date("2026-05-29T08:00:00.000Z"),
+  });
+  await writeFile(watchPath, JSON.stringify({ version: 1, items: [entry] }));
+  let notificationPayload = null;
+  const result = await processStockWatchNotifications({
+    watchPath,
+    previousProducts: stockWatchProducts,
+    currentProducts: [{ ...stockWatchProducts[0], stockStatus: "in_stock", stockCount: 12 }],
+    bridgeUrl: "http://127.0.0.1:5033/",
+    target: "陶九镇",
+    now: new Date("2026-05-29T08:30:00.000Z"),
+    fetchImpl: async (_url, options) => {
+      notificationPayload = JSON.parse(options.body);
+      return new Response("OK", { status: 200 });
+    },
+  });
+  assert.deepEqual(result, { notificationCount: 1, enabled: true });
+  assert.equal(notificationPayload.target, "陶九镇");
+  assert.match(notificationPayload.text, /库存变化/);
+  assert.deepEqual(Object.keys(notificationPayload).sort(), ["target", "text"]);
+  const savedWatch = JSON.parse(await readFile(watchPath, "utf8"));
+  assert.equal(savedWatch.items[0].lastNotifyStatus, "sent");
+} finally {
+  await rm(watchTestDir, { recursive: true, force: true });
+}
 
 assert.equal(buildFallbackProxyConfig({}).enabled, false);
 assert.deepEqual(
@@ -1008,7 +1075,8 @@ assert.match(adminApp, /item\.price >= MAX_VISIBLE_PRICE/);
 assert.match(server, /\/api\/stock-watch/);
 assert.match(server, /handleStockWatchAdd/);
 assert.match(server, /handleStockWatchTest/);
-assert.match(server, /WEIXIN_GATEWAY_ALERT_URL/);
+assert.match(server, /sendWeChatBridgeText/);
+assert.doesNotMatch(server, /WEIXIN_GATEWAY_ALERT/);
 assert.match(styles, /\.source-products/);
 assert.match(styles, /\.stock-watch-panel/);
 assert.match(styles, /\.stock-watch-list/);

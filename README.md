@@ -227,6 +227,18 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 
 主页面和后台页面也会定时重新读取本地 JSON 数据，因此自动刷新完成后，页面会在下一轮前端轮询时更新。
 
+## 价格与库存通知
+
+观察区商品发生价格或库存变化时，服务会通过本机 WeChatBridge 发送通知，默认接口为 `http://127.0.0.1:5033/`，默认目标为“陶九镇”。可在 `.env` 中配置：
+
+```dotenv
+STOCK_NOTIFY_ENABLED=1
+WECHATBRIDGE_URL=http://127.0.0.1:5033/
+WECHATBRIDGE_TARGET=陶九镇
+```
+
+后台观察区的“测试通知”使用同一条 WeChatBridge 发送链路。发送前需确保 WeChatBridge 已在本机运行并能访问目标联系人。
+
 ## 项目结构
 
 ```text
