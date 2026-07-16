@@ -189,6 +189,30 @@
       "token": "1PTC0Z1B"
     },
     {
+      "id": "ldxp-niuniushop",
+      "name": "牛牛ai专卖店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/niuniushop",
+      "token": "niuniushop"
+    },
+    {
+      "id": "ldxp-gpt-chengpin",
+      "name": "gpt成品",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/6YEJH8PE",
+      "token": "6YEJH8PE"
+    },
+    {
+      "id": "ldxp-longteng",
+      "name": "龙腾专卖店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/DEQLOPDB",
+      "token": "DEQLOPDB"
+    },
+    {
       "id": "dujiao-gmail91",
       "name": "91的小店",
       "adapter": "dujiao",
