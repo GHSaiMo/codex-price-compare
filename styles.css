@@ -935,16 +935,23 @@ input {
   }
 
   .title-row {
+    gap: 6px;
     flex-wrap: nowrap;
     align-items: flex-end;
   }
 
   .header-tools {
+    gap: 4px;
     padding-top: 0;
   }
 
   h1 {
-    font-size: clamp(1.95rem, 10vw, 2.6rem);
+    font-size: 2.6rem;
+  }
+
+  .title-row > h1 {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .summary {
@@ -1126,6 +1133,18 @@ input {
 
   .stock-watch-actions {
     justify-content: start;
+  }
+}
+
+@media (max-width: 480px) {
+  .title-row > h1 {
+    font-size: 2.1rem;
+  }
+}
+
+@media (max-width: 356px) {
+  .title-row > h1 {
+    font-size: 1.7rem;
   }
 }
 
