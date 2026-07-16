@@ -1,5 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 
+import { resolveWeChatBridgeConfig, sendWeChatBridgeText } from "./wechatbridge.mjs";
+
 const DEFAULT_WATCH_DATA = { version: 1, items: [] };
 const NOTIFY_RETRY_AFTER_MS = 10 * 60 * 1000;
 
@@ -172,8 +174,8 @@ export async function processStockWatchNotifications({
   watchPath,
   previousProducts = [],
   currentProducts = [],
-  gatewayUrl = process.env.WEIXIN_GATEWAY_ALERT_URL || "http://127.0.0.1:8787/alerts/send",
-  target = process.env.WEIXIN_GATEWAY_ALERT_TARGET || "self",
+  bridgeUrl = resolveWeChatBridgeConfig().url,
+  target = resolveWeChatBridgeConfig().target,
   enabled = process.env.STOCK_NOTIFY_ENABLED !== "0",
   now = new Date(),
   fetchImpl = fetch,
@@ -191,7 +193,7 @@ export async function processStockWatchNotifications({
       items = await sendStockNotification({
         items,
         notification,
-        gatewayUrl,
+        bridgeUrl,
         target,
         now,
         fetchImpl,
@@ -203,21 +205,16 @@ export async function processStockWatchNotifications({
   return { notificationCount: enabled ? updates.notifications.length : 0, enabled };
 }
 
-async function sendStockNotification({ items, notification, gatewayUrl, target, now, fetchImpl }) {
+async function sendStockNotification({ items, notification, bridgeUrl, target, now, fetchImpl }) {
   const timestamp = now.toISOString();
   const { entry, current } = notification;
   try {
-    const response = await fetchImpl(gatewayUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        target,
-        text: formatNotificationText(notification),
-        alertId: `watch:${entry.productId}:${notification.changeKey}`,
-      }),
+    await sendWeChatBridgeText({
+      url: bridgeUrl,
+      target,
+      text: formatNotificationText(notification),
+      fetchImpl,
     });
-    const body = await response.text();
-    if (!response.ok) throw new Error(body || `gateway HTTP ${response.status}`);
     return updateNotificationStatus(items, entry.productId, {
       lastNotifiedAt: timestamp,
       lastNotifyStatus: "sent",

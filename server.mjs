@@ -14,6 +14,7 @@ import {
   upsertStockWatchEntry,
   writeStockWatch,
 } from "./src/stock-watch.mjs";
+import { sendWeChatBridgeText } from "./src/wechatbridge.mjs";
 
 const PORT = 49173;
 const ADMIN_PORT = 49174;
@@ -338,8 +339,6 @@ async function handleStockWatchTest(productId, response) {
       throw err;
     }
     const product = products.find((item) => item.id === productId) || entry;
-    const gatewayUrl = process.env.WEIXIN_GATEWAY_ALERT_URL || "http://127.0.0.1:8787/alerts/send";
-    const target = process.env.WEIXIN_GATEWAY_ALERT_TARGET || "self";
     const price = typeof product.price === "number" ? `¥${product.price}` : "价格未知";
     const stockCount = typeof product.stockCount === "number" ? ` ${product.stockCount}` : "";
     const notifyText = [
@@ -350,18 +349,12 @@ async function handleStockWatchTest(productId, response) {
       `库存：${product.stockStatus || entry.lastStockStatus || "unknown"}${stockCount}`,
       `链接：${product.url || entry.url}`,
     ].join("\n");
-    const gatewayResponse = await fetch(gatewayUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        target,
-        text: notifyText,
-        alertId: `stock-test:${productId}:${Date.now()}`,
-      }),
+    const result = await sendWeChatBridgeText({ text: notifyText });
+    sendJson(response, 200, {
+      ok: true,
+      target: result.target,
+      bridge: result.response ? safeJson(result.response) : {},
     });
-    const raw = await gatewayResponse.text();
-    if (!gatewayResponse.ok) throw new Error(raw || `gateway HTTP ${gatewayResponse.status}`);
-    sendJson(response, 200, { ok: true, gateway: raw ? safeJson(raw) : {} });
   } catch (error) {
     sendJson(response, errorStatusCode(error), { message: error.message });
   }
