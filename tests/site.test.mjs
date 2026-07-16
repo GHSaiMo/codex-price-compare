@@ -300,7 +300,7 @@ assert.deepEqual(
     failedSourceIds: new Set(["ldxp-apple", "ldxp-go", "ldxp-plus"]),
     rules,
   }).map((item) => item.id),
-  ["ldxp-plus:old"],
+  ["ldxp-go:old", "ldxp-plus:old"],
 );
 assert.deepEqual(
   mergeProductsWithStaleSourceItems({
@@ -561,7 +561,22 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("ChatGPT GO 会员账号 成品号", "", rules).category,
-  "other",
+  "codex",
+);
+assert.equal(
+  classifyProduct("ChatGPT GO 会员账号 成品号", "", rules).subtype,
+  "free",
+);
+for (const title of [
+  "【印区卡冲】Gpt go 卡冲（质保一个月）",
+  "【IOS】GPT GO官方充值 仅质保不掉订阅，封号无售后",
+]) {
+  assert.equal(classifyProduct(title, "", rules).category, "codex");
+  assert.equal(classifyProduct(title, "", rules).subtype, "free");
+}
+assert.equal(
+  classifyProduct("ChatGPT Google Voice 账号", "", rules).subtype,
+  "unknown",
 );
 assert.equal(
   classifyProduct("paypal实卡手机号", "", rules).category,

@@ -19,7 +19,11 @@ export function stripHtml(value) {
 }
 
 function includesTerm(haystack, term) {
-  return haystack.includes(term.toLowerCase());
+  const normalizedTerm = term.toLowerCase();
+  if (normalizedTerm === "go") {
+    return /(^|[^a-z0-9])go(?=$|[^a-z0-9])/.test(haystack);
+  }
+  return haystack.includes(normalizedTerm);
 }
 
 function matchedTerms(haystack, terms) {
