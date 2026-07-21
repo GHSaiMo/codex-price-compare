@@ -49,6 +49,10 @@ function stripPlusUpgradeContext(text) {
     .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "");
 }
 
+function matchFreeUpgradePurpose(text) {
+  return text.match(/(?:开通?|升级)\s*(?:plus|puls)\s*专用/)?.[0] || "";
+}
+
 function hasSmsNegation(text) {
   return /不支持.{0,8}接码|不能.{0,8}接码|无法.{0,8}接码|禁止.{0,8}接码|如需.{0,8}自行接码|自行接码|自己接码/.test(text);
 }
@@ -88,13 +92,16 @@ export function classifyProduct(title, description = "", rules) {
   const titleOnly = titleText.toLowerCase();
   const subtypeCombined = stripPlusUpgradeContext(combined);
   const subtypeTitleOnly = stripPlusUpgradeContext(titleOnly);
+  const freeUpgradePurposeMatch = matchFreeUpgradePurpose(titleOnly);
   const titleExclusionMatches = matchedTerms(titleOnly, rules.titleExclusionTerms || []);
   const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
   const anchorMatches = matchedTerms(combined, rules.anchorTerms || []);
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
   const codexMatches = matchedTerms(combined, rules.codexTerms || []);
-  const titleOnlySubtype = firstMatchedSubtype(subtypeTitleOnly, rules.titleSubtypeTerms);
+  const titleOnlySubtype = freeUpgradePurposeMatch
+    ? "free"
+    : firstMatchedSubtype(subtypeTitleOnly, rules.titleSubtypeTerms);
   const titleSubtype = titleOnlySubtype !== "unknown"
     ? titleOnlySubtype
     : firstMatchedSubtype(subtypeTitleOnly, rules.subtypeTerms);
@@ -113,9 +120,10 @@ export function classifyProduct(title, description = "", rules) {
     );
   }
 
-  if (anchorMatches.length > 0) {
+  if (anchorMatches.length > 0 || freeUpgradePurposeMatch) {
     if (["free", "plus", "pro"].includes(titleSubtype)) {
       const reasons = [
+        ...(freeUpgradePurposeMatch ? [`命中Free用途词: ${freeUpgradePurposeMatch}`] : []),
         ...anchorMatches.slice(0, 2).map((term) => `命中Codex锚点词: ${term}`),
         ...matchedTerms(titleOnly, titleReasonTermsForSubtype(rules, titleSubtype)).slice(0, 2).map((term) => `命中套餐词: ${term}`),
       ];

@@ -712,6 +712,18 @@ assert.equal(
   "free",
 );
 assert.equal(
+  classifyProduct("gmail 邮箱 Free 已开通2fa, 百分百0元优惠，开plus专用", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("gmail 邮箱 Free 已开通2fa, 百分百0元优惠，开plus专用", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("Gmail 邮箱，已开通 2FA，0 元优惠，开 Plus 专用", "", rules).subtype,
+  "free",
+);
+assert.equal(
   classifyProduct("GPT Free 的 RT｜已接码｜支持 sub / cpa  / JSON 3个号=5小时plus", "", rules).subtype,
   "free",
 );
