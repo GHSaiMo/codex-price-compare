@@ -477,7 +477,7 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 32);
+assert.equal(sources.sources.length, 30);
 assert.ok(!sources.sources.some((source) => source.id === "acg-caowo" || source.url === "https://caowo.store/"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
 assert.ok(sources.sources.some((source) => (
@@ -606,6 +606,24 @@ assert.equal(
   classifyProduct("ChatGPT Pro 20x 月卡 正价官方直充", "codex 额度刷新", rules).subtype,
   "pro",
 );
+for (const title of [
+  "Claude Pro 成品号/代充【质保一个月】美区",
+  "【IOS美区】CLAUDE Pro 官方充值（月卡） (卡密可囤)",
+  "Claude-Pro 直充月卡",
+]) {
+  assert.equal(classifyProduct(title, "", rules).category, "other");
+  assert.equal(
+    normalizeLdxpProduct({
+      goods_key: "claude-pro-test",
+      name: title,
+      description: "ChatGPT Codex 可用",
+      price: "169.00",
+      extend: { stock_count: "8" },
+      link: "/item/claude-pro-test",
+    }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+    null,
+  );
+}
 for (const title of [
   "Openai Codex 10美金额度🔥卡俄斯x1",
   "Openai Codex 100美金额度🔥创世纪x1",
@@ -814,6 +832,12 @@ assert.deepEqual(
   productsData.items
     .filter((item) => typeof item.price === "number" && item.price >= 2000)
     .map((item) => ({ url: item.url, price: item.price })),
+  [],
+);
+assert.deepEqual(
+  productsData.items
+    .filter((item) => /claude[\s-]*pro/i.test(item.title || ""))
+    .map((item) => item.url),
   [],
 );
 
