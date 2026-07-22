@@ -20,21 +20,12 @@
       "core": true
     },
     {
-      "id": "ldxp-xiaoba",
-      "name": "Ai小八",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/xiaoba",
-      "token": "xiaoba",
-      "core": true
-    },
-    {
       "id": "ldxp-464",
       "name": "464",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/7HVUEC3Y",
-      "token": "7HVUEC3Y",
+      "url": "https://pay.ldxp.cn/shop/464xiaopu",
+      "token": "464xiaopu",
       "core": true
     },
     {
@@ -54,14 +45,6 @@
       "url": "https://pay.ldxp.cn/shop/lanyy",
       "token": "lanyy",
       "core": false
-    },
-    {
-      "id": "ldxp-fengxin-ai",
-      "name": "风心AI小店",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/ai11",
-      "token": "ai11"
     },
     {
       "id": "ldxp-shangjia696",
