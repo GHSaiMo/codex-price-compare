@@ -722,6 +722,14 @@ assert.equal(
   "free",
 );
 assert.equal(
+  classifyProduct("Gpt Free（codex已接码 | 高额度 | 刷新RT | 非PLUS）| outlook | 美国 | 长效邮", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("Gpt Free（codex已接码 | 高额度 | 刷新RT | 非plus）| outlook | 美国 | 长效邮", "", rules).subtype,
+  "free",
+);
+assert.equal(
   classifyProduct("gpt free 优质货已接码 可升级puls", "", rules).subtype,
   "free",
 );
