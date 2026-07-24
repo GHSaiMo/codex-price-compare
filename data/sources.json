@@ -237,14 +237,6 @@
       "adapter": "dujiao",
       "enabled": true,
       "url": "https://spark-zone.org/"
-    },
-    {
-      "id": "ldxp-qxvx-jike",
-      "name": "即刻智联AI",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.qxvx.cn/shop/OK1",
-      "token": "OK1"
     }
   ]
 }

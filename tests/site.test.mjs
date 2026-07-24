@@ -511,7 +511,6 @@ assert.ok(sources.sources.some((source) => (
   && source.token === "DEQLOPDB"
 )));
 assert.ok(sources.sources.some((source) => source.url === "https://gmail91.shop/"));
-assert.ok(sources.sources.some((source) => source.url === "https://pay.qxvx.cn/shop/OK1"));
 assert.ok(sources.sources.some((source) => source.url === "https://shop.mfttai.com/"));
 assert.ok(
   sources.sources.some((source) => source.url === "https://kelaode.vip/" && source.apiBase === "https://api.kelaode.vip/"),
