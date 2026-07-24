@@ -237,6 +237,13 @@
       "adapter": "dujiao",
       "enabled": true,
       "url": "https://spark-zone.org/"
+    },
+    {
+      "id": "dujiao-ac-card",
+      "name": "AC Card",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://ac-card.org/"
     }
   ]
 }
