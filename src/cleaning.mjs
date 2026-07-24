@@ -51,7 +51,9 @@ function stripPlusUpgradeContext(text) {
 }
 
 function matchFreeUpgradePurpose(text) {
-  return text.match(/(?:开通?|升级)\s*(?:plus|puls)\s*专用/)?.[0] || "";
+  return text.match(
+    /(?:(?:开通?|升级)\s*(?:plus|puls)|(?:plus|puls)\s*(?:开通?|升级))\s*专用/,
+  )?.[0] || "";
 }
 
 function matchNonPlusNegation(text) {

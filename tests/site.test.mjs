@@ -741,6 +741,18 @@ assert.equal(
   "codex",
 );
 assert.equal(
+  classifyProduct("Gpt Free（codex已接码 | Plus升级专用 | 高额度）| outlook | 美国 | 长效邮箱", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("Gpt Free（codex已接码 | Plus升级专用 | 高额度）| outlook | 美国 | 长效邮箱", "", rules).matchReasons.some((reason) => reason.includes("Plus升级专用") || reason.includes("plus升级专用")),
+  true,
+);
+assert.equal(
+  classifyProduct("Free号 Plus升级专用", "codex 可用", rules).subtype,
+  "free",
+);
+assert.equal(
   classifyProduct("gmail 邮箱 Free 已开通2fa, 百分百0元优惠，开plus专用", "", rules).subtype,
   "free",
 );
