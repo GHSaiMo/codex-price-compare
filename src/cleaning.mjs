@@ -64,6 +64,19 @@ function hasSmsNegation(text) {
   return /不支持.{0,8}接码|不能.{0,8}接码|无法.{0,8}接码|禁止.{0,8}接码|如需.{0,8}自行接码|自行接码|自己接码/.test(text);
 }
 
+function hasStrongSmsServiceSignal(text) {
+  return /(?:短效|长效|单次)?接码专用|短效接码|短效码|单次接码|接码成功率|质保接码成功|包接到|codex接码|手机接码|接手机验证码|【接码】/.test(text);
+}
+
+function isSmsServiceProduct(titleOnly, smsMatches, accountStateMatches) {
+  return (
+    smsMatches.length > 0
+    && accountStateMatches.length === 0
+    && !hasSmsNegation(titleOnly)
+    && hasStrongSmsServiceSignal(titleOnly)
+  );
+}
+
 function normalizePrice(value) {
   const price = Number.parseFloat(value);
   return Number.isFinite(price) ? price : null;
@@ -130,6 +143,18 @@ export function classifyProduct(title, description = "", rules) {
   }
 
   if (anchorMatches.length > 0 || freeTitleHintMatch) {
+    // 明确的接码服务商品优先于 free/plus/pro 套餐词，
+    // 避免 "plus/free短效接码专用" 被误判成账号套餐。
+    if (isSmsServiceProduct(titleOnly, smsMatches, accountStateMatches)) {
+      return buildResult(
+        "sms",
+        rules.smsSubtype || "codex_sms",
+        0.95,
+        ["codex", "sms"],
+        smsMatches.slice(0, 2).map((term) => `命中接码服务词: ${term}`),
+      );
+    }
+
     if (["free", "plus", "pro"].includes(titleSubtype)) {
       const reasons = [
         ...(freeUpgradePurposeMatch ? [`命中Free用途词: ${freeUpgradePurposeMatch}`] : []),

@@ -689,6 +689,18 @@ assert.equal(
   "sms",
 );
 assert.equal(
+  classifyProduct("【接码】gpt plus/free短效接码专用| 美区卡 | 99%接码成功率，质保接码成功", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("【接码】gpt plus/free短效接码专用| 美区卡 | 99%接码成功率，质保接码成功", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("【接码】gpt plus/free短效接码专用| 美区卡 | 99%接码成功率，质保接码成功", "", rules).tags.includes("sms"),
+  true,
+);
+assert.equal(
   classifyProduct("GPT普号|Free Plan成品✅|rt 格式|自行转换|不会用勿拍|不支持接码登录", "", rules).category,
   "codex",
 );
