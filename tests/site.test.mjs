@@ -477,8 +477,9 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 30);
+assert.equal(sources.sources.length, 31);
 assert.ok(!sources.sources.some((source) => source.id === "acg-caowo" || source.url === "https://caowo.store/"));
+assert.ok(!sources.sources.some((source) => source.id === "ldxp-kaka" || source.url === "https://pay.ldxp.cn/shop/D92VW084"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-doghubx"
@@ -509,6 +510,18 @@ assert.ok(sources.sources.some((source) => (
   && source.name === "龙腾专卖店"
   && source.url === "https://pay.ldxp.cn/shop/DEQLOPDB"
   && source.token === "DEQLOPDB"
+)));
+assert.ok(sources.sources.some((source) => (
+  source.id === "ldxp-z7krwfir"
+  && source.name === "AI最严厉的父亲"
+  && source.url === "https://pay.ldxp.cn/shop/Z7KRWFIR"
+  && source.token === "Z7KRWFIR"
+)));
+assert.ok(sources.sources.some((source) => (
+  source.id === "ldxp-haoai"
+  && source.name === "Ai小店"
+  && source.url === "https://pay.ldxp.cn/shop/haoai"
+  && source.token === "haoai"
 )));
 assert.ok(sources.sources.some((source) => source.url === "https://gmail91.shop/"));
 assert.ok(sources.sources.some((source) => source.url === "https://shop.mfttai.com/"));

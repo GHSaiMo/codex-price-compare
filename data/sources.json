@@ -106,14 +106,6 @@
       "token": "4UOATQTU"
     },
     {
-      "id": "ldxp-kaka",
-      "name": "咔咔",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/D92VW084",
-      "token": "D92VW084"
-    },
-    {
       "id": "ldxp-ai1998",
       "name": "ai1998",
       "adapter": "ldxp",
@@ -194,6 +186,22 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/DEQLOPDB",
       "token": "DEQLOPDB"
+    },
+    {
+      "id": "ldxp-z7krwfir",
+      "name": "AI最严厉的父亲",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/Z7KRWFIR",
+      "token": "Z7KRWFIR"
+    },
+    {
+      "id": "ldxp-haoai",
+      "name": "Ai小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/haoai",
+      "token": "haoai"
     },
     {
       "id": "dujiao-gmail91",
