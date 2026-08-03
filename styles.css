@@ -642,8 +642,8 @@ input {
 }
 
 .share-image {
-  width: min(390px, calc(100vw - 72px), calc((100vh - 96px) * 390 / 844));
-  aspect-ratio: 390 / 844;
+  width: min(390px, calc(100vw - 72px));
+  max-height: calc(100vh - 96px);
   display: flex;
   align-items: center;
   justify-content: center;

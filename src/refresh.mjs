@@ -232,6 +232,30 @@ export function buildLdxpRefreshPlan({
   };
 }
 
+export function reclassifyProductItem(item, rules) {
+  if (!item || !rules) return item;
+  const classification = classifyProduct(item.title, item.descriptionText, rules);
+  if (!classification || classification.category === "other") return null;
+  return {
+    ...item,
+    brand: classification.brand || (classification.category === "grok" ? "grok" : "codex"),
+    category: classification.category,
+    subtype: classification.subtype,
+    confidence: classification.confidence,
+    tags: classification.tags,
+    matchReasons: classification.matchReasons,
+    durationDays: classification.durationDays ?? null,
+    durationLabel: classification.durationLabel || null,
+  };
+}
+
+export function reclassifyProductItems(items = [], rules = null) {
+  if (!rules) return items;
+  return items
+    .map((item) => reclassifyProductItem(item, rules))
+    .filter(Boolean);
+}
+
 export function mergeProductsWithStaleSourceItems({
   previousItems = [],
   currentItems = [],
@@ -245,22 +269,8 @@ export function mergeProductsWithStaleSourceItems({
       && failedSourceIds.has(item.sourceId)
       && !currentSourceIds.has(item.sourceId)
     ))
-    .map((item) => {
-      if (!rules) return item;
-      const classification = classifyProduct(item.title, item.descriptionText, rules);
-      return {
-        ...item,
-        brand: classification.brand || (classification.category === "grok" ? "grok" : "codex"),
-        category: classification.category,
-        subtype: classification.subtype,
-        confidence: classification.confidence,
-        tags: classification.tags,
-        matchReasons: classification.matchReasons,
-        durationDays: classification.durationDays ?? null,
-        durationLabel: classification.durationLabel || null,
-      };
-    })
-    .filter((item) => !rules || item.category !== "other");
+    .map((item) => (rules ? reclassifyProductItem(item, rules) : item))
+    .filter(Boolean);
   return [...currentItems, ...staleItems];
 }
 
@@ -496,7 +506,9 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     failedSourceIds: staleSourceIds,
     rules,
   });
-  const sortedItems = sortProductsForDisplay(mergedItems);
+  // 规则更新后统一重算，避免 skipped/stale 以外的旧 subtype 残留（如 Grok 普号误进付费时长档）。
+  const reclassifiedItems = reclassifyProductItems(mergedItems, rules);
+  const sortedItems = sortProductsForDisplay(reclassifiedItems);
   const products = {
     generatedAt,
     brands: [
@@ -515,16 +527,16 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Grok",
         subtypes: [
           { id: "free", label: "Free" },
-          { id: "m1", label: "1M" },
-          { id: "m2", label: "2M" },
+          { id: "m12", label: "1-2M" },
           { id: "m3", label: "3M" },
+          { id: "y1", label: "1Y" },
         ],
       },
     ],
     categories: [
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
-      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m2", "m3"] },
+      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m12", "m3", "y1"] },
     ],
     items: sortedItems,
   };

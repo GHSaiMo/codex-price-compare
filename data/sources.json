@@ -30,7 +30,7 @@
     },
     {
       "id": "ldxp-lanyy",
-      "name": "懒羊羊",
+      "name": "懒羊羊AI",
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/lanyy",
@@ -47,7 +47,7 @@
     },
     {
       "id": "ldxp-rick",
-      "name": "Rick的AI小铺",
+      "name": "Rick的杂货铺",
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/rick",
@@ -72,7 +72,7 @@
     },
     {
       "id": "ldxp-ai-yuantou",
-      "name": "AI 源头厂家",
+      "name": "嘎子AI",
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/YQUOBIW1",
@@ -247,7 +247,7 @@
     },
     {
       "id": "dujiao-ac-card",
-      "name": "AC Card",
+      "name": "丁丁卡网",
       "adapter": "dujiao",
       "enabled": true,
       "url": "https://ac-card.org/"
@@ -298,6 +298,54 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/T7Q1V995",
       "token": "T7Q1V995"
+    },
+    {
+      "id": "ldxp-aishop86",
+      "name": "AI小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/aishop86",
+      "token": "aishop86"
+    },
+    {
+      "id": "ldxp-qihangai",
+      "name": "启航AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/qihangai",
+      "token": "qihangai"
+    },
+    {
+      "id": "ldxp-catfk-4kviporq",
+      "name": "山姆AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://catfk.com/shop/4KVIPORQ",
+      "token": "4KVIPORQ"
+    },
+    {
+      "id": "ldxp-catfk-2vjuoect",
+      "name": "AI大本营",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://catfk.com/shop/2VJUOECT",
+      "token": "2VJUOECT"
+    },
+    {
+      "id": "ldxp-ljmzqqh3",
+      "name": "咕咕咕",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/LJMZQQH3",
+      "token": "LJMZQQH3"
+    },
+    {
+      "id": "ldxp-catfk-n379roc0",
+      "name": "艾蜜莉",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://catfk.com/shop/N379ROC0",
+      "token": "N379ROC0"
     }
   ]
 }

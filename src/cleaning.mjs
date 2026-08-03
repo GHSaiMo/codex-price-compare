@@ -115,42 +115,59 @@ function stripNoiseDurationText(text, noiseTerms = []) {
   return output.replace(/\s+/g, " ").trim();
 }
 
+function durationMeta(subtype, matches = []) {
+  if (subtype === "m12") {
+    return { subtype, durationDays: 30, durationLabel: "1-2M", matches };
+  }
+  if (subtype === "m3") {
+    return { subtype, durationDays: 90, durationLabel: "3M", matches };
+  }
+  if (subtype === "y1") {
+    return { subtype, durationDays: 365, durationLabel: "1Y", matches };
+  }
+  return { subtype: "others", durationDays: null, durationLabel: "Others", matches };
+}
+
 function matchGrokDuration(text, durationTerms = {}) {
   const ordered = [
+    ["y1", durationTerms.y1 || []],
     ["m3", durationTerms.m3 || []],
-    ["m2", durationTerms.m2 || []],
-    ["m1", durationTerms.m1 || []],
+    ["m12", durationTerms.m12 || []],
+    // 兼容旧规则字段，避免历史 rules 缓存失效。
+    ["m12", [...(durationTerms.m1 || []), ...(durationTerms.m2 || [])]],
   ];
 
   for (const [subtype, terms] of ordered) {
     const matches = matchedTerms(text, terms);
     if (matches.length > 0) {
-      return {
-        subtype,
-        durationDays: subtype === "m1" ? 30 : subtype === "m2" ? 60 : 90,
-        durationLabel: subtype === "m1" ? "1M" : subtype === "m2" ? "2M" : "3M",
-        matches,
-      };
+      return durationMeta(subtype, matches);
     }
+  }
+
+  const yearMatch = text.match(/(?:^|[^a-z0-9])(?:1\s*年|一年|年卡|12\s*(?:个\s*)?月|1\s*year|one\s*year)(?=$|[^a-z0-9])/i);
+  if (yearMatch) {
+    return durationMeta("y1", [yearMatch[0].trim()]);
   }
 
   const monthMatch = text.match(/(\d+)\s*(?:个\s*)?月/);
   if (monthMatch) {
     const months = Number(monthMatch[1]);
-    if (months === 1) return { subtype: "m1", durationDays: 30, durationLabel: "1M", matches: [monthMatch[0]] };
-    if (months === 2) return { subtype: "m2", durationDays: 60, durationLabel: "2M", matches: [monthMatch[0]] };
-    if (months === 3) return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches: [monthMatch[0]] };
-    if (Number.isFinite(months) && months > 0) {
-      return { subtype: "others", durationDays: months * 30, durationLabel: months + "M", matches: [monthMatch[0]] };
-    }
+    if (months === 12) return durationMeta("y1", [monthMatch[0]]);
+    if (months === 3) return durationMeta("m3", [monthMatch[0]]);
+    if (months === 1 || months === 2) return durationMeta("m12", [monthMatch[0]]);
+    // 4-11 个月并入 3M 档；超过 12 个月并入 1Y。
+    if (Number.isFinite(months) && months > 12) return durationMeta("y1", [monthMatch[0]]);
+    if (Number.isFinite(months) && months > 3) return durationMeta("m3", [monthMatch[0]]);
   }
 
   const dayMatch = text.match(/(\d+)\s*天/);
   if (dayMatch) {
     const days = Number(dayMatch[1]);
-    if (days === 30) return { subtype: "m1", durationDays: 30, durationLabel: "1M", matches: [dayMatch[0]] };
-    if (days === 60) return { subtype: "m2", durationDays: 60, durationLabel: "2M", matches: [dayMatch[0]] };
-    if (days === 90) return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches: [dayMatch[0]] };
+    if (Number.isFinite(days) && days >= 360) return durationMeta("y1", [dayMatch[0]]);
+    if (days === 90 || (Number.isFinite(days) && days > 90 && days < 360)) {
+      return durationMeta("m3", [dayMatch[0]]);
+    }
+    if (days === 30 || days === 60) return durationMeta("m12", [dayMatch[0]]);
     if (Number.isFinite(days) && days > 0) {
       return { subtype: "others", durationDays: days, durationLabel: days + "D", matches: [dayMatch[0]] };
     }
@@ -182,11 +199,36 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
   const cleanedTitle = stripNoiseDurationText(titleOnly, rules.grokNoiseDurationTerms || []);
   const cleanedCombined = stripNoiseDurationText(combined, rules.grokNoiseDurationTerms || []);
   const titleDuration = matchGrokDuration(cleanedTitle, rules.grokDurationTerms || {});
-  const duration = titleDuration.matches.length > 0
+  const combinedDuration = matchGrokDuration(cleanedCombined, rules.grokDurationTerms || {});
+  // 标题里的付费时长最优先（月卡/一年），避免“质保3天”抢分类。
+  // 标题 free 词次之（普号），避免描述里的“1个月质保”把普号送进 1M。
+  // 再退回描述/综合文本中的付费时长。
+  const duration = ["m12", "m3", "y1"].includes(titleDuration.subtype)
     ? titleDuration
-    : matchGrokDuration(cleanedCombined, rules.grokDurationTerms || {});
+    : (freeMatches.length > 0
+      ? titleDuration
+      : ( ["m12", "m3", "y1"].includes(combinedDuration.subtype)
+        ? combinedDuration
+        : (titleDuration.matches.length > 0 ? titleDuration : combinedDuration)));
 
-  // Free 优先：普号 / 短体验 / 7-15 天尝鲜都进 Free。
+  if (["m12", "m3", "y1"].includes(duration.subtype) && ( ["m12", "m3", "y1"].includes(titleDuration.subtype) || freeMatches.length === 0 )) {
+    return buildResult(
+      "grok",
+      duration.subtype,
+      0.9,
+      ["grok", duration.subtype],
+      [
+        ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
+        ...duration.matches.slice(0, 2).map((term) => `命中时长: ${term}`),
+      ],
+      {
+        durationDays: duration.durationDays,
+        durationLabel: duration.durationLabel,
+      },
+    );
+  }
+
+  // Free：普号 / 短体验 / 无明确付费时长。
   if (freeMatches.length > 0 || duration.subtype === "others") {
     const freeDurationMatches = freeMatches.length > 0
       ? freeMatches
@@ -205,23 +247,6 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
         durationLabel: freeMatches.length > 0 && duration.subtype === "others" && duration.matches.length === 0
           ? "Free"
           : (duration.durationLabel || "Free"),
-      },
-    );
-  }
-
-  if (["m1", "m2", "m3"].includes(duration.subtype)) {
-    return buildResult(
-      "grok",
-      duration.subtype,
-      0.9,
-      ["grok", duration.subtype],
-      [
-        ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
-        ...duration.matches.slice(0, 2).map((term) => `命中时长: ${term}`),
-      ],
-      {
-        durationDays: duration.durationDays,
-        durationLabel: duration.durationLabel,
       },
     );
   }

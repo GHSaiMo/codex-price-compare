@@ -1,6 +1,6 @@
 # Codex 比价
 
-一个轻量的 Codex / ChatGPT 与 Grok 相关商品信息聚合与比价页面，用于汇总多个卡网店铺的公开商品信息。首页支持 Codex / Grok 双模式切换：Codex 按 Free、Plus、Pro、SMS 分类，Grok 按 Free、1M、2M、3M 分类，展示价格、库存和店铺来源。
+一个轻量的 Codex / ChatGPT 与 Grok 相关商品信息聚合与比价页面，用于汇总多个卡网店铺的公开商品信息。首页支持 Codex / Grok 双模式切换：Codex 按 Free、Plus、Pro、SMS 分类，Grok 按 Free、1-2M、3M、1Y 分类，展示价格、库存和店铺来源。
 
 > 本站仅汇总公开商品信息供参考，不代表对任何店铺或商品质量作出背书。
 
@@ -10,14 +10,14 @@
 
 ![Codex 比价主页面截图](assets/codex-price-compare-home.png)
 
-主页面支持 Codex / Grok 模式切换。Codex 模式默认聚焦 Plus 商品，并提供 Free、Plus、Pro、SMS 分类；Grok 模式默认聚焦 1M，并提供 Free、1M、2M、3M 分类。同一列表展示商品标题、来源店铺、库存状态和价格，也可开启“包含缺货”对比完整供给。
+主页面支持 Codex / Grok 模式切换。Codex 模式默认聚焦 Plus 商品，并提供 Free、Plus、Pro、SMS 分类；Grok 模式默认聚焦 3M，并提供 Free、1-2M、3M、1Y 分类。同一列表展示商品标题、来源店铺、库存状态和价格，也可开启“包含缺货”对比完整供给。
 
 ## 项目特性
 
 - 汇总多个卡网店铺的公开商品数据，统一展示商品标题、价格、库存和来源店铺。
 - 首页支持 Codex / Grok 双模式切换，店铺列表与商品采集链路共享。
-- Codex 按 Free、Plus、Pro、SMS 分类筛选；Grok 按 Free、1M、2M、3M 分类筛选。
-- Codex 默认聚焦 Plus，Grok 默认聚焦 1M。
+- Codex 按 Free、Plus、Pro、SMS 分类筛选；Grok 按 Free、1-2M、3M、1Y 分类筛选。
+- Codex 默认聚焦 Plus，Grok 默认聚焦 3M。
 - 支持价格升序 / 降序排序，并可选择是否包含缺货商品。
 - 商品列表采用紧凑单行布局，便于快速比较不同店铺的库存与价格。
 - 点击筛选、排序或显示设置时，商品列表提供轻量动态反馈。
@@ -42,7 +42,7 @@ http://127.0.0.1:49173/
 
 - 模式切换：`Codex` / `Grok`
 - Codex 分类：`Free`、`Plus`、`Pro`、`SMS`
-- Grok 分类：`Free`、`1M`、`2M`、`3M`
+- Grok 分类：`Free`、`1-2M`、`3M`、`1Y`
 - 排序：价格从低到高 / 价格从高到低
 - 包含缺货开关
 - 黑色 / 淡色系切换
@@ -181,13 +181,13 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 
 - `anchorTerms`：识别 Codex / ChatGPT / GPT 相关商品的锚点词。
 - `grokAnchorTerms`：识别 Grok / xAI 相关商品的锚点词。
-- `grokDurationTerms`：识别 Grok Free / `m1` / `m2` / `m3` 的关键词。
+- `grokDurationTerms`：识别 Grok Free / `m12`（1-2M）/ `m3` / `y1`（1Y）的关键词。
 - `grokExclusionTerms`：排除 X Premium、GPT 混充等非 Grok 商品。
 - `smsServiceTerms`：识别接码服务的关键词。
 - `accountStateTerms`：识别账号状态的关键词，例如“已接码”“接过码”。
 - `subtypeTerms`：识别 Codex 的 `free`、`plus`、`pro`、`api` 等二级分类关键词。
 
-分类逻辑会先判断是否命中 Grok 锚点；命中后归入 Free / 1M / 2M / 3M；普号与短体验进 Free。Codex 路径会优先根据商品标题识别明确的 `free`、`plus`、`pro` 套餐词，减少接码语境造成的误判。
+分类逻辑会先判断是否命中 Grok 锚点；命中后归入 Free / 1-2M / 3M / 1Y；普号与短体验进 Free，1-2个月进 1-2M，3个月进 3M，一年进 1Y。Codex 路径会优先根据商品标题识别明确的 `free`、`plus`、`pro` 套餐词，减少接码语境造成的误判。
 
 ### `data/products.json`
 

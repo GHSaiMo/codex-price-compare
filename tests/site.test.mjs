@@ -19,6 +19,7 @@ import {
 import {
   buildLdxpRefreshPlan,
   mergeProductsWithStaleSourceItems,
+  reclassifyProductItems,
   resolveLdxpFetchMode,
   resolveLdxpSchedulerConfig,
 } from "../src/refresh.mjs";
@@ -669,8 +670,40 @@ assert.equal(
   "free",
 );
 assert.equal(
+  classifyProduct(
+    "【Grok 普号】【帐密+sso】成品｜域名邮箱】无保---不支持grok build,量大联系",
+    "GROK【 普号 |直登成品】域名邮箱 三段格式 帐号+密码+sso grok普号 没有会员 1个月 质保",
+    rules,
+  ).subtype,
+  "free",
+);
+assert.equal(
   classifyProduct("grok普号(福利)", "", rules).subtype,
   "free",
+);
+assert.deepEqual(
+  reclassifyProductItems([
+    {
+      id: "ldxp-pay-ldxp-cn-j2fbuhez:aw0gxk",
+      sourceId: "ldxp-pay-ldxp-cn-j2fbuhez",
+      title: "【Grok 普号】【帐密+sso】成品｜域名邮箱】无保---不支持grok build,量大联系",
+      descriptionText: "GROK【 普号 |直登成品】域名邮箱 三段格式 帐号+密码+sso grok普号 没有会员 1个月 质保",
+      brand: "grok",
+      category: "grok",
+      subtype: "m1",
+      tags: ["grok", "m1"],
+      matchReasons: ["命中时长: 1个月"],
+    },
+  ], rules).map((item) => ({
+    id: item.id,
+    subtype: item.subtype,
+    tags: item.tags,
+  })),
+  [{
+    id: "ldxp-pay-ldxp-cn-j2fbuhez:aw0gxk",
+    subtype: "free",
+    tags: ["grok", "free"],
+  }],
 );
 assert.equal(
   classifyProduct("Super Grok 7天会员号---带SSO--质保订阅，最长可用15天，稳定供货", "", rules).subtype,
@@ -682,15 +715,27 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Grok Super正规直充卡密（两个月）", "", rules).subtype,
-  "m2",
+  "m12",
 );
 assert.equal(
   classifyProduct("SuperGrok 一个月成品号", "", rules).subtype,
-  "m1",
+  "m12",
 );
 assert.equal(
   classifyProduct("Grok Super直充卡密（3个月）", "", rules).subtype,
   "m3",
+);
+assert.equal(
+  classifyProduct("Supergrok Heavy月卡(可直充可成品，质保3天订阅）", "质保3天订阅！！！不质保封号", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Super grok heavy一年（质保首登，直充质保会员到账）", "Super grok heavy一年官方价值3000美刀/年", rules).subtype,
+  "y1",
+);
+assert.equal(
+  classifyProduct("Super grok heavy一年（质保首登，直充质保会员到账）", "", rules).durationLabel,
+  "1Y",
 );
 assert.equal(
   classifyProduct("Super Grok 1.5视频模型平替", "", rules).category,
@@ -1039,9 +1084,12 @@ assert.match(app, /function createShareUrl/);
 assert.match(app, /modeConfigs/);
 assert.match(app, /currentMode/);
 assert.match(app, /data-mode/);
-assert.match(app, /m1/);
-assert.match(app, /m2/);
+assert.match(app, /m12/);
 assert.match(app, /m3/);
+assert.match(app, /y1/);
+assert.match(app, /1-2M/);
+assert.match(app, /1Y/);
+assert.match(app, /defaultSubtype: "m3"/);
 assert.match(app, /\["sms", "codex_sms"\]/);
 assert.match(app, /currentSubtype === "codex_sms" \? "sms" : currentSubtype/);
 assert.match(app, /function createQrImage/);
@@ -1052,10 +1100,14 @@ assert.doesNotMatch(app, /share-logo\.png/);
 assert.doesNotMatch(app, /loadImage\("assets\/logo\.svg"\)/);
 assert.doesNotMatch(app, /ctx\.drawImage\(logo/);
 assert.match(app, /const SHARE_VISIBLE_ITEMS = 5;/);
+assert.match(app, /function getShareImageHeight/);
+assert.match(app, /const SHARE_IMAGE_MAX_HEIGHT = 844;/);
 assert.match(app, /另有 \$\{items\.length - SHARE_VISIBLE_ITEMS\} 条商品可以查看/);
-assert.match(app, /const moreRowHeight = 48;/);
-assert.match(app, /fillRoundRect\(ctx, rowX, 550, rowWidth, moreRowHeight, 8, panel, line\)/);
-assert.match(app, /canvas\.toDataURL\("image\/png"\)/);
+assert.match(app, /const SHARE_MORE_ROW_HEIGHT = 48;/);
+assert.match(app, /fillRoundRect\(ctx, SHARE_ROW_X, moreRowY, SHARE_ROW_WIDTH, SHARE_MORE_ROW_HEIGHT, 8, panel, line\)/);
+assert.match(app, /return \{ dataUrl: canvas\.toDataURL\("image\/png"\), height: imageHeight \};/);
+assert.match(app, /lockShareImageSize\(snapshot\.height\)/);
+assert.match(app, /lockShareImageSize\(getShareImageHeight\(previewItemCount\)\)/);
 assert.doesNotMatch(app, /qrserver\.com/);
 assert.match(app, /shareOverlay\.addEventListener\("click"/);
 assert.doesNotMatch(app, /image\.alt = "正在生成分享截图"/);
@@ -1141,6 +1193,8 @@ assert.match(styles, /\.back-to-top/);
 assert.match(styles, /\.share-overlay/);
 assert.match(styles, /\.share-overlay\.is-visible/);
 assert.match(styles, /\.share-image img/);
+assert.match(styles, /\.share-image \{[\s\S]*max-height: calc\(100vh - 96px\);/);
+assert.doesNotMatch(styles, /aspect-ratio: 390 \/ 844;/);
 assert.match(styles, /\.share-toast/);
 assert.match(styles, /\.share-toast\.is-visible/);
 assert.match(styles, /\.share-overlay \{[\s\S]*z-index: 80;/);

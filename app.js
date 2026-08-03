@@ -21,7 +21,18 @@ const DATA_RELOAD_INTERVAL_MS = 60 * 1000;
 const MAX_VISIBLE_PRICE = 2000;
 const SHARE_VISIBLE_ITEMS = 5;
 const SHARE_IMAGE_WIDTH = 390;
-const SHARE_IMAGE_HEIGHT = 844;
+const SHARE_IMAGE_MAX_HEIGHT = 844;
+const SHARE_ROW_X = 28;
+const SHARE_ROW_WIDTH = 334;
+const SHARE_ROW_HEIGHT = 68;
+const SHARE_ROW_GAP = 10;
+const SHARE_CARDS_TOP = 160;
+const SHARE_MORE_ROW_HEIGHT = 48;
+const SHARE_MORE_ROW_GAP = 22;
+const SHARE_QR_SIZE = 160;
+const SHARE_QR_INSET = 12;
+const SHARE_TIP_GAP = 28;
+const SHARE_BOTTOM_PAD = 36;
 const defaultSort = "price-asc";
 const MODE_STORAGE_KEY = "brandMode";
 const modeConfigs = {
@@ -41,12 +52,12 @@ const modeConfigs = {
     id: "grok",
     label: "Grok",
     title: "Grok 比价",
-    defaultSubtype: "m1",
+    defaultSubtype: "m3",
     subtypes: [
       { id: "free", label: "Free" },
-      { id: "m1", label: "1M" },
-      { id: "m2", label: "2M" },
+      { id: "m12", label: "1-2M" },
       { id: "m3", label: "3M" },
+      { id: "y1", label: "1Y" },
     ],
   },
 };
@@ -56,12 +67,18 @@ const subtypeValuesFromUrl = new Map([
   ["pro", "pro"],
   ["sms", "codex_sms"],
   ["codex_sms", "codex_sms"],
-  ["m1", "m1"],
-  ["m2", "m2"],
+  ["m12", "m12"],
+  ["m1", "m12"],
+  ["m2", "m12"],
+  ["1m", "m12"],
+  ["2m", "m12"],
+  ["1-2m", "m12"],
   ["m3", "m3"],
-  ["1m", "m1"],
-  ["2m", "m2"],
   ["3m", "m3"],
+  ["3m+", "m3"],
+  ["y1", "y1"],
+  ["1y", "y1"],
+  ["year", "y1"],
 ]);
 const urlStateKeys = {
   mode: "mode",
@@ -335,11 +352,21 @@ function truncateCanvasText(ctx, text, maxWidth) {
   return `${output}...`;
 }
 
-function lockShareImageSize() {
+function getShareImageHeight(itemCount) {
+  const visibleCount = Math.min(Math.max(itemCount, 0), SHARE_VISIBLE_ITEMS);
+  const moreRowY = SHARE_CARDS_TOP + visibleCount * (SHARE_ROW_HEIGHT + SHARE_ROW_GAP);
+  const qrY = moreRowY + SHARE_MORE_ROW_HEIGHT + SHARE_MORE_ROW_GAP;
+  const tipY = qrY + SHARE_QR_SIZE + SHARE_TIP_GAP;
+  return tipY + SHARE_BOTTOM_PAD;
+}
+
+function lockShareImageSize(imageHeight = SHARE_IMAGE_MAX_HEIGHT) {
   const maxWidth = Math.max(220, window.innerWidth - 72);
   const maxHeight = Math.max(420, window.innerHeight - 96);
-  const width = Math.floor(Math.min(SHARE_IMAGE_WIDTH, maxWidth, (maxHeight * SHARE_IMAGE_WIDTH) / SHARE_IMAGE_HEIGHT));
-  const height = Math.floor((width * SHARE_IMAGE_HEIGHT) / SHARE_IMAGE_WIDTH);
+  const width = Math.floor(
+    Math.min(SHARE_IMAGE_WIDTH, maxWidth, (maxHeight * SHARE_IMAGE_WIDTH) / imageHeight),
+  );
+  const height = Math.floor((width * imageHeight) / SHARE_IMAGE_WIDTH);
   shareImage.style.width = `${width}px`;
   shareImage.style.height = `${height}px`;
 }
@@ -369,13 +396,15 @@ function hideShareToast() {
 
 async function createShareSnapshotImage() {
   const items = sortProducts(filterProducts());
+  const visibleItems = items.slice(0, SHARE_VISIBLE_ITEMS);
+  const imageHeight = getShareImageHeight(visibleItems.length);
   const modeConfig = currentModeConfig();
   const subtypeText = currentSubtypeLabel();
   const qr = await createQrImage(createShareUrl());
   const scale = 2;
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_IMAGE_WIDTH * scale;
-  canvas.height = SHARE_IMAGE_HEIGHT * scale;
+  canvas.height = imageHeight * scale;
   const ctx = canvas.getContext("2d");
   ctx.scale(scale, scale);
 
@@ -390,7 +419,7 @@ async function createShareSnapshotImage() {
   const warn = canvasColor("--warn");
 
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, SHARE_IMAGE_WIDTH, SHARE_IMAGE_HEIGHT);
+  ctx.fillRect(0, 0, SHARE_IMAGE_WIDTH, imageHeight);
 
   ctx.textAlign = "center";
   ctx.font = "800 12px Inter, system-ui, sans-serif";
@@ -407,53 +436,74 @@ async function createShareSnapshotImage() {
   ctx.fillText(`${subtypeText} · ${currentSort === "price-desc" ? "价格降序" : "价格升序"}`, SHARE_IMAGE_WIDTH / 2, 124);
 
   ctx.textAlign = "left";
-  const rowX = 28;
-  const rowWidth = 334;
-  const rowHeight = 68;
-  let y = 160;
-  for (const item of items.slice(0, SHARE_VISIBLE_ITEMS)) {
-    fillRoundRect(ctx, rowX, y, rowWidth, rowHeight, 8, item.stockStatus === "out_of_stock" ? outPanel : panel, line);
+  let y = SHARE_CARDS_TOP;
+  for (const item of visibleItems) {
+    fillRoundRect(
+      ctx,
+      SHARE_ROW_X,
+      y,
+      SHARE_ROW_WIDTH,
+      SHARE_ROW_HEIGHT,
+      8,
+      item.stockStatus === "out_of_stock" ? outPanel : panel,
+      line,
+    );
 
     ctx.fillStyle = text;
     ctx.font = "700 15px Inter, system-ui, sans-serif";
-    ctx.fillText(truncateCanvasText(ctx, item.title, 220), rowX + 16, y + 27);
+    ctx.fillText(truncateCanvasText(ctx, item.title, 220), SHARE_ROW_X + 16, y + 27);
 
     ctx.fillStyle = muted;
     ctx.font = "13px Inter, system-ui, sans-serif";
-    ctx.fillText(truncateCanvasText(ctx, `${item.sourceName} · ${stockLabel(item)}`, 220), rowX + 16, y + 50);
+    ctx.fillText(
+      truncateCanvasText(ctx, `${item.sourceName} · ${stockLabel(item)}`, 220),
+      SHARE_ROW_X + 16,
+      y + 50,
+    );
 
     ctx.textAlign = "right";
     ctx.fillStyle = item.stockStatus === "out_of_stock" ? warn : accent;
     ctx.font = "800 18px Inter, system-ui, sans-serif";
-    ctx.fillText(formatPrice(item.price), rowX + rowWidth - 16, y + 42);
+    ctx.fillText(formatPrice(item.price), SHARE_ROW_X + SHARE_ROW_WIDTH - 16, y + 42);
     ctx.textAlign = "left";
 
-    y += rowHeight + 10;
+    y += SHARE_ROW_HEIGHT + SHARE_ROW_GAP;
   }
 
+  const moreRowY = y;
+  const moreTextY = moreRowY + 30;
+  const qrY = moreRowY + SHARE_MORE_ROW_HEIGHT + SHARE_MORE_ROW_GAP;
+  const qrX = Math.round((SHARE_IMAGE_WIDTH - SHARE_QR_SIZE) / 2);
+  const tipY = qrY + SHARE_QR_SIZE + SHARE_TIP_GAP;
+
   ctx.textAlign = "center";
-  const moreRowHeight = 48;
-  fillRoundRect(ctx, rowX, 550, rowWidth, moreRowHeight, 8, panel, line);
+  fillRoundRect(ctx, SHARE_ROW_X, moreRowY, SHARE_ROW_WIDTH, SHARE_MORE_ROW_HEIGHT, 8, panel, line);
   ctx.fillStyle = text;
   ctx.font = "700 15px Inter, system-ui, sans-serif";
   if (items.length > SHARE_VISIBLE_ITEMS) {
-    ctx.fillText(`另有 ${items.length - SHARE_VISIBLE_ITEMS} 条商品可以查看`, SHARE_IMAGE_WIDTH / 2, 580);
+    ctx.fillText(`另有 ${items.length - SHARE_VISIBLE_ITEMS} 条商品可以查看`, SHARE_IMAGE_WIDTH / 2, moreTextY);
   } else if (items.length === 0) {
-    ctx.fillText("没有匹配的商品", SHARE_IMAGE_WIDTH / 2, 580);
+    ctx.fillText("没有匹配的商品", SHARE_IMAGE_WIDTH / 2, moreTextY);
   } else {
-    ctx.fillText("已显示全部匹配商品", SHARE_IMAGE_WIDTH / 2, 580);
+    ctx.fillText("已显示全部匹配商品", SHARE_IMAGE_WIDTH / 2, moreTextY);
   }
 
-  fillRoundRect(ctx, 115, 620, 160, 160, 10, "#ffffff", line);
-  ctx.drawImage(qr, 127, 632, 136, 136);
+  fillRoundRect(ctx, qrX, qrY, SHARE_QR_SIZE, SHARE_QR_SIZE, 10, "#ffffff", line);
+  ctx.drawImage(
+    qr,
+    qrX + SHARE_QR_INSET,
+    qrY + SHARE_QR_INSET,
+    SHARE_QR_SIZE - SHARE_QR_INSET * 2,
+    SHARE_QR_SIZE - SHARE_QR_INSET * 2,
+  );
 
   ctx.fillStyle = muted;
   ctx.font = "14px Inter, system-ui, sans-serif";
-  ctx.fillText("长按图片扫码或者分享", SHARE_IMAGE_WIDTH / 2, 808);
+  ctx.fillText("长按图片扫码或者分享", SHARE_IMAGE_WIDTH / 2, tipY);
 
   ctx.fillStyle = panelMuted;
-  ctx.fillRect(0, SHARE_IMAGE_HEIGHT - 1, SHARE_IMAGE_WIDTH, 1);
-  return canvas.toDataURL("image/png");
+  ctx.fillRect(0, imageHeight - 1, SHARE_IMAGE_WIDTH, 1);
+  return { dataUrl: canvas.toDataURL("image/png"), height: imageHeight };
 }
 
 async function openShareOverlay() {
@@ -461,11 +511,14 @@ async function openShareOverlay() {
   shareButton.disabled = true;
   shareButton.setAttribute("aria-busy", "true");
   image.removeAttribute("src");
-  lockShareImageSize();
+  const previewItemCount = Math.min(sortProducts(filterProducts()).length, SHARE_VISIBLE_ITEMS);
+  lockShareImageSize(getShareImageHeight(previewItemCount));
   showShareToast();
 
   try {
-    image.src = await createShareSnapshotImage();
+    const snapshot = await createShareSnapshotImage();
+    lockShareImageSize(snapshot.height);
+    image.src = snapshot.dataUrl;
     image.alt = `${currentModeConfig().title}分享截图`;
     hideShareToast();
     shareOverlay.hidden = false;

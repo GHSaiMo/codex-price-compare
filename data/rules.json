@@ -14,9 +14,9 @@
   ],
   "grokSubtypes": [
     "free",
-    "m1",
-    "m2",
-    "m3"
+    "m12",
+    "m3",
+    "y1"
   ],
   "smsSubtype": "codex_sms",
   "smsServiceTerms": [
@@ -89,24 +89,20 @@
     "1.5视频"
   ],
   "grokDurationTerms": {
-    "m1": [
-      "1个月",
-      "一个月",
-      "1 个月",
-      "月卡",
-      "30天",
-      "30 天",
-      "1 month",
-      "1month",
-      "one month"
-    ],
-    "m2": [
-      "2个月",
-      "两个月",
-      "2 个月",
-      "2 month",
-      "2month",
-      "two month"
+    "y1": [
+      "一年",
+      "1年",
+      "1 年",
+      "年卡",
+      "12个月",
+      "12 个月",
+      "十二个月",
+      "1 year",
+      "1year",
+      "one year",
+      "12 month",
+      "12month",
+      "12 months"
     ],
     "m3": [
       "3个月",
@@ -115,7 +111,28 @@
       "季卡",
       "3 month",
       "3month",
-      "three month"
+      "three month",
+      "90天",
+      "90 天"
+    ],
+    "m12": [
+      "1个月",
+      "一个月",
+      "1 个月",
+      "月卡",
+      "30天",
+      "30 天",
+      "1 month",
+      "1month",
+      "one month",
+      "2个月",
+      "两个月",
+      "2 个月",
+      "2 month",
+      "2month",
+      "two month",
+      "60天",
+      "60 天"
     ]
   },
   "grokNoiseDurationTerms": [
