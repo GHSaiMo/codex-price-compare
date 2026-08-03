@@ -163,11 +163,12 @@ assert.deepEqual(
 assert.equal(DEFAULT_WECHATBRIDGE_TARGET, "");
 assert.deepEqual(resolveWeChatBridgeConfig({}), {
   url: "http://127.0.0.1:5033/",
-  target: "your_contact_name",
+  target: "",
 });
 let bridgeRequest = null;
 const bridgeResult = await sendWeChatBridgeText({
   text: "测试通知",
+  target: "test-contact",
   fetchImpl: async (url, options) => {
     bridgeRequest = { url, options };
     return new Response('{"ok":true}', { status: 200 });
@@ -175,10 +176,10 @@ const bridgeResult = await sendWeChatBridgeText({
 });
 assert.equal(bridgeRequest.url, "http://127.0.0.1:5033/");
 assert.deepEqual(JSON.parse(bridgeRequest.options.body), {
-  target: "your_contact_name",
+  target: "test-contact",
   text: "测试通知",
 });
-assert.deepEqual(bridgeResult, { target: "your_contact_name", response: '{"ok":true}' });
+assert.deepEqual(bridgeResult, { target: "test-contact", response: '{"ok":true}' });
 await assert.rejects(
   sendWeChatBridgeText({
     text: "测试通知",
@@ -202,7 +203,7 @@ try {
     previousProducts: stockWatchProducts,
     currentProducts: [{ ...stockWatchProducts[0], stockStatus: "in_stock", stockCount: 12 }],
     bridgeUrl: "http://127.0.0.1:5033/",
-    target: "your_contact_name",
+    target: "test-contact",
     now: new Date("2026-05-29T08:30:00.000Z"),
     fetchImpl: async (_url, options) => {
       notificationPayload = JSON.parse(options.body);
@@ -210,7 +211,7 @@ try {
     },
   });
   assert.deepEqual(result, { notificationCount: 1, enabled: true });
-  assert.equal(notificationPayload.target, "your_contact_name");
+  assert.equal(notificationPayload.target, "test-contact");
   assert.match(notificationPayload.text, /库存变化/);
   assert.deepEqual(Object.keys(notificationPayload).sort(), ["target", "text"]);
   const savedWatch = JSON.parse(await readFile(watchPath, "utf8"));

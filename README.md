@@ -234,7 +234,7 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 
 ## 价格与库存通知
 
-观察区商品发生价格或库存变化时，服务会通过本机 WeChatBridge 发送通知，默认接口为 `http://127.0.0.1:5033/`，默认目标为“your_contact_name”。可在 `.env` 中配置：
+观察区商品发生价格或库存变化时，服务会通过本机 WeChatBridge 发送通知，默认接口为 `http://127.0.0.1:5033/`。通知对象需在 `.env` 中通过 `WECHATBRIDGE_TARGET` 配置：
 
 ```dotenv
 STOCK_NOTIFY_ENABLED=1

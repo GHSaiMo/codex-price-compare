@@ -11,21 +11,12 @@
       "core": true
     },
     {
-      "id": "ldxp-xiaomao",
-      "name": "小猫GPT源头",
+      "id": "ldxp-pay-ldxp-cn-j2fbuhez",
+      "name": "小喵AI低价源头",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/1D0LD6BR",
-      "token": "1D0LD6BR",
-      "core": true
-    },
-    {
-      "id": "ldxp-464",
-      "name": "464",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/464xiaopu",
-      "token": "464xiaopu",
+      "url": "https://pay.ldxp.cn/shop/J2FBUHEZ",
+      "token": "J2FBUHEZ",
       "core": true
     },
     {
@@ -204,6 +195,14 @@
       "token": "haoai"
     },
     {
+      "id": "ldxp-pay-ldxp-cn-c8j9tmgv",
+      "name": "AI成品",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/C8J9TMGV",
+      "token": "C8J9TMGV"
+    },
+    {
       "id": "dujiao-gmail91",
       "name": "91的小店",
       "adapter": "dujiao",
@@ -252,6 +251,53 @@
       "adapter": "dujiao",
       "enabled": true,
       "url": "https://ac-card.org/"
+    },
+    {
+      "id": "ldxp-scd",
+      "name": "AI生产队",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/scd",
+      "token": "scd"
+    },
+    {
+      "id": "ldxp-tpswg4x0",
+      "name": "账号制造者",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/TPSWG4X0",
+      "token": "TPSWG4X0"
+    },
+    {
+      "id": "ldxp-zxc",
+      "name": "自行车 Ai 店铺",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/ZXC",
+      "token": "ZXC"
+    },
+    {
+      "id": "acg-ai-buy",
+      "name": "聊聊AI",
+      "adapter": "acg",
+      "enabled": true,
+      "url": "https://ai-buy.vip/"
+    },
+    {
+      "id": "ldxp-ggboy",
+      "name": "GGBoy",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/GGBoy",
+      "token": "GGBoy"
+    },
+    {
+      "id": "ldxp-t7q1v995",
+      "name": "地平线AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/T7Q1V995",
+      "token": "T7Q1V995"
     }
   ]
 }
