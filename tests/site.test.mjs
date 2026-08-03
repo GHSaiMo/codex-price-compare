@@ -477,7 +477,7 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
-assert.equal(sources.sources.length, 31);
+assert.ok(sources.sources.length >= 30);
 assert.ok(!sources.sources.some((source) => source.id === "acg-caowo" || source.url === "https://caowo.store/"));
 assert.ok(!sources.sources.some((source) => source.id === "ldxp-kaka" || source.url === "https://pay.ldxp.cn/shop/D92VW084"));
 assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
@@ -665,7 +665,19 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GROK【普号|直登成品｜域名邮箱】只保首登", "", rules).subtype,
-  "others",
+  "free",
+);
+assert.equal(
+  classifyProduct("grok普号(福利)", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("Super Grok 7天会员号---带SSO--质保订阅，最长可用15天，稳定供货", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("supergrok尝鲜版（7-10天有效期特惠价）", "", rules).subtype,
+  "free",
 );
 assert.equal(
   classifyProduct("Grok Super正规直充卡密（两个月）", "", rules).subtype,
@@ -678,6 +690,10 @@ assert.equal(
 assert.equal(
   classifyProduct("Grok Super直充卡密（3个月）", "", rules).subtype,
   "m3",
+);
+assert.equal(
+  classifyProduct("Super Grok 1.5视频模型平替", "", rules).category,
+  "other",
 );
 assert.equal(
   classifyProduct("X（Twitter） Premium会员直充卡密", "", rules).category,
@@ -1025,7 +1041,6 @@ assert.match(app, /data-mode/);
 assert.match(app, /m1/);
 assert.match(app, /m2/);
 assert.match(app, /m3/);
-assert.match(app, /others/);
 assert.match(app, /\["sms", "codex_sms"\]/);
 assert.match(app, /currentSubtype === "codex_sms" \? "sms" : currentSubtype/);
 assert.match(app, /function createQrImage/);

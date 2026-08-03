@@ -514,17 +514,17 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         id: "grok",
         name: "Grok",
         subtypes: [
+          { id: "free", label: "Free" },
           { id: "m1", label: "1M" },
           { id: "m2", label: "2M" },
           { id: "m3", label: "3M" },
-          { id: "others", label: "Others" },
         ],
       },
     ],
     categories: [
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
-      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["m1", "m2", "m3", "others"] },
+      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m2", "m3"] },
     ],
     items: sortedItems,
   };

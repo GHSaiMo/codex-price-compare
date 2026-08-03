@@ -43,10 +43,10 @@ const modeConfigs = {
     title: "Grok 比价",
     defaultSubtype: "m1",
     subtypes: [
+      { id: "free", label: "Free" },
       { id: "m1", label: "1M" },
       { id: "m2", label: "2M" },
       { id: "m3", label: "3M" },
-      { id: "others", label: "Others" },
     ],
   },
 };
@@ -59,7 +59,6 @@ const subtypeValuesFromUrl = new Map([
   ["m1", "m1"],
   ["m2", "m2"],
   ["m3", "m3"],
-  ["others", "others"],
   ["1m", "m1"],
   ["2m", "m2"],
   ["3m", "m3"],

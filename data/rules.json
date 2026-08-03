@@ -13,10 +13,10 @@
     "unknown"
   ],
   "grokSubtypes": [
+    "free",
     "m1",
     "m2",
-    "m3",
-    "others"
+    "m3"
   ],
   "smsSubtype": "codex_sms",
   "smsServiceTerms": [
@@ -83,7 +83,10 @@
     "gpt go",
     "claude",
     "codex",
-    "perplexity"
+    "perplexity",
+    "视频模型",
+    "视频模型平替",
+    "1.5视频"
   ],
   "grokDurationTerms": {
     "m1": [
@@ -185,5 +188,28 @@
       "手机验证解锁",
       "go"
     ]
-  }
+  },
+  "grokFreeTerms": [
+    "普号",
+    "普通号",
+    "free",
+    "无会员",
+    "福利号",
+    "福利",
+    "尝鲜",
+    "试玩",
+    "试用",
+    "体验",
+    "日抛",
+    "7天",
+    "七天",
+    "7-10天",
+    "7～10天",
+    "7~10天",
+    "最长可用15天",
+    "15天",
+    "10天",
+    "3天",
+    "三天"
+  ]
 }

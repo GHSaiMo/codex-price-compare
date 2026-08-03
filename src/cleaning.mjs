@@ -178,6 +178,7 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
     return buildResult("other", "unknown", 0, [], []);
   }
 
+  const freeMatches = matchedTerms(titleOnly, rules.grokFreeTerms || []);
   const cleanedTitle = stripNoiseDurationText(titleOnly, rules.grokNoiseDurationTerms || []);
   const cleanedCombined = stripNoiseDurationText(combined, rules.grokNoiseDurationTerms || []);
   const titleDuration = matchGrokDuration(cleanedTitle, rules.grokDurationTerms || {});
@@ -185,20 +186,55 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
     ? titleDuration
     : matchGrokDuration(cleanedCombined, rules.grokDurationTerms || {});
 
-  const reasons = [
-    ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
-    ...duration.matches.slice(0, 2).map((term) => `命中时长: ${term}`),
-  ];
+  // Free 优先：普号 / 短体验 / 7-15 天尝鲜都进 Free。
+  if (freeMatches.length > 0 || duration.subtype === "others") {
+    const freeDurationMatches = freeMatches.length > 0
+      ? freeMatches
+      : duration.matches;
+    return buildResult(
+      "grok",
+      "free",
+      freeMatches.length > 0 || duration.matches.length > 0 ? 0.9 : 0.75,
+      ["grok", "free"],
+      [
+        ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
+        ...freeDurationMatches.slice(0, 2).map((term) => `命中Free词: ${term}`),
+      ],
+      {
+        durationDays: duration.durationDays,
+        durationLabel: freeMatches.length > 0 && duration.subtype === "others" && duration.matches.length === 0
+          ? "Free"
+          : (duration.durationLabel || "Free"),
+      },
+    );
+  }
+
+  if (["m1", "m2", "m3"].includes(duration.subtype)) {
+    return buildResult(
+      "grok",
+      duration.subtype,
+      0.9,
+      ["grok", duration.subtype],
+      [
+        ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
+        ...duration.matches.slice(0, 2).map((term) => `命中时长: ${term}`),
+      ],
+      {
+        durationDays: duration.durationDays,
+        durationLabel: duration.durationLabel,
+      },
+    );
+  }
 
   return buildResult(
     "grok",
-    duration.subtype,
-    duration.matches.length > 0 ? 0.9 : 0.75,
-    ["grok", duration.subtype],
-    reasons,
+    "free",
+    0.75,
+    ["grok", "free"],
+    anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
     {
-      durationDays: duration.durationDays,
-      durationLabel: duration.durationLabel,
+      durationDays: null,
+      durationLabel: "Free",
     },
   );
 }
