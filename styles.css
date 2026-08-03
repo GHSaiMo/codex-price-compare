@@ -87,9 +87,9 @@ body {
 
 .brand-kicker {
   display: inline-flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
-  margin: 0 0 4px;
+  margin: 0 0 8px;
 }
 
 .brand-logo {
@@ -97,6 +97,19 @@ body {
   height: 28px;
   border-radius: 8px;
   box-shadow: 0 8px 18px rgba(15, 118, 110, 0.18);
+}
+
+.brand-kicker .mode-group {
+  gap: 6px;
+}
+
+.brand-kicker .mode-button {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 h1 {
@@ -217,10 +230,6 @@ input {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 800;
-}
-
-.toolbar-row-mode {
-  justify-content: flex-start;
 }
 
 .toolbar-row {
@@ -1061,18 +1070,28 @@ input {
     justify-content: flex-end;
   }
 
-  .mode-group,
   .subtype-group {
     flex: 1 1 auto;
     min-width: 0;
     height: 34px;
   }
 
-  .mode-button,
   .subtype-button {
     flex: 1 1 0;
     min-width: 0;
     padding: 0 6px;
+  }
+
+  .brand-kicker .mode-group {
+    flex: 0 0 auto;
+    height: auto;
+  }
+
+  .brand-kicker .mode-button {
+    flex: 0 0 auto;
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 0.74rem;
   }
 
   .filter-actions {

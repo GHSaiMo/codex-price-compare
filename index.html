@@ -18,7 +18,11 @@
             <div>
               <div class="brand-kicker">
                 <img class="brand-logo" src="assets/logo.svg" alt="">
-                <p class="eyebrow" id="brandEyebrow">Codex</p>
+                <fieldset class="mode-group" aria-label="品牌模式">
+                  <button class="mode-button is-active" type="button" data-mode="codex" aria-pressed="true">Codex</button>
+                  <button class="mode-button" type="button" data-mode="grok" aria-pressed="false">Grok</button>
+                </fieldset>
+                <p class="eyebrow" id="brandEyebrow" hidden>Codex</p>
               </div>
               <div class="title-row">
                 <h1 id="pageTitle">Codex 比价</h1>
@@ -60,12 +64,6 @@
 
       <section class="toolbar" aria-label="商品筛选">
         <div class="content-column filter-panel">
-          <div class="toolbar-row toolbar-row-mode">
-            <fieldset class="mode-group" aria-label="品牌模式">
-              <button class="mode-button is-active" type="button" data-mode="codex" aria-pressed="true">Codex</button>
-              <button class="mode-button" type="button" data-mode="grok" aria-pressed="false">Grok</button>
-            </fieldset>
-          </div>
           <div class="toolbar-row toolbar-row-filters">
             <fieldset class="subtype-group" id="subtypeGroup" aria-label="商品类型">
               <button class="subtype-button" type="button" data-subtype="free" aria-pressed="false">Free</button>
