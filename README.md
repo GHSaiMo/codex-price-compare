@@ -10,6 +10,8 @@
 
 ![Codex 比价主页面截图](assets/codex-price-compare-home.png)
 
+![Grok 比价主页面截图](assets/grok-price-compare-home.png)
+
 主页面支持 Codex / Grok 模式切换。Codex 模式默认聚焦 Plus 商品，并提供 Free、Plus、Pro、SMS 分类；Grok 模式默认聚焦 3M，并提供 Free、1-2M、3M、1Y 分类。同一列表展示商品标题、来源店铺、库存状态和价格，也可开启“包含缺货”对比完整供给。
 
 ## 项目特性
@@ -251,7 +253,10 @@ WECHATBRIDGE_TARGET=your_contact_name
 ├── admin.html              # 后台管理页面
 ├── admin.js                # 后台管理逻辑
 ├── app.js                  # 主页面逻辑
-├── assets/logo.svg         # 站点图标
+├── assets/
+│   ├── logo.svg            # 站点图标
+│   ├── codex-price-compare-home.png  # Codex 模式预览图
+│   └── grok-price-compare-home.png   # Grok 模式预览图
 ├── data/
 │   ├── rules.json          # 分类规则
 │   ├── sources.json        # 店铺数据源
