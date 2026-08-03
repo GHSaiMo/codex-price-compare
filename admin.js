@@ -260,7 +260,7 @@ async function loadAdminData() {
     const refreshData = await refreshResponse.json();
     const stockWatchData = await stockWatchResponse.json();
     products = Array.isArray(productsData.items) ? visibleProducts(productsData.items) : [];
-    sources = Array.isArray(sourcesData.sources) ? sourcesData.sources : [];
+    sources = sortSources(Array.isArray(sourcesData.sources) ? sourcesData.sources : []);
     meta = metaData && typeof metaData === "object" ? metaData : {};
     stockWatchItems = Array.isArray(stockWatchData.items) ? stockWatchData.items : [];
     renderRefreshStatus(refreshData);

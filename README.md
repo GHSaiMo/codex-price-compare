@@ -266,6 +266,7 @@ WECHATBRIDGE_TARGET=your_contact_name
 ├── index.html              # 主页面
 ├── scripts/refresh-products.mjs
 ├── server.mjs              # 本地 HTTP 服务与刷新 API
+├── source-sort.js          # 店铺排序共用逻辑
 ├── sources.html            # 店铺列表页面
 ├── sources.js              # 店铺列表逻辑
 ├── src/

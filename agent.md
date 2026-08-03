@@ -32,7 +32,7 @@
    - 运行语法检查：
 
 ```bash
-node --check server.mjs && node --check src/cleaning.mjs && node --check app.js && node --check admin.js && node --check theme.js && node --check sources.js
+node --check server.mjs && node --check src/cleaning.mjs && node --check app.js && node --check admin.js && node --check theme.js && node --check source-sort.js && node --check sources.js
 ```
 
 ## 注意事项
