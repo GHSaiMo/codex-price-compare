@@ -574,6 +574,29 @@ assert.equal(
   classifyProduct("反代教程【不要下单，直接点开看就行】记得看到最后", "json直接导入反代软件就能用，反代后使用codex，完全体gpt", rules).category,
   "other",
 );
+assert.equal(
+  classifyProduct("📚 ChatGPT 土区开通稳定订阅教程【帮您少踩坑】", "", rules).category,
+  "other",
+);
+assert.equal(
+  normalizeLdxpProduct({
+    goods_key: "jftyl3",
+    name: "📚 ChatGPT 土区开通稳定订阅教程【帮您少踩坑】",
+    description: "",
+    price: "1.00",
+    extend: { stock_count: "99" },
+    link: "/item/jftyl3",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+  null,
+);
+assert.equal(
+  classifyProduct("ChatGPT Plus 成品号（看教程还不会使用的别拍）", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("ChatGPT Plus 成品号（看教程还不会使用的别拍）", "", rules).subtype,
+  "plus",
+);
 for (const title of [
   "【GPT-K12充值】理论2年，可用codex，无需接码",
   "【GPT-K12充值】理论2年，可用codex",
@@ -917,12 +940,51 @@ assert.equal(
   "plus",
 );
 assert.equal(
+  classifyProduct("GPt Plus 充值CDK kakao 新渠道 自动充值非成品需自备账号，自己账号有team不能冲", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("GPt Plus 充值CDK kakao 新渠道 自动充值非成品需自备账号，自己账号有team不能冲", "", rules).matchReasons.some((reason) => reason.includes("plus")),
+  true,
+);
+assert.equal(
   classifyProduct("GPT成品号（三天内封号换新号，30天内质保掉订阅）", "", rules).subtype,
   "plus",
 );
 assert.equal(
   classifyProduct("GPT成品号（三天内封号换新号，中转可用）", "", rules).subtype,
   "plus",
+);
+assert.equal(
+  classifyProduct("GPT PLUS 镜像站(天卡)", "", rules).category,
+  "other",
+);
+assert.equal(
+  normalizeLdxpProduct({
+    goods_key: "e16fey",
+    name: "GPT PLUS 镜像站(天卡)",
+    description: "",
+    price: "9.90",
+    extend: { stock_count: "12" },
+    link: "/item/e16fey",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+  null,
+);
+assert.equal(
+  classifyProduct("全新微软邮箱，已注册好OpenAI（不含plus）", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("全新微软邮箱，已注册好OpenAI（不含plus）", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("全新微软邮箱，已注册好OpenAI（不含 plus）", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("OpenAI 微软邮箱 不含Plus 长效", "", rules).subtype,
+  "free",
 );
 
 const ldxp = normalizeLdxpProduct(
@@ -1131,6 +1193,11 @@ assert.doesNotMatch(app, /hasExactSubtypeSelection/);
 assert.match(app, /currentSubtypeValues/);
 assert.match(app, /MAX_VISIBLE_PRICE/);
 assert.match(app, /item\.price >= MAX_VISIBLE_PRICE/);
+assert.match(app, /function updateSummary/);
+assert.match(app, /function isSummaryOverflowing/);
+assert.match(app, /共 \$\{allProducts\.length\} 条商品。最近刷新：/);
+assert.match(app, /if \(isSummaryOverflowing\(\)\) summary\.textContent = compact;/);
+assert.match(app, /window\.addEventListener\(\s*\"resize\"/);
 assert.doesNotMatch(app, /themeToggle/);
 assert.match(themeApp, /themeToggle/);
 assert.match(themeApp, /localStorage\.setItem\("color-theme"/);

@@ -43,10 +43,25 @@ function titleReasonTermsForSubtype(rules, subtype) {
   ];
 }
 
+function explicitPlanSubtype(haystack, subtypeTerms = {}) {
+  // 标题里的 free/plus/pro 明确套餐词优先，避免次要上下文词（如 team 限制）抢分类。
+  // 这里只认核心套餐词，不直接复用 subtypeTerms 全量词表。
+  const termsBySubtype = {
+    pro: ["pro", "5x", "20x"],
+    plus: ["plus", "puls"],
+    free: ["free", "fre", "free号", "普号", "go"],
+  };
+  for (const subtype of ["pro", "plus", "free"]) {
+    if (matchedTerms(haystack, termsBySubtype[subtype]).length > 0) return subtype;
+  }
+  return "unknown";
+}
+
 function stripPlusUpgradeContext(text) {
   return text
     .replace(/可\s*(?:升级|开通|开)\s*(?:plus|puls)/g, "可")
     .replace(/(?:非|不是|并非)\s*[-_]?\s*(?:plus|puls)/g, "")
+    .replace(/(?:不含|没有|无)\s*[-_]?\s*(?:plus|puls)/g, "")
     .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "");
 }
 
@@ -57,7 +72,7 @@ function matchFreeUpgradePurpose(text) {
 }
 
 function matchNonPlusNegation(text) {
-  return text.match(/(?:非|不是|并非)\s*[-_]?\s*(?:plus|puls)/)?.[0] || "";
+  return text.match(/(?:非|不是|并非|不含|没有|无)\s*[-_]?\s*(?:plus|puls)/)?.[0] || "";
 }
 
 function hasSmsNegation(text) {
@@ -278,12 +293,18 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
   const codexMatches = matchedTerms(combined, rules.codexTerms || []);
+  const explicitTitleSubtype = freeTitleHintMatch
+    ? "free"
+    : explicitPlanSubtype(subtypeTitleOnly, rules.subtypeTerms);
   const titleOnlySubtype = freeTitleHintMatch
     ? "free"
     : firstMatchedSubtype(subtypeTitleOnly, rules.titleSubtypeTerms);
-  const titleSubtype = titleOnlySubtype !== "unknown"
-    ? titleOnlySubtype
-    : firstMatchedSubtype(subtypeTitleOnly, rules.subtypeTerms);
+  // 明确 free/plus/pro 优先于 titleSubtypeTerms 里的次要词（如 team）。
+  const titleSubtype = explicitTitleSubtype !== "unknown"
+    ? explicitTitleSubtype
+    : (titleOnlySubtype !== "unknown"
+      ? titleOnlySubtype
+      : firstMatchedSubtype(subtypeTitleOnly, rules.subtypeTerms));
   const subtype = firstMatchedSubtype(subtypeCombined, rules.subtypeTerms);
 
   if (titleExclusionMatches.length > 0 || exclusionMatches.length > 0) {

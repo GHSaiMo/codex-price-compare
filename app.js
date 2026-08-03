@@ -35,6 +35,7 @@ const SHARE_TIP_GAP = 28;
 const SHARE_BOTTOM_PAD = 36;
 const defaultSort = "price-asc";
 const MODE_STORAGE_KEY = "brandMode";
+let lastRefreshLabel = "尚未刷新";
 const modeConfigs = {
   codex: {
     id: "codex",
@@ -211,6 +212,27 @@ function syncSortButton() {
   sortButton.classList.toggle("is-desc", isDesc);
   sortButton.setAttribute("aria-label", isDesc ? "价格降序" : "价格升序");
   sortButton.title = isDesc ? "价格降序" : "价格升序";
+}
+
+function isSummaryOverflowing() {
+  if (!summary) return false;
+  const style = getComputedStyle(summary);
+  const lineHeight = Number.parseFloat(style.lineHeight);
+  const fontSize = Number.parseFloat(style.fontSize);
+  const oneLine = Number.isFinite(lineHeight) ? lineHeight : fontSize * 1.6;
+  return summary.scrollHeight > oneLine + 1 || summary.scrollWidth > summary.clientWidth + 1;
+}
+
+function updateSummary(time) {
+  if (typeof time === "string") lastRefreshLabel = time;
+  if (!summary) return;
+
+  const modeCount = allProducts.filter((item) => productBrand(item) === currentMode).length;
+  const full = `共 ${allProducts.length} 条商品，当前 ${currentModeConfig().label} ${modeCount} 条。最近刷新：${lastRefreshLabel}`;
+  const compact = `共 ${allProducts.length} 条商品。最近刷新：${lastRefreshLabel}`;
+
+  summary.textContent = full;
+  if (isSummaryOverflowing()) summary.textContent = compact;
 }
 
 function createProductCard(item) {
@@ -576,8 +598,7 @@ async function loadData() {
     allProducts = Array.isArray(products.items) ? products.items : [];
 
     const time = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
-    const modeCount = allProducts.filter((item) => productBrand(item) === currentMode).length;
-    summary.textContent = `共 ${allProducts.length} 条商品，当前 ${currentModeConfig().label} ${modeCount} 条。最近刷新：${time}`;
+    updateSummary(time);
     render();
   } catch (error) {
     summary.textContent = `读取数据失败：${error.message}`;
@@ -597,10 +618,7 @@ function setMode(mode, { animate = true } = {}) {
   writeStateToUrl();
   // 已有商品数据时直接重绘；同时刷新摘要中的模式计数。
   if (allProducts.length > 0) {
-    const timeMatch = summary.textContent.match(/最近刷新：(.+)$/);
-    const time = timeMatch?.[1] || "尚未刷新";
-    const modeCount = allProducts.filter((item) => productBrand(item) === currentMode).length;
-    summary.textContent = `共 ${allProducts.length} 条商品，当前 ${currentModeConfig().label} ${modeCount} 条。最近刷新：${time}`;
+    updateSummary();
   }
   render({ animate });
 }
@@ -642,6 +660,14 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("scroll", syncBackToTop, { passive: true });
+
+window.addEventListener(
+  "resize",
+  () => {
+    if (allProducts.length > 0) updateSummary();
+  },
+  { passive: true },
+);
 
 readStateFromUrl();
 syncModeButtons();
