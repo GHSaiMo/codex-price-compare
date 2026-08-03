@@ -1,8 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "categories": [
     "codex",
-    "sms"
+    "sms",
+    "grok"
   ],
   "codexSubtypes": [
     "free",
@@ -10,6 +11,12 @@
     "pro",
     "api",
     "unknown"
+  ],
+  "grokSubtypes": [
+    "m1",
+    "m2",
+    "m3",
+    "others"
   ],
   "smsSubtype": "codex_sms",
   "smsServiceTerms": [
@@ -59,6 +66,62 @@
     "chatgpt",
     "gpt",
     "openai"
+  ],
+  "grokAnchorTerms": [
+    "grok",
+    "xai",
+    "x.ai",
+    "supergrok",
+    "super grok"
+  ],
+  "grokExclusionTerms": [
+    "x premium",
+    "twitter premium",
+    "x（twitter）",
+    "x(twitter)",
+    "chatgpt",
+    "gpt go",
+    "claude",
+    "codex",
+    "perplexity"
+  ],
+  "grokDurationTerms": {
+    "m1": [
+      "1个月",
+      "一个月",
+      "1 个月",
+      "月卡",
+      "30天",
+      "30 天",
+      "1 month",
+      "1month",
+      "one month"
+    ],
+    "m2": [
+      "2个月",
+      "两个月",
+      "2 个月",
+      "2 month",
+      "2month",
+      "two month"
+    ],
+    "m3": [
+      "3个月",
+      "三个月",
+      "3 个月",
+      "季卡",
+      "3 month",
+      "3month",
+      "three month"
+    ]
+  },
+  "grokNoiseDurationTerms": [
+    "卡密永久有效",
+    "未使用卡密永久有效",
+    "cdk永久有效",
+    "无到期时间",
+    "永久有效，不会过期",
+    "永久有效不会过期"
   ],
   "exclusionTerms": [
     "perplexity",

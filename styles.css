@@ -186,6 +186,19 @@ h1 {
   gap: 8px;
 }
 
+
+.mode-group,
+.subtype-group {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.mode-button,
 .subtype-button,
 input {
   min-height: 40px;
@@ -198,11 +211,16 @@ input {
   cursor: pointer;
 }
 
+.mode-button.is-active,
 .subtype-button.is-active {
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 800;
+}
+
+.toolbar-row-mode {
+  justify-content: flex-start;
 }
 
 .toolbar-row {
@@ -1024,12 +1042,14 @@ input {
     align-items: center;
   }
 
+  .mode-group,
   .subtype-group,
   .filters {
     flex-wrap: nowrap;
     gap: 6px;
   }
 
+  .mode-button,
   .subtype-button,
   input {
     min-height: 34px;
@@ -1041,12 +1061,14 @@ input {
     justify-content: flex-end;
   }
 
+  .mode-group,
   .subtype-group {
     flex: 1 1 auto;
     min-width: 0;
     height: 34px;
   }
 
+  .mode-button,
   .subtype-button {
     flex: 1 1 0;
     min-width: 0;

@@ -95,19 +95,115 @@ function normalizeStockStatus(stockCount, explicitStatus, isSoldOut = false) {
   return "unknown";
 }
 
-function buildResult(category, subtype, confidence, tags, matchReasons) {
+function buildResult(category, subtype, confidence, tags, matchReasons, extra = {}) {
   return {
+    brand: category === "grok" ? "grok" : "codex",
     category,
     subtype,
     confidence,
     tags: [...new Set(tags)],
     matchReasons,
+    ...extra,
   };
 }
 
-export function classifyProduct(title, description = "", rules) {
-  const titleText = stripHtml(title);
-  const descriptionText = stripHtml(description);
+function stripNoiseDurationText(text, noiseTerms = []) {
+  let output = text;
+  for (const term of noiseTerms) {
+    output = output.split(term.toLowerCase()).join(" ");
+  }
+  return output.replace(/\s+/g, " ").trim();
+}
+
+function matchGrokDuration(text, durationTerms = {}) {
+  const ordered = [
+    ["m3", durationTerms.m3 || []],
+    ["m2", durationTerms.m2 || []],
+    ["m1", durationTerms.m1 || []],
+  ];
+
+  for (const [subtype, terms] of ordered) {
+    const matches = matchedTerms(text, terms);
+    if (matches.length > 0) {
+      return {
+        subtype,
+        durationDays: subtype === "m1" ? 30 : subtype === "m2" ? 60 : 90,
+        durationLabel: subtype === "m1" ? "1M" : subtype === "m2" ? "2M" : "3M",
+        matches,
+      };
+    }
+  }
+
+  const monthMatch = text.match(/(\d+)\s*(?:个\s*)?月/);
+  if (monthMatch) {
+    const months = Number(monthMatch[1]);
+    if (months === 1) return { subtype: "m1", durationDays: 30, durationLabel: "1M", matches: [monthMatch[0]] };
+    if (months === 2) return { subtype: "m2", durationDays: 60, durationLabel: "2M", matches: [monthMatch[0]] };
+    if (months === 3) return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches: [monthMatch[0]] };
+    if (Number.isFinite(months) && months > 0) {
+      return { subtype: "others", durationDays: months * 30, durationLabel: months + "M", matches: [monthMatch[0]] };
+    }
+  }
+
+  const dayMatch = text.match(/(\d+)\s*天/);
+  if (dayMatch) {
+    const days = Number(dayMatch[1]);
+    if (days === 30) return { subtype: "m1", durationDays: 30, durationLabel: "1M", matches: [dayMatch[0]] };
+    if (days === 60) return { subtype: "m2", durationDays: 60, durationLabel: "2M", matches: [dayMatch[0]] };
+    if (days === 90) return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches: [dayMatch[0]] };
+    if (Number.isFinite(days) && days > 0) {
+      return { subtype: "others", durationDays: days, durationLabel: days + "D", matches: [dayMatch[0]] };
+    }
+  }
+
+  return { subtype: "others", durationDays: null, durationLabel: "Others", matches: [] };
+}
+
+function classifyGrokProduct(titleText, descriptionText, rules) {
+  const titleOnly = titleText.toLowerCase();
+  const combined = `${titleText} ${descriptionText}`.toLowerCase();
+  const exclusionMatches = matchedTerms(combined, rules.grokExclusionTerms || []);
+  if (exclusionMatches.length > 0) {
+    return buildResult(
+      "other",
+      "unknown",
+      0,
+      [],
+      exclusionMatches.slice(0, 2).map((term) => `命中Grok排除词: ${term}`),
+    );
+  }
+
+  const anchorMatches = matchedTerms(combined, rules.grokAnchorTerms || []);
+  if (anchorMatches.length === 0) {
+    return buildResult("other", "unknown", 0, [], []);
+  }
+
+  const cleanedTitle = stripNoiseDurationText(titleOnly, rules.grokNoiseDurationTerms || []);
+  const cleanedCombined = stripNoiseDurationText(combined, rules.grokNoiseDurationTerms || []);
+  const titleDuration = matchGrokDuration(cleanedTitle, rules.grokDurationTerms || {});
+  const duration = titleDuration.matches.length > 0
+    ? titleDuration
+    : matchGrokDuration(cleanedCombined, rules.grokDurationTerms || {});
+
+  const reasons = [
+    ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
+    ...duration.matches.slice(0, 2).map((term) => `命中时长: ${term}`),
+  ];
+
+  return buildResult(
+    "grok",
+    duration.subtype,
+    duration.matches.length > 0 ? 0.9 : 0.75,
+    ["grok", duration.subtype],
+    reasons,
+    {
+      durationDays: duration.durationDays,
+      durationLabel: duration.durationLabel,
+    },
+  );
+}
+
+function classifyCodexProduct(titleText, descriptionText, rules) {
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   const titleOnly = titleText.toLowerCase();
   const subtypeCombined = stripPlusUpgradeContext(combined);
@@ -143,8 +239,6 @@ export function classifyProduct(title, description = "", rules) {
   }
 
   if (anchorMatches.length > 0 || freeTitleHintMatch) {
-    // 明确的接码服务商品优先于 free/plus/pro 套餐词，
-    // 避免 "plus/free短效接码专用" 被误判成账号套餐。
     if (isSmsServiceProduct(titleOnly, smsMatches, accountStateMatches)) {
       return buildResult(
         "sms",
@@ -186,6 +280,22 @@ export function classifyProduct(title, description = "", rules) {
   return buildResult("other", "unknown", 0, [], []);
 }
 
+export function classifyProduct(title, description = "", rules) {
+  const titleText = stripHtml(title);
+  const descriptionText = stripHtml(description);
+  const combined = `${titleText} ${descriptionText}`.toLowerCase();
+  const grokAnchorMatches = matchedTerms(combined, rules.grokAnchorTerms || []);
+  const codexAnchorMatches = matchedTerms(combined, rules.anchorTerms || []);
+
+  if (grokAnchorMatches.length > 0) {
+    const grokResult = classifyGrokProduct(titleText, descriptionText, rules);
+    if (grokResult.category !== "other") return grokResult;
+    if (codexAnchorMatches.length === 0) return grokResult;
+  }
+
+  return classifyCodexProduct(titleText, descriptionText, rules);
+}
+
 function withCommonFields(raw, source, rules, fields) {
   const classification = classifyProduct(fields.title, fields.descriptionText, rules);
   if (classification.category === "other") return null;
@@ -194,11 +304,14 @@ function withCommonFields(raw, source, rules, fields) {
 
   return {
     id: `${source.id || source.name}:${fields.sourceProductId}`,
+    brand: classification.brand || (classification.category === "grok" ? "grok" : "codex"),
     category: classification.category,
     subtype: classification.subtype,
     confidence: classification.confidence,
     tags: classification.tags,
     matchReasons: classification.matchReasons,
+    durationDays: classification.durationDays ?? null,
+    durationLabel: classification.durationLabel || null,
     title: fields.title,
     price,
     currency: "CNY",

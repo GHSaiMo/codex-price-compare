@@ -9,7 +9,11 @@ const shareButton = document.querySelector("#shareButton");
 const shareOverlay = document.querySelector("#shareOverlay");
 const shareImage = document.querySelector("#shareImage");
 const shareToast = document.querySelector("#shareToast");
-const subtypeButtons = [...document.querySelectorAll("[data-subtype]")];
+const subtypeGroup = document.querySelector("#subtypeGroup");
+const modeButtons = [...document.querySelectorAll("[data-mode]")];
+const pageTitle = document.querySelector("#pageTitle");
+const brandEyebrow = document.querySelector("#brandEyebrow");
+const documentTitle = document.querySelector("#documentTitle") || document.querySelector("title");
 
 const productsUrl = document.body.dataset.productsUrl || "data/products.json";
 const metaUrl = document.body.dataset.metaUrl || "data/meta.json";
@@ -19,14 +23,49 @@ const SHARE_VISIBLE_ITEMS = 5;
 const SHARE_IMAGE_WIDTH = 390;
 const SHARE_IMAGE_HEIGHT = 844;
 const defaultSort = "price-asc";
-const visibleSubtypeValues = ["free", "plus", "pro", "codex_sms"];
+const MODE_STORAGE_KEY = "brandMode";
+const modeConfigs = {
+  codex: {
+    id: "codex",
+    label: "Codex",
+    title: "Codex 比价",
+    defaultSubtype: "plus",
+    subtypes: [
+      { id: "free", label: "Free" },
+      { id: "plus", label: "Plus" },
+      { id: "pro", label: "Pro" },
+      { id: "codex_sms", label: "SMS" },
+    ],
+  },
+  grok: {
+    id: "grok",
+    label: "Grok",
+    title: "Grok 比价",
+    defaultSubtype: "m1",
+    subtypes: [
+      { id: "m1", label: "1M" },
+      { id: "m2", label: "2M" },
+      { id: "m3", label: "3M" },
+      { id: "others", label: "Others" },
+    ],
+  },
+};
 const subtypeValuesFromUrl = new Map([
   ["free", "free"],
   ["plus", "plus"],
   ["pro", "pro"],
   ["sms", "codex_sms"],
+  ["codex_sms", "codex_sms"],
+  ["m1", "m1"],
+  ["m2", "m2"],
+  ["m3", "m3"],
+  ["others", "others"],
+  ["1m", "m1"],
+  ["2m", "m2"],
+  ["3m", "m3"],
 ]);
 const urlStateKeys = {
+  mode: "mode",
   subtype: "type",
   stock: "stock",
   sort: "sort",
@@ -34,7 +73,8 @@ const urlStateKeys = {
 
 let allProducts = [];
 let currentSort = defaultSort;
-let currentSubtype = "plus";
+let currentMode = "codex";
+let currentSubtype = modeConfigs.codex.defaultSubtype;
 let shareToastFrame = 0;
 let shareToastTimer = 0;
 
@@ -56,6 +96,23 @@ function stockLabel(item) {
   return "库存未知";
 }
 
+function productBrand(item) {
+  if (item.brand === "grok" || item.category === "grok") return "grok";
+  return "codex";
+}
+
+function currentModeConfig() {
+  return modeConfigs[currentMode] || modeConfigs.codex;
+}
+
+function currentSubtypeValues() {
+  return currentModeConfig().subtypes.map((item) => item.id);
+}
+
+function currentSubtypeLabel() {
+  return currentModeConfig().subtypes.find((item) => item.id === currentSubtype)?.label || currentSubtype;
+}
+
 function sortProducts(items) {
   const stockRank = { in_stock: 0, low_stock: 0, unknown: 1, out_of_stock: 2 };
   const price = (item) => (typeof item.price === "number" ? item.price : Number.POSITIVE_INFINITY);
@@ -68,8 +125,10 @@ function sortProducts(items) {
 }
 
 function filterProducts() {
+  const subtypeValues = currentSubtypeValues();
   return allProducts.filter((item) => {
-    if (!visibleSubtypeValues.includes(item.subtype)) return false;
+    if (productBrand(item) !== currentMode) return false;
+    if (!subtypeValues.includes(item.subtype)) return false;
     if (item.subtype !== currentSubtype) return false;
     if (typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE) return false;
     if (!includeOutOfStock.checked && item.stockStatus === "out_of_stock") return false;
@@ -77,12 +136,58 @@ function filterProducts() {
   });
 }
 
+function ensureSubtypeForMode() {
+  const values = currentSubtypeValues();
+  if (!values.includes(currentSubtype)) {
+    currentSubtype = currentModeConfig().defaultSubtype;
+  }
+}
+
+function renderSubtypeButtons() {
+  clearElement(subtypeGroup);
+  for (const subtype of currentModeConfig().subtypes) {
+    const button = document.createElement("button");
+    button.className = "subtype-button";
+    button.type = "button";
+    button.dataset.subtype = subtype.id;
+    button.textContent = subtype.label;
+    button.addEventListener("click", () => {
+      currentSubtype = subtype.id;
+      syncSubtypeButtons();
+      writeStateToUrl();
+      render({ animate: true });
+    });
+    subtypeGroup.appendChild(button);
+  }
+  syncSubtypeButtons();
+}
+
+function syncModeButtons() {
+  for (const button of modeButtons) {
+    const isActive = button.dataset.mode === currentMode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  }
+}
+
 function syncSubtypeButtons() {
+  const subtypeButtons = [...subtypeGroup.querySelectorAll("[data-subtype]")];
   for (const button of subtypeButtons) {
     const isActive = button.dataset.subtype === currentSubtype;
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   }
+}
+
+function syncModeChrome() {
+  const config = currentModeConfig();
+  if (pageTitle) pageTitle.textContent = config.title;
+  if (brandEyebrow) brandEyebrow.textContent = config.label;
+  if (documentTitle) documentTitle.textContent = config.title;
+  document.body.dataset.mode = currentMode;
+  try {
+    window.localStorage?.setItem(MODE_STORAGE_KEY, currentMode);
+  } catch {}
 }
 
 function syncSortButton() {
@@ -139,11 +244,22 @@ function loadImage(src) {
 
 function readStateFromUrl() {
   const params = new URLSearchParams(window.location.search);
+  const mode = params.get(urlStateKeys.mode);
   const subtype = subtypeValuesFromUrl.get(params.get(urlStateKeys.subtype));
   const stock = params.get(urlStateKeys.stock);
   const sort = params.get(urlStateKeys.sort);
 
-  if (subtype) {
+  if (mode === "codex" || mode === "grok") {
+    currentMode = mode;
+  } else {
+    try {
+      const saved = window.localStorage?.getItem(MODE_STORAGE_KEY);
+      if (saved === "codex" || saved === "grok") currentMode = saved;
+    } catch {}
+  }
+
+  ensureSubtypeForMode();
+  if (subtype && currentSubtypeValues().includes(subtype)) {
     currentSubtype = subtype;
   }
   if (stock === "all") {
@@ -166,7 +282,11 @@ function writeStateToUrl() {
 
 function createShareUrl() {
   const url = new URL(window.location.href);
-  url.searchParams.set(urlStateKeys.subtype, currentSubtype === "codex_sms" ? "sms" : currentSubtype);
+  url.searchParams.set(urlStateKeys.mode, currentMode);
+  url.searchParams.set(
+    urlStateKeys.subtype,
+    currentSubtype === "codex_sms" ? "sms" : currentSubtype,
+  );
   url.searchParams.set(urlStateKeys.stock, includeOutOfStock.checked ? "all" : "available");
   url.searchParams.set(urlStateKeys.sort, currentSort === "price-desc" ? "desc" : "asc");
   return url;
@@ -250,7 +370,8 @@ function hideShareToast() {
 
 async function createShareSnapshotImage() {
   const items = sortProducts(filterProducts());
-  const subtypeText = subtypeButtons.find((button) => button.dataset.subtype === currentSubtype)?.textContent || currentSubtype;
+  const modeConfig = currentModeConfig();
+  const subtypeText = currentSubtypeLabel();
   const qr = await createQrImage(createShareUrl());
   const scale = 2;
   const canvas = document.createElement("canvas");
@@ -275,12 +396,12 @@ async function createShareSnapshotImage() {
   ctx.textAlign = "center";
   ctx.font = "800 12px Inter, system-ui, sans-serif";
   ctx.fillStyle = accent;
-  ctx.fillText("CODEX", SHARE_IMAGE_WIDTH / 2, 50);
+  ctx.fillText(modeConfig.label.toUpperCase(), SHARE_IMAGE_WIDTH / 2, 50);
 
   ctx.textAlign = "center";
   ctx.fillStyle = text;
   ctx.font = "800 42px Inter, system-ui, sans-serif";
-  ctx.fillText("Codex 比价", SHARE_IMAGE_WIDTH / 2, 94);
+  ctx.fillText(modeConfig.title, SHARE_IMAGE_WIDTH / 2, 94);
 
   ctx.fillStyle = muted;
   ctx.font = "15px Inter, system-ui, sans-serif";
@@ -346,7 +467,7 @@ async function openShareOverlay() {
 
   try {
     image.src = await createShareSnapshotImage();
-    image.alt = "Codex 比价分享截图";
+    image.alt = `${currentModeConfig().title}分享截图`;
     hideShareToast();
     shareOverlay.hidden = false;
     requestAnimationFrame(() => {
@@ -403,7 +524,8 @@ async function loadData() {
     allProducts = Array.isArray(products.items) ? products.items : [];
 
     const time = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
-    summary.textContent = `共 ${allProducts.length} 条商品。最近刷新：${time}`;
+    const modeCount = allProducts.filter((item) => productBrand(item) === currentMode).length;
+    summary.textContent = `共 ${allProducts.length} 条商品，当前 ${currentModeConfig().label} ${modeCount} 条。最近刷新：${time}`;
     render();
   } catch (error) {
     summary.textContent = `读取数据失败：${error.message}`;
@@ -413,12 +535,27 @@ async function loadData() {
   }
 }
 
-for (const button of subtypeButtons) {
+function setMode(mode, { animate = true } = {}) {
+  if (!modeConfigs[mode] || mode === currentMode) return;
+  currentMode = mode;
+  ensureSubtypeForMode();
+  syncModeButtons();
+  syncModeChrome();
+  renderSubtypeButtons();
+  writeStateToUrl();
+  // 已有商品数据时直接重绘；同时刷新摘要中的模式计数。
+  if (allProducts.length > 0) {
+    const timeMatch = summary.textContent.match(/最近刷新：(.+)$/);
+    const time = timeMatch?.[1] || "尚未刷新";
+    const modeCount = allProducts.filter((item) => productBrand(item) === currentMode).length;
+    summary.textContent = `共 ${allProducts.length} 条商品，当前 ${currentModeConfig().label} ${modeCount} 条。最近刷新：${time}`;
+  }
+  render({ animate });
+}
+
+for (const button of modeButtons) {
   button.addEventListener("click", () => {
-    currentSubtype = button.dataset.subtype;
-    syncSubtypeButtons();
-    writeStateToUrl();
-    render({ animate: true });
+    setMode(button.dataset.mode);
   });
 }
 
@@ -455,8 +592,11 @@ window.addEventListener("keydown", (event) => {
 window.addEventListener("scroll", syncBackToTop, { passive: true });
 
 readStateFromUrl();
-syncSubtypeButtons();
+syncModeButtons();
+syncModeChrome();
+renderSubtypeButtons();
 syncSortButton();
 syncBackToTop();
+writeStateToUrl();
 loadData();
 setInterval(loadData, DATA_RELOAD_INTERVAL_MS);

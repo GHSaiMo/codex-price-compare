@@ -540,6 +540,7 @@ assert.ok(
 assert.deepEqual(
   classifyProduct("Codex接码 ( 美区 ) 单次接码", "只能用于codex登录", rules),
   {
+    brand: "codex",
     category: "sms",
     subtype: "codex_sms",
     confidence: 0.95,
@@ -660,6 +661,26 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GROK【普号|直登成品｜域名邮箱】只保首登", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("GROK【普号|直登成品｜域名邮箱】只保首登", "", rules).subtype,
+  "others",
+);
+assert.equal(
+  classifyProduct("Grok Super正规直充卡密（两个月）", "", rules).subtype,
+  "m2",
+);
+assert.equal(
+  classifyProduct("SuperGrok 一个月成品号", "", rules).subtype,
+  "m1",
+);
+assert.equal(
+  classifyProduct("Grok Super直充卡密（3个月）", "", rules).subtype,
+  "m3",
+);
+assert.equal(
+  classifyProduct("X（Twitter） Premium会员直充卡密", "", rules).category,
   "other",
 );
 assert.equal(
@@ -930,10 +951,12 @@ assert.deepEqual(
 assert.match(html, /data-products-url="data\/products\.json"/);
 assert.match(html, /包含缺货/);
 assert.doesNotMatch(html, /id="searchInput"/);
-assert.match(html, /<title>Codex 比价<\/title>/);
+assert.match(html, /Codex 比价/);
+assert.match(html, /id="documentTitle"/);
 assert.match(html, /href="assets\/logo\.svg"/);
 assert.match(html, /class="brand-logo"/);
-assert.match(html, /<h1>Codex 比价<\/h1>/);
+assert.match(html, /id="pageTitle"/);
+assert.match(html, /<h1 id="pageTitle">Codex 比价<\/h1>/);
 assert.match(html, /本站仅汇总公开商品信息供参考/);
 assert.match(html, /不代表对任何店铺或商品质量作出背书/);
 assert.match(html, /<p class="summary" id="summary">正在读取商品数据\.\.\.<\/p>/);
@@ -968,6 +991,9 @@ assert.doesNotMatch(html, /二级标签/);
 assert.doesNotMatch(html, /显示设置/);
 assert.match(html, /id="sortButton"/);
 assert.match(html, /价格升序/);
+assert.match(html, /data-mode="codex" aria-pressed="true">Codex/);
+assert.match(html, /data-mode="grok" aria-pressed="false">Grok/);
+assert.match(html, /id="subtypeGroup"/);
 assert.match(html, /data-subtype="free" aria-pressed="false">Free/);
 assert.match(html, /data-subtype="plus" aria-pressed="true">Plus/);
 assert.match(html, /data-subtype="pro" aria-pressed="false">Pro/);
@@ -993,8 +1019,14 @@ assert.match(app, /shareImage\.style\.height = `\$\{height\}px`/);
 assert.match(app, /function readStateFromUrl/);
 assert.match(app, /function writeStateToUrl/);
 assert.match(app, /function createShareUrl/);
+assert.match(app, /modeConfigs/);
+assert.match(app, /currentMode/);
+assert.match(app, /data-mode/);
+assert.match(app, /m1/);
+assert.match(app, /m2/);
+assert.match(app, /m3/);
+assert.match(app, /others/);
 assert.match(app, /\["sms", "codex_sms"\]/);
-assert.doesNotMatch(app, /\["codex_sms", "codex_sms"\]/);
 assert.match(app, /currentSubtype === "codex_sms" \? "sms" : currentSubtype/);
 assert.match(app, /function createQrImage/);
 assert.match(app, /qrcode/);
@@ -1021,13 +1053,14 @@ assert.doesNotMatch(app, /sortSelect/);
 assert.match(app, /card\.append\(title, source, stock, price\)/);
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);
-assert.match(app, /currentSubtype = "plus"/);
+assert.match(app, /defaultSubtype: "plus"/);
+assert.match(app, /currentSubtype = modeConfigs.codex.defaultSubtype/);
 assert.match(app, /syncSubtypeButtons/);
 assert.match(app, /syncSortButton/);
 assert.doesNotMatch(app, /selectedSubtypes/);
 assert.doesNotMatch(app, /setSubtypeSelection/);
 assert.doesNotMatch(app, /hasExactSubtypeSelection/);
-assert.match(app, /visibleSubtypeValues/);
+assert.match(app, /currentSubtypeValues/);
 assert.match(app, /MAX_VISIBLE_PRICE/);
 assert.match(app, /item\.price >= MAX_VISIBLE_PRICE/);
 assert.doesNotMatch(app, /themeToggle/);

@@ -250,11 +250,14 @@ export function mergeProductsWithStaleSourceItems({
       const classification = classifyProduct(item.title, item.descriptionText, rules);
       return {
         ...item,
+        brand: classification.brand || (classification.category === "grok" ? "grok" : "codex"),
         category: classification.category,
         subtype: classification.subtype,
         confidence: classification.confidence,
         tags: classification.tags,
         matchReasons: classification.matchReasons,
+        durationDays: classification.durationDays ?? null,
+        durationLabel: classification.durationLabel || null,
       };
     })
     .filter((item) => !rules || item.category !== "other");
@@ -496,9 +499,32 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
   const sortedItems = sortProductsForDisplay(mergedItems);
   const products = {
     generatedAt,
+    brands: [
+      {
+        id: "codex",
+        name: "Codex",
+        subtypes: [
+          { id: "free", label: "Free" },
+          { id: "plus", label: "Plus" },
+          { id: "pro", label: "Pro" },
+          { id: "codex_sms", label: "SMS" },
+        ],
+      },
+      {
+        id: "grok",
+        name: "Grok",
+        subtypes: [
+          { id: "m1", label: "1M" },
+          { id: "m2", label: "2M" },
+          { id: "m3", label: "3M" },
+          { id: "others", label: "Others" },
+        ],
+      },
+    ],
     categories: [
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
+      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["m1", "m2", "m3", "others"] },
     ],
     items: sortedItems,
   };

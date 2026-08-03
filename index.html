@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Codex 比价</title>
+    <title id="documentTitle">Codex 比价</title>
     <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
   </head>
@@ -18,10 +18,10 @@
             <div>
               <div class="brand-kicker">
                 <img class="brand-logo" src="assets/logo.svg" alt="">
-                <p class="eyebrow">Codex</p>
+                <p class="eyebrow" id="brandEyebrow">Codex</p>
               </div>
               <div class="title-row">
-                <h1>Codex 比价</h1>
+                <h1 id="pageTitle">Codex 比价</h1>
                 <div class="header-tools">
                   <button class="theme-toggle icon-button" id="themeToggle" type="button" aria-label="切换黑色和淡色系" aria-pressed="false" title="切换黑色和淡色系">
                     <svg class="theme-icon theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
@@ -60,8 +60,14 @@
 
       <section class="toolbar" aria-label="商品筛选">
         <div class="content-column filter-panel">
+          <div class="toolbar-row toolbar-row-mode">
+            <fieldset class="mode-group" aria-label="品牌模式">
+              <button class="mode-button is-active" type="button" data-mode="codex" aria-pressed="true">Codex</button>
+              <button class="mode-button" type="button" data-mode="grok" aria-pressed="false">Grok</button>
+            </fieldset>
+          </div>
           <div class="toolbar-row toolbar-row-filters">
-            <fieldset class="subtype-group" aria-label="商品类型">
+            <fieldset class="subtype-group" id="subtypeGroup" aria-label="商品类型">
               <button class="subtype-button" type="button" data-subtype="free" aria-pressed="false">Free</button>
               <button class="subtype-button is-active" type="button" data-subtype="plus" aria-pressed="true">Plus</button>
               <button class="subtype-button" type="button" data-subtype="pro" aria-pressed="false">Pro</button>
