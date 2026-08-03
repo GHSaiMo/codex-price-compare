@@ -1212,6 +1212,7 @@ assert.match(server, /createStaticServer\("index\.html"/);
 assert.match(server, /createStaticServer\("admin\.html"/);
 assert.match(server, /function isAdminStaticPath/);
 assert.match(server, /!isAdminStaticPath\(pathname\)/);
+assert.match(server, /"\/source-sort\.js"/);
 assert.match(server, /POST/);
 assert.match(server, /knownAdapters/);
 assert.match(server, /DEFAULT_REFRESH_INTERVAL_MS/);

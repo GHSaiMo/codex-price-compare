@@ -8,7 +8,7 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/echo_dream",
       "token": "echo_dream",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-pay-ldxp-cn-j2fbuhez",
@@ -26,7 +26,7 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/6Q8DVZ9B",
       "token": "6Q8DVZ9B",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-lanyy",
@@ -68,7 +68,7 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/catcoder",
       "token": "catcoder",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-ai-yuantou",
@@ -135,7 +135,7 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/VUOJQOHY",
       "token": "VUOJQOHY",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-doghubx",
@@ -144,7 +144,7 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/JBJJWNA5",
       "token": "JBJJWNA5",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-akkkk",
@@ -274,7 +274,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/ZXC",
-      "token": "ZXC"
+      "token": "ZXC",
+      "core": true
     },
     {
       "id": "acg-ai-buy",
@@ -289,7 +290,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/GGBoy",
-      "token": "GGBoy"
+      "token": "GGBoy",
+      "core": true
     },
     {
       "id": "ldxp-t7q1v995",
@@ -313,7 +315,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/qihangai",
-      "token": "qihangai"
+      "token": "qihangai",
+      "core": true
     },
     {
       "id": "ldxp-catfk-4kviporq",

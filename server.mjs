@@ -70,6 +70,7 @@ function isAdminStaticPath(pathname) {
     "/",
     "/admin.html",
     "/admin.js",
+    "/source-sort.js",
     "/styles.css",
     "/assets/logo.svg",
     "/data/products.json",
