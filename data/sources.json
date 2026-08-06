@@ -2,6 +2,70 @@
   "version": 1,
   "sources": [
     {
+      "id": "ldxp-catfk-n379roc0",
+      "name": "艾蜜莉",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://catfk.com/shop/N379ROC0",
+      "token": "N379ROC0"
+    },
+    {
+      "id": "ldxp-aileader",
+      "name": "AI 源头渠道",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/Aileader",
+      "token": "Aileader"
+    },
+    {
+      "id": "ldxp-ai1998",
+      "name": "ai1998",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/ai1998",
+      "token": "ai1998"
+    },
+    {
+      "id": "ldxp-pay-ldxp-cn-c8j9tmgv",
+      "name": "AI成品",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/C8J9TMGV",
+      "token": "C8J9TMGV"
+    },
+    {
+      "id": "ldxp-catfk-2vjuoect",
+      "name": "AI大本营",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://catfk.com/shop/2VJUOECT",
+      "token": "2VJUOECT"
+    },
+    {
+      "id": "ldxp-scd",
+      "name": "AI生产队",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/scd",
+      "token": "scd"
+    },
+    {
+      "id": "ldxp-haoai",
+      "name": "Ai小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/haoai",
+      "token": "haoai"
+    },
+    {
+      "id": "ldxp-aishop86",
+      "name": "AI小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/aishop86",
+      "token": "aishop86"
+    },
+    {
       "id": "ldxp-ai-shop",
       "name": "AI小铺",
       "adapter": "ldxp",
@@ -11,55 +75,20 @@
       "core": false
     },
     {
-      "id": "ldxp-pay-ldxp-cn-j2fbuhez",
-      "name": "小喵AI低价源头",
+      "id": "ldxp-z7krwfir",
+      "name": "AI最严厉的父亲",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/J2FBUHEZ",
-      "token": "J2FBUHEZ",
-      "core": true
+      "url": "https://pay.ldxp.cn/shop/Z7KRWFIR",
+      "token": "Z7KRWFIR"
     },
     {
-      "id": "ldxp-shenqibaobei",
-      "name": "神奇宝贝",
+      "id": "ldxp-akkkk",
+      "name": "Akkkk",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/6Q8DVZ9B",
-      "token": "6Q8DVZ9B",
-      "core": false
-    },
-    {
-      "id": "ldxp-lanyy",
-      "name": "懒羊羊AI",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/lanyy",
-      "token": "lanyy",
-      "core": false
-    },
-    {
-      "id": "ldxp-shangjia696",
-      "name": "商家696",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/Kegan04",
-      "token": "Kegan04"
-    },
-    {
-      "id": "ldxp-rick",
-      "name": "Rick的杂货铺",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/rick",
-      "token": "rick"
-    },
-    {
-      "id": "ldxp-kaopu-ai",
-      "name": "靠谱 AI",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/1I2Y9GEC",
-      "token": "1I2Y9GEC"
+      "url": "https://pay.ldxp.cn/shop/1PTC0Z1B",
+      "token": "1PTC0Z1B"
     },
     {
       "id": "ldxp-catcoder",
@@ -68,6 +97,23 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/catcoder",
       "token": "catcoder",
+      "core": false
+    },
+    {
+      "id": "ldxp-t7q1v995",
+      "name": "地平线AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/T7Q1V995",
+      "token": "T7Q1V995"
+    },
+    {
+      "id": "ldxp-doghubx",
+      "name": "doghubx",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/JBJJWNA5",
+      "token": "JBJJWNA5",
       "core": false
     },
     {
@@ -80,209 +126,12 @@
       "core": true
     },
     {
-      "id": "ldxp-maomao-ai",
-      "name": "毛毛AI货源",
+      "id": "ldxp-ljmzqqh3",
+      "name": "咕咕咕",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/9S9N5V82",
-      "token": "9S9N5V82",
-      "core": true
-    },
-    {
-      "id": "ldxp-hug-ai",
-      "name": "Hug AI",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/4UOATQTU",
-      "token": "4UOATQTU"
-    },
-    {
-      "id": "ldxp-ai1998",
-      "name": "ai1998",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/ai1998",
-      "token": "ai1998"
-    },
-    {
-      "id": "ldxp-yoloo",
-      "name": "yoloo的小店",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/haozi719",
-      "token": "haozi719"
-    },
-    {
-      "id": "ldxp-yuanzhu-ai",
-      "name": "元筑AI",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/laoyang",
-      "token": "laoyang"
-    },
-    {
-      "id": "ldxp-zhegetinghao",
-      "name": "这个挺好",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/ULT21PVZ",
-      "token": "ULT21PVZ"
-    },
-    {
-      "id": "ldxp-xiaojiu",
-      "name": "小久",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/VUOJQOHY",
-      "token": "VUOJQOHY",
-      "core": false
-    },
-    {
-      "id": "ldxp-doghubx",
-      "name": "doghubx",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/JBJJWNA5",
-      "token": "JBJJWNA5",
-      "core": false
-    },
-    {
-      "id": "ldxp-akkkk",
-      "name": "Akkkk",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/1PTC0Z1B",
-      "token": "1PTC0Z1B"
-    },
-    {
-      "id": "ldxp-niuniushop",
-      "name": "牛牛ai专卖店",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/niuniushop",
-      "token": "niuniushop"
-    },
-    {
-      "id": "ldxp-gpt-chengpin",
-      "name": "gpt成品",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/6YEJH8PE",
-      "token": "6YEJH8PE"
-    },
-    {
-      "id": "ldxp-longteng",
-      "name": "龙腾专卖店",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/DEQLOPDB",
-      "token": "DEQLOPDB"
-    },
-    {
-      "id": "ldxp-z7krwfir",
-      "name": "AI最严厉的父亲",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/Z7KRWFIR",
-      "token": "Z7KRWFIR"
-    },
-    {
-      "id": "ldxp-haoai",
-      "name": "Ai小店",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/haoai",
-      "token": "haoai"
-    },
-    {
-      "id": "ldxp-pay-ldxp-cn-c8j9tmgv",
-      "name": "AI成品",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/C8J9TMGV",
-      "token": "C8J9TMGV"
-    },
-    {
-      "id": "dujiao-gmail91",
-      "name": "91的小店",
-      "adapter": "dujiao",
-      "enabled": true,
-      "url": "https://gmail91.shop/"
-    },
-    {
-      "id": "acg-mika",
-      "name": "米卡店铺",
-      "adapter": "acg",
-      "enabled": true,
-      "url": "https://buy.aishopstore.com/"
-    },
-    {
-      "id": "acg-aisou",
-      "name": "Aisou智充",
-      "adapter": "acg",
-      "enabled": true,
-      "url": "https://aisou.pro/"
-    },
-    {
-      "id": "dujiao-nexakey",
-      "name": "NexaKey",
-      "adapter": "dujiao",
-      "enabled": true,
-      "url": "https://kelaode.vip/",
-      "apiBase": "https://api.kelaode.vip/"
-    },
-    {
-      "id": "dujiao-mufeng",
-      "name": "沐风小铺",
-      "adapter": "dujiao",
-      "enabled": true,
-      "url": "https://shop.mfttai.com/"
-    },
-    {
-      "id": "dujiao-spark-zone",
-      "name": "Spark-zone",
-      "adapter": "dujiao",
-      "enabled": true,
-      "url": "https://spark-zone.org/"
-    },
-    {
-      "id": "dujiao-ac-card",
-      "name": "丁丁卡网",
-      "adapter": "dujiao",
-      "enabled": true,
-      "url": "https://ac-card.org/"
-    },
-    {
-      "id": "ldxp-scd",
-      "name": "AI生产队",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/scd",
-      "token": "scd"
-    },
-    {
-      "id": "ldxp-tpswg4x0",
-      "name": "账号制造者",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/TPSWG4X0",
-      "token": "TPSWG4X0"
-    },
-    {
-      "id": "ldxp-zxc",
-      "name": "自行车 Ai 店铺",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/ZXC",
-      "token": "ZXC",
-      "core": true
-    },
-    {
-      "id": "acg-ai-buy",
-      "name": "聊聊AI",
-      "adapter": "acg",
-      "enabled": true,
-      "url": "https://ai-buy.vip/"
+      "url": "https://pay.ldxp.cn/shop/LJMZQQH3",
+      "token": "LJMZQQH3"
     },
     {
       "id": "ldxp-ggboy",
@@ -294,20 +143,62 @@
       "core": true
     },
     {
-      "id": "ldxp-t7q1v995",
-      "name": "地平线AI",
+      "id": "ldxp-gpt-chengpin",
+      "name": "gpt成品",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/T7Q1V995",
-      "token": "T7Q1V995"
+      "url": "https://pay.ldxp.cn/shop/6YEJH8PE",
+      "token": "6YEJH8PE"
     },
     {
-      "id": "ldxp-aishop86",
-      "name": "AI小店",
+      "id": "ldxp-hug-ai",
+      "name": "Hug AI",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/aishop86",
-      "token": "aishop86"
+      "url": "https://pay.ldxp.cn/shop/4UOATQTU",
+      "token": "4UOATQTU"
+    },
+    {
+      "id": "ldxp-kaopu-ai",
+      "name": "靠谱 AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/1I2Y9GEC",
+      "token": "1I2Y9GEC"
+    },
+    {
+      "id": "ldxp-lanyy",
+      "name": "懒羊羊AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/lanyy",
+      "token": "lanyy",
+      "core": false
+    },
+    {
+      "id": "ldxp-longteng",
+      "name": "龙腾专卖店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/DEQLOPDB",
+      "token": "DEQLOPDB"
+    },
+    {
+      "id": "ldxp-maomao-ai",
+      "name": "毛毛AI货源",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/9S9N5V82",
+      "token": "9S9N5V82",
+      "core": true
+    },
+    {
+      "id": "ldxp-niuniushop",
+      "name": "牛牛ai专卖店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/niuniushop",
+      "token": "niuniushop"
     },
     {
       "id": "ldxp-qihangai",
@@ -319,6 +210,14 @@
       "core": true
     },
     {
+      "id": "ldxp-rick",
+      "name": "Rick的杂货铺",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/rick",
+      "token": "rick"
+    },
+    {
       "id": "ldxp-catfk-4kviporq",
       "name": "山姆AI",
       "adapter": "ldxp",
@@ -327,28 +226,137 @@
       "token": "4KVIPORQ"
     },
     {
-      "id": "ldxp-catfk-2vjuoect",
-      "name": "AI大本营",
+      "id": "ldxp-shangjia696",
+      "name": "商家696",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://catfk.com/shop/2VJUOECT",
-      "token": "2VJUOECT"
+      "url": "https://pay.ldxp.cn/shop/Kegan04",
+      "token": "Kegan04"
     },
     {
-      "id": "ldxp-ljmzqqh3",
-      "name": "咕咕咕",
+      "id": "ldxp-shenqibaobei",
+      "name": "神奇宝贝",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/LJMZQQH3",
-      "token": "LJMZQQH3"
+      "url": "https://pay.ldxp.cn/shop/6Q8DVZ9B",
+      "token": "6Q8DVZ9B",
+      "core": false
     },
     {
-      "id": "ldxp-catfk-n379roc0",
-      "name": "艾蜜莉",
+      "id": "ldxp-xiaojiu",
+      "name": "小久",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://catfk.com/shop/N379ROC0",
-      "token": "N379ROC0"
+      "url": "https://pay.ldxp.cn/shop/VUOJQOHY",
+      "token": "VUOJQOHY",
+      "core": false
+    },
+    {
+      "id": "ldxp-pay-ldxp-cn-j2fbuhez",
+      "name": "小喵AI低价源头",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/J2FBUHEZ",
+      "token": "J2FBUHEZ",
+      "core": true
+    },
+    {
+      "id": "ldxp-yuanzhu-ai",
+      "name": "元筑AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/laoyang",
+      "token": "laoyang"
+    },
+    {
+      "id": "ldxp-yoloo",
+      "name": "yoloo的小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/haozi719",
+      "token": "haozi719"
+    },
+    {
+      "id": "ldxp-tpswg4x0",
+      "name": "账号制造者",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/TPSWG4X0",
+      "token": "TPSWG4X0"
+    },
+    {
+      "id": "ldxp-zhegetinghao",
+      "name": "这个挺好",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/ULT21PVZ",
+      "token": "ULT21PVZ"
+    },
+    {
+      "id": "ldxp-zxc",
+      "name": "自行车 Ai 店铺",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/ZXC",
+      "token": "ZXC",
+      "core": true
+    },
+    {
+      "id": "acg-aisou",
+      "name": "Aisou智充",
+      "adapter": "acg",
+      "enabled": true,
+      "url": "https://aisou.pro/"
+    },
+    {
+      "id": "acg-ai-buy",
+      "name": "聊聊AI",
+      "adapter": "acg",
+      "enabled": true,
+      "url": "https://ai-buy.vip/"
+    },
+    {
+      "id": "acg-mika",
+      "name": "米卡店铺",
+      "adapter": "acg",
+      "enabled": true,
+      "url": "https://buy.aishopstore.com/"
+    },
+    {
+      "id": "dujiao-gmail91",
+      "name": "91的小店",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://gmail91.shop/"
+    },
+    {
+      "id": "dujiao-ac-card",
+      "name": "丁丁卡网",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://ac-card.org/"
+    },
+    {
+      "id": "dujiao-mufeng",
+      "name": "沐风小铺",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://shop.mfttai.com/"
+    },
+    {
+      "id": "dujiao-nexakey",
+      "name": "NexaKey",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://kelaode.vip/",
+      "apiBase": "https://api.kelaode.vip/"
+    },
+    {
+      "id": "dujiao-spark-zone",
+      "name": "Spark-zone",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://spark-zone.org/"
     }
   ]
 }
