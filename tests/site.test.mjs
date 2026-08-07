@@ -766,6 +766,14 @@ assert.equal(
   "other",
 );
 assert.equal(
+  classifyProduct("【请看店铺公告】Bug Team 没被封就能一直用 240+的额度", "转换网址 http://xgrok.xdo.icu:18363/", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("Bug Team 没被封就能一直用", "GROK 描述里写了也没用", rules).category,
+  "other",
+);
+assert.equal(
   classifyProduct("X（Twitter） Premium会员直充卡密", "", rules).category,
   "other",
 );
@@ -961,6 +969,40 @@ assert.equal(
   "other",
 );
 assert.equal(
+  classifyProduct("VISA 0 刀虚拟卡 485954 卡密有效期2个小时kiro别拍拍错不退", "不保证绑GPT不会被拒卡", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("0.1x 倍率Codex官方中转API 10美元=100美元", "Codex官方中转API 纯Plus号池0.1x倍率", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("0.1x 倍率 Codex官方中转API 50美元=500美元额度", "", rules).category,
+  "other",
+);
+assert.equal(
+  normalizeLdxpProduct({
+    goods_key: "xa9hn6",
+    name: "VISA 0 刀虚拟卡 485954 卡密有效期2个小时kiro别拍拍错不退",
+    description: "不保证绑GPT不会被拒卡，这与个人手法有关",
+    price: "9.90",
+    extend: { stock_count: "12" },
+    link: "/item/xa9hn6",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+  null,
+);
+assert.equal(
+  normalizeLdxpProduct({
+    goods_key: "bgakju",
+    name: "0.1x 倍率Codex官方中转API 10美元=100美元",
+    description: "Codex官方中转API 纯Plus号池0.1x倍率",
+    price: "10.00",
+    extend: { stock_count: "5" },
+    link: "/item/bgakju",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+  null,
+);
+assert.equal(
   normalizeLdxpProduct({
     goods_key: "e16fey",
     name: "GPT PLUS 镜像站(天卡)",
@@ -1150,11 +1192,13 @@ assert.match(app, /data-mode/);
 assert.match(app, /m12/);
 assert.match(app, /m3/);
 assert.match(app, /y1/);
-assert.match(app, /1-2M/);
+assert.match(app, /1M/);
 assert.match(app, /1Y/);
-assert.match(app, /defaultSubtype: "m3"/);
+assert.match(app, /defaultSubtype: "m12"/);
+assert.match(app, /切换品牌时回到该模式默认标签/);
 assert.match(app, /\["sms", "codex_sms"\]/);
-assert.match(app, /currentSubtype === "codex_sms" \? "sms" : currentSubtype/);
+assert.match(app, /currentSubtype === "m12" \? "m1" : currentSubtype/);
+assert.match(app, /\["m1", "m12"\]/);
 assert.match(app, /function createQrImage/);
 assert.match(app, /qrcode/);
 assert.match(app, /createShareUrl\(\)/);

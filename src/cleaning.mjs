@@ -20,8 +20,13 @@ export function stripHtml(value) {
 
 function includesTerm(haystack, term) {
   const normalizedTerm = term.toLowerCase();
+  // go 需要完整词边界，避免 google / good 误命中。
   if (normalizedTerm === "go") {
     return /(^|[^a-z0-9])go(?=$|[^a-z0-9])/.test(haystack);
+  }
+  // grok 只限制左侧边界，避免 xgrok 域名误命中，同时保留 grok4.5 这类标题。
+  if (normalizedTerm === "grok") {
+    return /(^|[^a-z0-9])grok/.test(haystack);
   }
   return haystack.includes(normalizedTerm);
 }
@@ -132,7 +137,7 @@ function stripNoiseDurationText(text, noiseTerms = []) {
 
 function durationMeta(subtype, matches = []) {
   if (subtype === "m12") {
-    return { subtype, durationDays: 30, durationLabel: "1-2M", matches };
+    return { subtype, durationDays: 30, durationLabel: "1M", matches };
   }
   if (subtype === "m3") {
     return { subtype, durationDays: 90, durationLabel: "3M", matches };
@@ -205,7 +210,8 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
     );
   }
 
-  const anchorMatches = matchedTerms(combined, rules.grokAnchorTerms || []);
+  // 标题未出现 Grok 锚点时直接忽略，避免描述里的 xgrok 域名等误归类。
+  const anchorMatches = matchedTerms(titleOnly, rules.grokAnchorTerms || []);
   if (anchorMatches.length === 0) {
     return buildResult("other", "unknown", 0, [], []);
   }
@@ -365,8 +371,10 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
 export function classifyProduct(title, description = "", rules) {
   const titleText = stripHtml(title);
   const descriptionText = stripHtml(description);
+  const titleOnly = titleText.toLowerCase();
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
-  const grokAnchorMatches = matchedTerms(combined, rules.grokAnchorTerms || []);
+  // Grok 只看标题锚点，防止描述链接/域名把无关商品拉进 Grok。
+  const grokAnchorMatches = matchedTerms(titleOnly, rules.grokAnchorTerms || []);
   const codexAnchorMatches = matchedTerms(combined, rules.anchorTerms || []);
 
   if (grokAnchorMatches.length > 0) {

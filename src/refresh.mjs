@@ -527,7 +527,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Grok",
         subtypes: [
           { id: "free", label: "Free" },
-          { id: "m12", label: "1-2M" },
+          { id: "m12", label: "1M" },
           { id: "m3", label: "3M" },
           { id: "y1", label: "1Y" },
         ],

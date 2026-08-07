@@ -53,10 +53,10 @@ const modeConfigs = {
     id: "grok",
     label: "Grok",
     title: "Grok 比价",
-    defaultSubtype: "m3",
+    defaultSubtype: "m12",
     subtypes: [
       { id: "free", label: "Free" },
-      { id: "m12", label: "1-2M" },
+      { id: "m12", label: "1M" },
       { id: "m3", label: "3M" },
       { id: "y1", label: "1Y" },
     ],
@@ -323,7 +323,9 @@ function createShareUrl() {
   url.searchParams.set(urlStateKeys.mode, currentMode);
   url.searchParams.set(
     urlStateKeys.subtype,
-    currentSubtype === "codex_sms" ? "sms" : currentSubtype,
+    currentSubtype === "codex_sms"
+      ? "sms"
+      : (currentSubtype === "m12" ? "m1" : currentSubtype),
   );
   url.searchParams.set(urlStateKeys.stock, includeOutOfStock.checked ? "all" : "available");
   url.searchParams.set(urlStateKeys.sort, currentSort === "price-desc" ? "desc" : "asc");
@@ -611,7 +613,8 @@ async function loadData() {
 function setMode(mode, { animate = true } = {}) {
   if (!modeConfigs[mode] || mode === currentMode) return;
   currentMode = mode;
-  ensureSubtypeForMode();
+  // 切换品牌时回到该模式默认标签，例如 Grok 默认 1M。
+  currentSubtype = currentModeConfig().defaultSubtype;
   syncModeButtons();
   syncModeChrome();
   renderSubtypeButtons();
