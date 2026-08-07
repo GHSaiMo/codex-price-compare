@@ -85,7 +85,16 @@ function hasSmsNegation(text) {
 }
 
 function hasStrongSmsServiceSignal(text) {
-  return /(?:短效|长效|单次)?接码专用|短效接码|短效码|单次接码|接码成功率|质保接码成功|包接到|codex接码|手机接码|接手机验证码|【接码】/.test(text);
+  return /(?:短效|长效|单次)?接码专用|短效接码|长效接码|短效码|单次接码|接码成功率|质保接码成功|质保不来码|包接到|codex接码|手机接码|接手机验证码|【接码】|(?:plus|puls|pro|free)接码/.test(text);
+}
+
+function isFinishedAccountSmsMention(text) {
+  // Plus/Free 成品号会写“美区长效接码/已使用...接码”，这是账号卖点而不是接码服务本身。
+  return (
+    /已使用.{0,12}(?:长效|短效|单次)?接码/.test(text)
+    || /(?:成品|直卡|现货|账号注册|谷歌账号|google\s*账号).{0,24}(?:长效|短效|单次)?接码/.test(text)
+    || /(?:长效|短效|单次)?接码.{0,24}(?:成品|直卡|现货|账号注册|谷歌账号|google\s*账号)/.test(text)
+  ) && !/(?:质保不来码|注册通用|接码专用|单次接码|短效码|包接到|质保接码成功|接码成功率)/.test(text);
 }
 
 function isSmsServiceProduct(titleOnly, smsMatches, accountStateMatches) {
@@ -94,6 +103,7 @@ function isSmsServiceProduct(titleOnly, smsMatches, accountStateMatches) {
     && accountStateMatches.length === 0
     && !hasSmsNegation(titleOnly)
     && hasStrongSmsServiceSignal(titleOnly)
+    && !isFinishedAccountSmsMention(titleOnly)
   );
 }
 

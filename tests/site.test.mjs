@@ -568,6 +568,54 @@ assert.equal(
   "codex_sms",
 );
 assert.equal(
+  classifyProduct("【请看店铺公告】美国长效接码codex 注册通用🔥1-10天【质保不来码】PLUS", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("【请看店铺公告】美国长效接码codex 注册通用🔥1-10天【质保不来码】PLUS", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("美国实卡长效接码codex绑定注册通用🔥20-30天【质保不来码】PLUS接码codex接码", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接码 | 谷歌账号家宽IP注册", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接码 | 谷歌账号家宽IP注册", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("谷歌账号注册的ChatGPT Plus｜已使用美区实卡长效接码 （后期随时用）", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("plus pro邀请额度增加 自行使用卖出无售后", "卡密激活 plus和pro额度增加 邀请 自行使用 自行确认自己账号邀请是否有资格 如果自己codex页面不显示邀请获取多少奖励就是0", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("ChatGPT Plus 邀请额度", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("gmail 短效谷歌 接码邮箱（GPT注册专用）", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("Gmail 接码 （两次码|OpenAI业务|看清楚商品说明）", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("谷歌接码邮箱（GPT注册专用）", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("Pro 邀请资格 自行使用卖出无售后", "codex 邀请额度增加", rules).category,
+  "other",
+);
+assert.equal(
   classifyProduct("【美区30天T-Mobile实体卡】", "ChatGPT接码，期限内可无限次接码", rules).category,
   "sms",
 );

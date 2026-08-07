@@ -188,9 +188,9 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 - `smsServiceTerms`：识别接码服务的关键词。
 - `accountStateTerms`：识别账号状态的关键词，例如“已接码”“接过码”。
 - `subtypeTerms`：识别 Codex 的 `free`、`plus`、`pro`、`api` 等二级分类关键词。
-- `titleExclusionTerms` / `exclusionTerms`：排除 kiro、中转 API、官方中转、镜像站等明显无关或第三方商品。
+- `titleExclusionTerms` / `exclusionTerms`：排除 kiro、中转 API、官方中转、镜像站、邀请额度/邀请资格、Gmail/谷歌接码邮箱等明显无关或第三方商品。
 
-分类逻辑会先判断是否命中 Grok 锚点；命中后归入 Free / 1M / 3M / 1Y；普号与短体验进 Free，1-2个月进 1M，3个月进 3M，一年进 1Y。Codex 路径会优先根据商品标题识别明确的 `free`、`plus`、`pro` 套餐词，减少接码语境造成的误判。
+分类逻辑会先判断是否命中 Grok 锚点；命中后归入 Free / 1M / 3M / 1Y；普号与短体验进 Free，1-2个月进 1M，3个月进 3M，一年进 1Y。Codex 路径会优先根据商品标题识别明确的 `free`、`plus`、`pro` 套餐词；若标题同时出现“长效接码 / 质保不来码 / PLUS接码”等接码服务强信号，则仍归入 SMS，避免把接码服务误判成套餐账号。邀请额度、邀请资格这类商品会直接排除。
 
 ### `data/products.json`
 

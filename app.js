@@ -106,6 +106,12 @@ function formatPrice(price) {
   return `¥${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
 }
 
+function displayProductTitle(title) {
+  return String(title || "")
+    .replace(/^[\[【]\s*请看店铺公告\s*[\]】]\s*/u, "")
+    .trim();
+}
+
 function stockLabel(item) {
   if (item.stockStatus === "out_of_stock") return "缺货";
   if (item.stockStatus === "low_stock") return item.stockCount == null ? "低库存" : `低库存 ${item.stockCount}`;
@@ -141,16 +147,28 @@ function sortProducts(items) {
   });
 }
 
-function filterProducts() {
+function matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock = true } = {}) {
   const subtypeValues = currentSubtypeValues();
-  return allProducts.filter((item) => {
-    if (productBrand(item) !== currentMode) return false;
-    if (!subtypeValues.includes(item.subtype)) return false;
-    if (item.subtype !== currentSubtype) return false;
-    if (typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE) return false;
-    if (!includeOutOfStock.checked && item.stockStatus === "out_of_stock") return false;
-    return true;
-  });
+  if (productBrand(item) !== currentMode) return false;
+  if (!subtypeValues.includes(item.subtype)) return false;
+  if (item.subtype !== currentSubtype) return false;
+  if (typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE) return false;
+  if (!allowOutOfStock && item.stockStatus === "out_of_stock") return false;
+  return true;
+}
+
+function filterProducts(options = {}) {
+  const allowOutOfStock = options.includeOutOfStock ?? includeOutOfStock.checked;
+  return allProducts.filter((item) => matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock }));
+}
+
+// 当前标签/模式下没有有货商品、但存在缺货商品时，自动打开“包含缺货”。
+function ensureIncludeOutOfStockFallback() {
+  if (includeOutOfStock.checked) return false;
+  if (filterProducts({ includeOutOfStock: false }).length > 0) return false;
+  if (filterProducts({ includeOutOfStock: true }).length === 0) return false;
+  includeOutOfStock.checked = true;
+  return true;
 }
 
 function ensureSubtypeForMode() {
@@ -257,7 +275,7 @@ function createProductCard(item) {
   link.href = item.url;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-  link.textContent = item.title;
+  link.textContent = displayProductTitle(item.title);
 
   title.append(link);
   card.append(title, source, stock, price);
@@ -475,7 +493,7 @@ async function createShareSnapshotImage() {
 
     ctx.fillStyle = text;
     ctx.font = "700 15px Inter, system-ui, sans-serif";
-    ctx.fillText(truncateCanvasText(ctx, item.title, 220), SHARE_ROW_X + 16, y + 27);
+    ctx.fillText(truncateCanvasText(ctx, displayProductTitle(item.title), 220), SHARE_ROW_X + 16, y + 27);
 
     ctx.fillStyle = muted;
     ctx.font = "13px Inter, system-ui, sans-serif";
@@ -571,6 +589,9 @@ function closeShareOverlay() {
 }
 
 function render({ animate = false } = {}) {
+  if (ensureIncludeOutOfStockFallback()) {
+    writeStateToUrl();
+  }
   const items = sortProducts(filterProducts());
   clearElement(productList);
   emptyState.hidden = items.length > 0;
