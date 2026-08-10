@@ -2,6 +2,14 @@
   "version": 1,
   "sources": [
     {
+      "id": "ldxp-kk1818",
+      "name": "阿k业务充值",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/kk1818",
+      "token": "kk1818"
+    },
+    {
       "id": "ldxp-catfk-n379roc0",
       "name": "艾蜜莉",
       "adapter": "ldxp",
@@ -75,6 +83,14 @@
       "core": false
     },
     {
+      "id": "ldxp-catfk-mrnf",
+      "name": "ai小铺",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://catfk.com/shop/mrnf",
+      "token": "mrnf"
+    },
+    {
       "id": "ldxp-z7krwfir",
       "name": "AI最严厉的父亲",
       "adapter": "ldxp",
@@ -117,6 +133,14 @@
       "core": false
     },
     {
+      "id": "ldxp-ft7",
+      "name": "FT",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/FT7",
+      "token": "FT7"
+    },
+    {
       "id": "ldxp-ai-yuantou",
       "name": "嘎子AI",
       "adapter": "ldxp",
@@ -132,6 +156,14 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/LJMZQQH3",
       "token": "LJMZQQH3"
+    },
+    {
+      "id": "ldxp-gg-bong",
+      "name": "GG_Bong",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/GG_Bong",
+      "token": "GG_Bong"
     },
     {
       "id": "ldxp-ggboy",
@@ -193,6 +225,14 @@
       "core": true
     },
     {
+      "id": "ldxp-f16k31u5",
+      "name": "猛哥Ai",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/F16K31U5",
+      "token": "F16K31U5"
+    },
+    {
       "id": "ldxp-niuniushop",
       "name": "牛牛ai专卖店",
       "adapter": "ldxp",
@@ -252,12 +292,12 @@
       "core": false
     },
     {
-      "id": "ldxp-pay-ldxp-cn-j2fbuhez",
-      "name": "小喵AI低价源头",
+      "id": "ldxp-rtdz8p7i",
+      "name": "小猫AI低价源头",
       "adapter": "ldxp",
       "enabled": true,
-      "url": "https://pay.ldxp.cn/shop/J2FBUHEZ",
-      "token": "J2FBUHEZ",
+      "url": "https://pay.ldxp.cn/shop/RTDZ8P7I",
+      "token": "RTDZ8P7I",
       "core": true
     },
     {
@@ -267,6 +307,14 @@
       "enabled": true,
       "url": "https://pay.ldxp.cn/shop/laoyang",
       "token": "laoyang"
+    },
+    {
+      "id": "ldxp-gv0hq2c0",
+      "name": "YaHo🐯GPT全网低价",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/GV0HQ2C0",
+      "token": "GV0HQ2C0"
     },
     {
       "id": "ldxp-yoloo",
