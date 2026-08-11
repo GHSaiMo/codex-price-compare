@@ -283,6 +283,14 @@
       "core": false
     },
     {
+      "id": "ldxp-pay-ldxp-cn-irpbfs50",
+      "name": "玩去了的AI提效工具店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/IRPBFS50",
+      "token": "IRPBFS50"
+    },
+    {
       "id": "ldxp-xiaojiu",
       "name": "小久",
       "adapter": "ldxp",
