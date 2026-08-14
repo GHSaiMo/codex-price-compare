@@ -138,17 +138,8 @@ function buildResult(category, subtype, confidence, tags, matchReasons, extra = 
 }
 
 export function refineCodexPlanSubtype(haystack, subtype, rules = {}) {
-  if (subtype === "plus") {
-    const trialMatches = matchedTerms(haystack, rules.plusTrialTerms || []);
-    if (trialMatches.length > 0) {
-      return { subtype: "plus_trial", parent: "plus", matches: trialMatches };
-    }
-    const topupMatches = matchedTerms(haystack, rules.plusTopupTerms || []);
-    if (topupMatches.length > 0) {
-      return { subtype: "plus_topup", parent: "plus", matches: topupMatches };
-    }
-    const readyMatches = matchedTerms(haystack, rules.plusReadyTerms || []);
-    return { subtype: "plus_ready", parent: "plus", matches: readyMatches };
+  if (subtype === "plus" || subtype === "plus_trial" || subtype === "plus_ready" || subtype === "plus_topup") {
+    return { subtype: "plus", parent: "plus", matches: [] };
   }
 
   if (subtype === "pro") {

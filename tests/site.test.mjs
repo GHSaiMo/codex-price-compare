@@ -595,11 +595,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接码 | 谷歌账号家宽IP注册", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("谷歌账号注册的ChatGPT Plus｜已使用美区实卡长效接码 （后期随时用）", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("plus pro邀请额度增加 自行使用卖出无售后", "卡密激活 plus和pro额度增加 邀请 自行使用 自行确认自己账号邀请是否有资格 如果自己codex页面不显示邀请获取多少奖励就是0", rules).category,
@@ -654,7 +654,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("ChatGPT Plus 成品号（看教程还不会使用的别拍）", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 for (const title of [
   "【GPT-K12充值】理论2年，可用codex，无需接码",
@@ -697,7 +697,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("plus--【codex可用】--该商品质保30天", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("ChatGPT Pro 20x 月卡 正价官方直充", "codex 额度刷新", rules).subtype,
@@ -741,7 +741,7 @@ for (const title of [
 }
 assert.equal(
   classifyProduct("ChatGPT Plus 月卡 正价官方直充", "稳定性仅次于纯Pro线路", rules).subtype,
-  "plus_topup",
+  "plus",
 );
 assert.equal(
   classifyProduct("Perplexity Pro max功能都有，破解版软件，只支持安卓系统", "ChatGPT 分类", rules).category,
@@ -908,7 +908,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("福利网页Plus号,无法反代,不能直接登录codex.如需使用自行接码", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("GPT普号|Free Plan成品✅|账密直登+RT|长效邮箱|带接码地址|适合业务", "", rules).subtype,
@@ -976,23 +976,23 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("gptplus稳定cdk成品账密（需接码质保首登）", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("GPT puls 成品号 质保首登", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("GPT半成品账号 质保首登", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("ChatGPT土区直充月卡", "", rules).subtype,
-  "plus_topup",
+  "plus",
 );
 assert.equal(
   classifyProduct("【日抛】PLUS未接码-仅网页-icloud📭（质保三小时内首登）", "ChatGPT Codex 可用", rules).subtype,
-  "plus_trial",
+  "plus",
 );
 assert.equal(
   classifyProduct("gptplus稳定cdk成品账密（需接码质保首登）", "", rules).category,
@@ -1000,11 +1000,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("可达鸭GPT 额度卡 5个号", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("可达鸭GPT 额度卡 10个号", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("gpt team【成品号json反代专用】", "", rules).subtype,
@@ -1012,11 +1012,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GPT Plus新号CDK充值（pix渠道）", "请勿使用team空间的token充值", rules).subtype,
-  "plus_topup",
+  "plus",
 );
 assert.equal(
   classifyProduct("GPt Plus 充值CDK kakao 新渠道 自动充值非成品需自备账号，自己账号有team不能冲", "", rules).subtype,
-  "plus_topup",
+  "plus",
 );
 assert.equal(
   classifyProduct("GPt Plus 充值CDK kakao 新渠道 自动充值非成品需自备账号，自己账号有team不能冲", "", rules).matchReasons.some((reason) => reason.includes("plus")),
@@ -1024,11 +1024,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GPT成品号（三天内封号换新号，30天内质保掉订阅）", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("GPT成品号（三天内封号换新号，中转可用）", "", rules).subtype,
-  "plus_ready",
+  "plus",
 );
 assert.equal(
   classifyProduct("GPT PLUS 镜像站(天卡)", "", rules).category,
@@ -1169,7 +1169,7 @@ const dujiao = normalizeDujiaoProduct(
   { name: "Spark-zone", url: "https://spark-zone.org/", adapter: "dujiao" },
   rules,
 );
-assert.equal(dujiao.subtype, "plus_topup");
+assert.equal(dujiao.subtype, "plus");
 assert.equal(dujiao.stockStatus, "low_stock");
 
 assert.deepEqual(
@@ -1228,9 +1228,7 @@ assert.match(html, /data-mode="codex" aria-pressed="true">Codex/);
 assert.match(html, /data-mode="grok" aria-pressed="false">Grok/);
 assert.match(html, /id="subtypeGroup"/);
 assert.match(html, /data-subtype="free" aria-pressed="false">Free/);
-assert.match(html, /data-subtype="plus_trial" aria-pressed="false">日抛/);
-assert.match(html, /data-subtype="plus_ready" aria-pressed="true">成品/);
-assert.match(html, /data-subtype="plus_topup" aria-pressed="false">直充/);
+assert.match(html, /data-subtype="plus" aria-pressed="true">Plus/);
 assert.match(html, /data-subtype="pro_5x" aria-pressed="false">5x/);
 assert.match(html, /data-subtype="pro_20x" aria-pressed="false">20x/);
 assert.match(html, /data-subtype="codex_sms" aria-pressed="false">SMS/);
@@ -1302,7 +1300,7 @@ assert.doesNotMatch(app, /sortSelect/);
 assert.match(app, /card\.append\(title, source, stock, price\)/);
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);
-assert.match(app, /defaultSubtype: "plus_ready"/);
+assert.match(app, /defaultSubtype: "plus"/);
 assert.match(app, /currentSubtype = modeConfigs.codex.defaultSubtype/);
 assert.match(app, /syncSubtypeButtons/);
 assert.match(app, /syncSortButton/);
@@ -1495,7 +1493,7 @@ const publicItem = toPublicProductItem({
   id: "ldxp-test:1",
   brand: "codex",
   category: "codex",
-  subtype: "plus_ready",
+  subtype: "plus",
   title: "ChatGPT Plus 成品号",
   price: 12,
   currency: "CNY",
@@ -1508,13 +1506,13 @@ const publicItem = toPublicProductItem({
   sourceAdapter: "ldxp",
   sourceCategory: "gpt",
   confidence: 0.9,
-  tags: ["plus", "plus_ready"],
+  tags: ["plus"],
   matchReasons: ["命中套餐词: plus"],
   descriptionText: "内部描述",
   raw: { goodsKey: "1" },
 });
 assert.equal(publicItem.title, "ChatGPT Plus 成品号");
-assert.equal(publicItem.subtype, "plus_ready");
+assert.equal(publicItem.subtype, "plus");
 assert.equal(Object.hasOwn(publicItem, "raw"), false);
 assert.equal(Object.hasOwn(publicItem, "descriptionText"), false);
 assert.equal(Object.hasOwn(publicItem, "matchReasons"), false);
@@ -1546,11 +1544,11 @@ assert.deepEqual(
 
 assert.deepEqual(
   refineCodexPlanSubtype("【日抛】plus 未接码", "plus", rules).subtype,
-  "plus_trial",
+  "plus",
 );
 assert.deepEqual(
   refineCodexPlanSubtype("chatgpt plus 月卡 正价官方直充", "plus", rules).subtype,
-  "plus_topup",
+  "plus",
 );
 assert.equal(
   refineCodexPlanSubtype("chatgpt pro 20x 月卡", "pro", rules).subtype,

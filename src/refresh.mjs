@@ -554,9 +554,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Codex",
         subtypes: [
           { id: "free", label: "Free" },
-          { id: "plus_trial", label: "日抛" },
-          { id: "plus_ready", label: "成品" },
-          { id: "plus_topup", label: "直充" },
+          { id: "plus", label: "Plus" },
           { id: "pro_5x", label: "5x" },
           { id: "pro_20x", label: "20x" },
           { id: "codex_sms", label: "SMS" },

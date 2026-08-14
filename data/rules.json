@@ -7,41 +7,11 @@
   ],
   "codexSubtypes": [
     "free",
-    "plus_trial",
-    "plus_ready",
-    "plus_topup",
+    "plus",
     "pro_5x",
     "pro_20x",
     "api",
     "unknown"
-  ],
-  "plusTrialTerms": [
-    "日抛",
-    "试用",
-    "试用款",
-    "天卡",
-    "小时卡",
-    "试玩"
-  ],
-  "plusTopupTerms": [
-    "直充",
-    "正价",
-    "官方充值",
-    "官方直充",
-    "代充",
-    "充值cdk",
-    "cdk充值",
-    "自助充值",
-    "非成品",
-    "自备账号",
-    "卡密可囤"
-  ],
-  "plusReadyTerms": [
-    "成品",
-    "半成品",
-    "账密",
-    "网页号",
-    "网页版"
   ],
   "pro5xTerms": [
     "5x",
