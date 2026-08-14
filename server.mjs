@@ -16,6 +16,7 @@ import {
   createStockWatchEntryFromUrl,
   readStockWatch,
   removeStockWatchEntry,
+  updateStockWatchSettings,
   upsertStockWatchEntry,
   writeStockWatch,
 } from "./src/stock-watch.mjs";
@@ -326,15 +327,32 @@ async function handleStockWatchList(response) {
     readStockWatch(stockWatchPath),
     readProducts(),
   ]);
-  sendJson(response, 200, { items: buildStockWatchView(watchData.items, products) });
+  sendJson(response, 200, {
+    digestEnabled: watchData.digestEnabled === true,
+    lastDigestAt: watchData.lastDigestAt,
+    items: buildStockWatchView(watchData.items, products),
+  });
 }
 
 async function handleStockWatchAdd(request, response) {
   try {
     const body = await readRequestJson(request);
-    const products = await readProducts();
-    const entry = createStockWatchEntryFromUrl({ products, url: body.url });
     const watchData = await readStockWatch(stockWatchPath);
+    if (Object.hasOwn(body, "digestEnabled") && !body.url) {
+      const nextData = updateStockWatchSettings(watchData, { digestEnabled: body.digestEnabled });
+      await writeStockWatch(stockWatchPath, nextData);
+      sendJson(response, 200, {
+        ok: true,
+        digestEnabled: nextData.digestEnabled === true,
+      });
+      return;
+    }
+    const products = await readProducts();
+    const entry = createStockWatchEntryFromUrl({
+      products,
+      url: body.url,
+      targetPrice: body.targetPrice,
+    });
     const nextData = upsertStockWatchEntry(watchData, entry);
     await writeStockWatch(stockWatchPath, nextData);
     sendJson(response, 201, { entry: buildStockWatchView([entry], products)[0] });

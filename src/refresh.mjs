@@ -127,9 +127,10 @@ async function readLdxpSchedulerState() {
       cursorByHost: state?.cursorByHost && typeof state.cursorByHost === "object" ? state.cursorByHost : {},
       cooldowns: state?.cooldowns && typeof state.cooldowns === "object" ? state.cooldowns : {},
       lastFailures: state?.lastFailures && typeof state.lastFailures === "object" ? state.lastFailures : {},
+      lastSuccess: state?.lastSuccess && typeof state.lastSuccess === "object" ? state.lastSuccess : {},
     };
   } catch {
-    return { version: 1, cursorByHost: {}, cooldowns: {}, lastFailures: {} };
+    return { version: 1, cursorByHost: {}, cooldowns: {}, lastFailures: {}, lastSuccess: {} };
   }
 }
 
@@ -140,6 +141,7 @@ async function writeLdxpSchedulerState(state) {
     cursorByHost: state.cursorByHost || {},
     cooldowns: state.cooldowns || {},
     lastFailures: state.lastFailures || {},
+    lastSuccess: state.lastSuccess || {},
   }, null, 2)}\n`);
 }
 
@@ -265,8 +267,61 @@ export function buildLdxpRefreshPlan({
       cursorByHost,
       cooldowns: state.cooldowns || {},
       lastFailures: state.lastFailures || {},
+      lastSuccess: state.lastSuccess || {},
     },
   };
+}
+
+export function buildSourceHealth({
+  sources = [],
+  items = [],
+  skipped = [],
+  errors = [],
+  lastSuccess = {},
+  lastFailures = {},
+  now = new Date(),
+} = {}) {
+  const skippedById = new Map(skipped.map((entry) => [entry.sourceId || entry.source?.id, entry]));
+  const errorsById = new Map(errors.map((entry) => [entry.sourceId, entry]));
+  const latestFetchedAt = new Map();
+  const itemCountBySource = new Map();
+  for (const item of items) {
+    if (!item?.sourceId) continue;
+    itemCountBySource.set(item.sourceId, (itemCountBySource.get(item.sourceId) || 0) + 1);
+    if (item.fetchedAt && (!latestFetchedAt.has(item.sourceId) || item.fetchedAt > latestFetchedAt.get(item.sourceId))) {
+      latestFetchedAt.set(item.sourceId, item.fetchedAt);
+    }
+  }
+
+  return sources.map((source) => {
+    const skip = skippedById.get(source.id);
+    const error = errorsById.get(source.id);
+    let status = "ok";
+    let reason = null;
+    if (error) {
+      status = "failed";
+      reason = error.message || null;
+    } else if (skip) {
+      status = String(skip.reason || "").includes("冷却") ? "cooldown" : "skipped";
+      reason = skip.reason || null;
+    }
+    const lastSuccessAt = lastSuccess[source.id] || latestFetchedAt.get(source.id) || null;
+    const ageMs = lastSuccessAt ? now.getTime() - new Date(lastSuccessAt).getTime() : null;
+    const ageHours = Number.isFinite(ageMs) ? Math.round((ageMs / 36e5) * 10) / 10 : null;
+    return {
+      sourceId: source.id,
+      sourceName: source.name,
+      adapter: source.adapter,
+      core: source.core === true,
+      status,
+      reason,
+      lastSuccessAt,
+      lastFailureAt: lastFailures[source.id]?.at || error?.at || null,
+      lastError: lastFailures[source.id]?.message || error?.message || null,
+      itemCount: itemCountBySource.get(source.id) || 0,
+      ageHours,
+    };
+  });
 }
 
 export function reclassifyProductItem(item, rules) {
@@ -500,7 +555,16 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         }
         const adapter = adapters[source.adapter];
         if (!adapter) throw new Error(`未知适配器: ${source.adapter}`);
-        items.push(...(await adapter(source, rules, { fallbackProxy, blockedHosts, ldxpFetchMode })));
+        const fetchedAt = new Date().toISOString();
+        const fetchedItems = await adapter(source, rules, { fallbackProxy, blockedHosts, ldxpFetchMode });
+        items.push(...fetchedItems.map((item) => ({ ...item, fetchedAt })));
+        nextLdxpState.lastSuccess = {
+          ...(nextLdxpState.lastSuccess || {}),
+          [source.id]: fetchedAt,
+        };
+        if (nextLdxpState.lastFailures?.[source.id]) {
+          delete nextLdxpState.lastFailures[source.id];
+        }
       } catch (error) {
         staleSourceIds.add(source.id);
         if (source.adapter === "ldxp") {
@@ -554,6 +618,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Codex",
         subtypes: [
           { id: "free", label: "Free" },
+          { id: "go", label: "Go" },
           { id: "plus", label: "Plus" },
           { id: "pro_5x", label: "5x" },
           { id: "pro_20x", label: "20x" },
@@ -582,10 +647,25 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     generatedAt,
     nextRefreshAt,
     sourceCount: enabledSources.length,
-    successCount: enabledSources.length - errors.length,
+    attemptedCount: refreshSources.length,
+    successCount: refreshSources.length - errors.length,
     failureCount: errors.length,
+    skippedCount: ldxpPlan.skipped.length,
     itemCount: sortedItems.length,
     errors,
+    sources: buildSourceHealth({
+      sources: enabledSources,
+      items: sortedItems,
+      skipped: ldxpPlan.skipped.map((entry) => ({
+        sourceId: entry.source.id,
+        sourceName: entry.source.name,
+        reason: entry.reason,
+      })),
+      errors,
+      lastSuccess: nextLdxpState.lastSuccess || {},
+      lastFailures: nextLdxpState.lastFailures || {},
+      now: new Date(generatedAt),
+    }),
     ldxp: {
       fetchMode: ldxpFetchMode,
       maxSourcesPerRun: ldxpSchedulerConfig.maxSourcesPerRun,

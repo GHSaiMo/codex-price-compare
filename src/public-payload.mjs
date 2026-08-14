@@ -32,6 +32,7 @@ const PUBLIC_PRODUCT_KEYS = [
   "sourceUrl",
   "sourceAdapter",
   "sourceCategory",
+  "fetchedAt",
 ];
 
 export function isPublicStaticPath(pathname) {
@@ -58,6 +59,6 @@ export function toPublicProductsDocument(products) {
 
 export function toPublicMeta(meta) {
   if (!meta || typeof meta !== "object") return {};
-  const { backup, ...publicMeta } = meta;
+  const { backup, sources, ...publicMeta } = meta;
   return publicMeta;
 }

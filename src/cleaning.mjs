@@ -49,14 +49,15 @@ function titleReasonTermsForSubtype(rules, subtype) {
 }
 
 function explicitPlanSubtype(haystack, subtypeTerms = {}) {
-  // 标题里的 free/plus/pro 明确套餐词优先，避免次要上下文词（如 team 限制）抢分类。
+  // 标题里的 free/plus/pro/go 明确套餐词优先，避免次要上下文词（如 team 限制）抢分类。
   // 这里只认核心套餐词，不直接复用 subtypeTerms 全量词表。
   const termsBySubtype = {
     pro: ["pro", "5x", "20x"],
     plus: ["plus", "puls"],
-    free: ["free", "fre", "free号", "普号", "go"],
+    go: ["go"],
+    free: ["free", "fre", "free号", "普号"],
   };
-  for (const subtype of ["pro", "plus", "free"]) {
+  for (const subtype of ["pro", "plus", "go", "free"]) {
     if (matchedTerms(haystack, termsBySubtype[subtype]).length > 0) return subtype;
   }
   return "unknown";
@@ -379,7 +380,7 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
       );
     }
 
-    if (["free", "plus", "pro"].includes(titleSubtype)) {
+    if (["free", "plus", "pro", "go"].includes(titleSubtype)) {
       const reasons = [
         ...(freeUpgradePurposeMatch ? [`命中Free用途词: ${freeUpgradePurposeMatch}`] : []),
         ...(nonPlusNegationMatch ? [`命中非Plus词: ${nonPlusNegationMatch}`] : []),

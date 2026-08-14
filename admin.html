@@ -45,15 +45,23 @@
         <p class="form-message" id="refreshStatus" role="status">正在读取刷新状态...</p>
       </section>
 
-      <section class="admin-panel stock-watch-panel" aria-label="价格/库存变动通知">
-        <h2>价格/库存变动通知</h2>
+      <section class="admin-panel stock-watch-panel" aria-label="价格库存观察">
+        <h2>价格库存观察</h2>
         <form class="stock-watch-form" id="stockWatchForm">
           <label class="field">
             <span>商品链接</span>
             <input id="stockWatchUrl" name="url" type="url" placeholder="https://..." required>
           </label>
+          <label class="field field-target">
+            <span>到价阈值</span>
+            <input id="stockWatchTarget" name="targetPrice" type="number" min="0" step="0.01" placeholder="可选">
+          </label>
           <button class="toolbar-link" type="submit">查找并加入观察区</button>
         </form>
+        <label class="stock-watch-digest">
+          <input id="stockWatchDigest" type="checkbox">
+          <span>每日摘要</span>
+        </label>
         <p class="form-message" id="stockWatchStatus" role="status">正在读取观察列表...</p>
         <div class="stock-watch-list" id="stockWatchList"></div>
       </section>

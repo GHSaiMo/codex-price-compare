@@ -7,6 +7,7 @@
   ],
   "codexSubtypes": [
     "free",
+    "go",
     "plus",
     "pro_5x",
     "pro_20x",
@@ -230,13 +231,16 @@
       "team",
       "GPT成品号"
     ],
+    "go": [
+      "go",
+      "gptgo"
+    ],
     "free": [
       "free",
       "fre",
       "free号",
       "普号",
-      "手机验证解锁",
-      "go"
+      "手机验证解锁"
     ]
   },
   "grokFreeTerms": [

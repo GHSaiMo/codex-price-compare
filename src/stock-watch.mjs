@@ -2,8 +2,10 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import { resolveWeChatBridgeConfig, sendWeChatBridgeText } from "./wechatbridge.mjs";
 
-const DEFAULT_WATCH_DATA = { version: 1, items: [] };
+const DEFAULT_WATCH_DATA = { version: 1, digestEnabled: false, lastDigestAt: null, items: [] };
 const NOTIFY_RETRY_AFTER_MS = 10 * 60 * 1000;
+const DIGEST_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const PRICE_DROP_RATIO = 0.1;
 
 export function normalizeProductUrl(value) {
   const url = new URL(String(value || "").trim());
@@ -18,7 +20,7 @@ export function findProductByUrl(products, url) {
   return products.find((item) => item?.url && normalizeProductUrl(item.url) === targetUrl) || null;
 }
 
-export function createStockWatchEntryFromUrl({ products, url, now = new Date() }) {
+export function createStockWatchEntryFromUrl({ products, url, targetPrice = null, now = new Date() }) {
   const product = findProductByUrl(products, url);
   if (!product) {
     const err = new Error("未在当前商品数据中找到这个链接，请确认商品已被采集并刷新过。");
@@ -33,9 +35,11 @@ export function createStockWatchEntryFromUrl({ products, url, now = new Date() }
     title: product.title,
     sourceName: product.sourceName,
     enabled: true,
+    targetPrice: normalizeTargetPrice(targetPrice),
     createdAt: timestamp,
     updatedAt: timestamp,
     lastSeenAt: timestamp,
+    missingSince: null,
     lastPrice: productPrice(product),
     lastStockStatus: product.stockStatus || "unknown",
     lastStockCount: typeof product.stockCount === "number" ? product.stockCount : null,
@@ -74,6 +78,7 @@ export function upsertStockWatchEntry(watchData, entry) {
     ...data.items[index],
     ...entry,
     createdAt: data.items[index].createdAt || entry.createdAt,
+    targetPrice: entry.targetPrice ?? data.items[index].targetPrice ?? null,
     lastNotifiedAt: data.items[index].lastNotifiedAt ?? entry.lastNotifiedAt,
     lastNotifyStatus: data.items[index].lastNotifyStatus ?? entry.lastNotifyStatus,
     lastNotifyError: data.items[index].lastNotifyError ?? entry.lastNotifyError,
@@ -108,7 +113,10 @@ export function buildStockWatchNotificationUpdates({
   currentProducts = [],
   now = new Date(),
   retryAfterMs = NOTIFY_RETRY_AFTER_MS,
-}) {
+  digestEnabled = false,
+  lastDigestAt = null,
+  digestIntervalMs = DIGEST_INTERVAL_MS,
+} = {}) {
   const previousById = productMap(previousProducts);
   const currentById = productMap(currentProducts);
   const timestamp = now.toISOString();
@@ -118,7 +126,27 @@ export function buildStockWatchNotificationUpdates({
 
     const previous = previousById.get(entry.productId);
     const current = currentById.get(entry.productId);
-    if (!current) return { ...entry, updatedAt: timestamp };
+    if (!current) {
+      const nextEntry = {
+        ...entry,
+        updatedAt: timestamp,
+        missingSince: entry.missingSince || timestamp,
+      };
+      const changeKey = `gone:${nextEntry.missingSince}`;
+      const canRetry = entry.lastNotifyStatus === "failed" && shouldRetry(entry.updatedAt, now, retryAfterMs);
+      const alreadyNotified = entry.lastNotifyChangeKey === changeKey && entry.lastNotifyStatus === "sent";
+      if ((!entry.missingSince || canRetry) && !alreadyNotified) {
+        notifications.push({
+          kind: "gone",
+          entry: nextEntry,
+          changes: [{ type: "gone" }],
+          changeKey,
+          previous: previous ? publicProductFields(previous) : null,
+          current: null,
+        });
+      }
+      return nextEntry;
+    }
 
     const previousSnapshot = watchSnapshot(previous, entry);
     const currentStatus = current.stockStatus || "unknown";
@@ -131,17 +159,17 @@ export function buildStockWatchNotificationUpdates({
       url: current.url || entry.url,
       updatedAt: timestamp,
       lastSeenAt: timestamp,
+      missingSince: null,
       lastPrice: currentPrice,
       lastStockStatus: currentStatus,
       lastStockCount: currentCount,
     };
 
-    const changes = buildWatchChanges(previousSnapshot, {
-      hasPrice: true,
+    const changes = selectWatchEvents(previousSnapshot, {
       price: currentPrice,
       stockStatus: currentStatus,
       stockCount: currentCount,
-    });
+    }, entry);
     const changeKey = changes.length > 0
       ? `${formatChangeKey(changes)}:${timestamp}`
       : entry.lastNotifyChangeKey || formatSnapshotKey({
@@ -149,13 +177,14 @@ export function buildStockWatchNotificationUpdates({
         stockStatus: currentStatus,
         stockCount: currentCount,
       });
-    const canRetry = entry.lastNotifyStatus === "failed" && shouldRetry(entry.updatedAt, now, retryAfterMs);
+    const canRetry = entry.lastNotifyStatus === "failed"
+      && changes.length > 0
+      && shouldRetry(entry.updatedAt, now, retryAfterMs);
     const alreadyNotified = entry.lastNotifyStatus === "sent"
-      && entry.lastNotifiedPrice === currentPrice
-      && entry.lastNotifiedStockStatus === currentStatus
-      && normalizeStockCount(entry.lastNotifiedStockCount) === currentCount;
+      && entry.lastNotifyChangeKey === changeKey;
     if ((changes.length > 0 || canRetry) && !alreadyNotified) {
       notifications.push({
+        kind: changes[0]?.type || "change",
         entry: nextEntry,
         changes,
         changeKey,
@@ -167,7 +196,20 @@ export function buildStockWatchNotificationUpdates({
     return nextEntry;
   });
 
-  return { items, notifications };
+  let nextDigestAt = lastDigestAt || null;
+  if (digestEnabled) {
+    if (!lastDigestAt) {
+      nextDigestAt = timestamp;
+    } else if (now.getTime() - new Date(lastDigestAt).getTime() >= digestIntervalMs) {
+      notifications.push({
+        kind: "digest",
+        entries: items.filter((entry) => entry.enabled),
+      });
+      nextDigestAt = timestamp;
+    }
+  }
+
+  return { items, notifications, lastDigestAt: nextDigestAt };
 }
 
 export async function processStockWatchNotifications({
@@ -186,10 +228,26 @@ export async function processStockWatchNotifications({
     previousProducts,
     currentProducts,
     now,
+    digestEnabled: watchData.digestEnabled === true,
+    lastDigestAt: watchData.lastDigestAt,
   });
   let items = updates.items;
+  let lastDigestAt = updates.lastDigestAt;
   if (enabled) {
     for (const notification of updates.notifications) {
+      if (notification.kind === "digest") {
+        try {
+          await sendWeChatBridgeText({
+            url: bridgeUrl,
+            target,
+            text: formatDigestText(notification.entries),
+            fetchImpl,
+          });
+        } catch {
+          lastDigestAt = watchData.lastDigestAt || null;
+        }
+        continue;
+      }
       items = await sendStockNotification({
         items,
         notification,
@@ -201,7 +259,12 @@ export async function processStockWatchNotifications({
     }
   }
 
-  await writeStockWatch(watchPath, { version: 1, items });
+  await writeStockWatch(watchPath, {
+    version: 1,
+    digestEnabled: watchData.digestEnabled === true,
+    lastDigestAt,
+    items,
+  });
   return { notificationCount: enabled ? updates.notifications.length : 0, enabled };
 }
 
@@ -219,9 +282,9 @@ async function sendStockNotification({ items, notification, bridgeUrl, target, n
       lastNotifiedAt: timestamp,
       lastNotifyStatus: "sent",
       lastNotifyError: null,
-      lastNotifiedPrice: productPrice(current),
-      lastNotifiedStockStatus: current.stockStatus,
-      lastNotifiedStockCount: normalizeStockCount(current.stockCount),
+      lastNotifiedPrice: current ? productPrice(current) : entry.lastPrice,
+      lastNotifiedStockStatus: current?.stockStatus || "missing",
+      lastNotifiedStockCount: normalizeStockCount(current?.stockCount),
       lastNotifyChangeKey: notification.changeKey,
     });
   } catch (error) {
@@ -238,15 +301,30 @@ function updateNotificationStatus(items, productId, fields) {
 }
 
 function formatNotificationText(notification) {
-  const { current, changes = [] } = notification;
+  const { kind, current, entry, changes = [] } = notification;
+  if (kind === "gone") {
+    return [
+      "商品消失提醒",
+      `商品：${entry.title}`,
+      `来源：${entry.sourceName || "未知来源"}`,
+      `上次见到：${entry.lastSeenAt || "未知"}`,
+      `链接：${entry.url}`,
+    ].join("\n");
+  }
+
   const changeLines = changes.map((change) => {
-    if (change.type === "price") {
-      return `价格变化：${formatPrice(change.previous)} -> ${formatPrice(change.current)}`;
+    if (change.type === "price_drop") {
+      const target = typeof change.targetPrice === "number" ? `，阈值 ${formatPrice(change.targetPrice)}` : "";
+      return `降价：${formatPrice(change.previous)} -> ${formatPrice(change.current)}${target}`;
     }
-    return `库存变化：${formatStock(change.previous)} -> ${formatStock(change.current)}`;
+    if (change.type === "restock") {
+      return `补货：${formatStock(change.previous)} -> ${formatStock(change.current)}`;
+    }
+    return `变化：${change.type}`;
   });
+  const title = kind === "restock" ? "补货提醒" : kind === "price_drop" ? "到价提醒" : "价格/库存变动提醒";
   return [
-    "价格/库存变动提醒",
+    title,
     `商品：${current.title}`,
     `来源：${current.sourceName}`,
     ...changeLines,
@@ -256,24 +334,60 @@ function formatNotificationText(notification) {
   ].join("\n");
 }
 
+function formatDigestText(entries = []) {
+  const lines = entries.map((entry) => {
+    const missing = entry.missingSince ? "已消失" : formatStock({
+      status: entry.lastStockStatus,
+      count: entry.lastStockCount,
+    });
+    return `- ${entry.title} · ${entry.sourceName || "未知来源"} · ${formatPrice(entry.lastPrice)} · ${missing}`;
+  });
+  return ["观察区日报", `共 ${entries.length} 条`, ...lines].join("\n");
+}
+
 function shouldRetry(lastUpdatedAt, now, retryAfterMs) {
   const last = new Date(lastUpdatedAt || 0).getTime();
   return !Number.isFinite(last) || now.getTime() - last >= retryAfterMs;
 }
 
-function buildWatchChanges(previous, current) {
+export function selectWatchEvents(previous, current, entry = {}) {
   const changes = [];
-  if (previous.hasPrice && previous.price !== current.price) {
-    changes.push({ type: "price", previous: previous.price, current: current.price });
-  }
-  if (previous.stockStatus !== current.stockStatus || previous.stockCount !== current.stockCount) {
+  if (entry.missingSince) {
     changes.push({
-      type: "stock",
+      type: "restock",
+      previous: { status: "missing", count: null },
+      current: { status: current.stockStatus, count: current.stockCount },
+    });
+  } else if (isOutOfStockStatus(previous.stockStatus) && isInStockStatus(current.stockStatus)) {
+    changes.push({
+      type: "restock",
       previous: { status: previous.stockStatus, count: previous.stockCount },
       current: { status: current.stockStatus, count: current.stockCount },
     });
   }
+
+  if (previous.hasPrice && previous.price != null && current.price != null && current.price < previous.price) {
+    const targetPrice = normalizeTargetPrice(entry.targetPrice);
+    const crossedTarget = targetPrice != null && previous.price > targetPrice && current.price <= targetPrice;
+    const significantDrop = current.price <= previous.price * (1 - PRICE_DROP_RATIO);
+    if (crossedTarget || significantDrop) {
+      changes.push({
+        type: "price_drop",
+        previous: previous.price,
+        current: current.price,
+        targetPrice,
+      });
+    }
+  }
   return changes;
+}
+
+function isInStockStatus(status) {
+  return status === "in_stock" || status === "low_stock";
+}
+
+function isOutOfStockStatus(status) {
+  return status === "out_of_stock";
 }
 
 function watchSnapshot(product, entry = null) {
@@ -306,6 +420,7 @@ function formatStock(value) {
     in_stock: "有货",
     low_stock: "低库存",
     out_of_stock: "缺货",
+    missing: "已消失",
     unknown: "库存未知",
   }[status] || status;
   return count == null ? label : `${label} ${count}`;
@@ -313,14 +428,18 @@ function formatStock(value) {
 
 function formatChangeKey(changes) {
   return changes.map((change) => {
-    if (change.type === "price") {
-      return `price:${formatKeyValue(change.previous)}>${formatKeyValue(change.current)}`;
+    if (change.type === "gone") return "gone";
+    if (change.type === "price_drop") {
+      return `price_drop:${formatKeyValue(change.previous)}>${formatKeyValue(change.current)}`;
     }
-    return [
-      "stock",
-      `${formatKeyValue(change.previous.status)}-${formatKeyValue(change.previous.count)}`,
-      `${formatKeyValue(change.current.status)}-${formatKeyValue(change.current.count)}`,
-    ].join(":");
+    if (change.type === "restock") {
+      return [
+        "restock",
+        `${formatKeyValue(change.previous.status)}-${formatKeyValue(change.previous.count)}`,
+        `${formatKeyValue(change.current.status)}-${formatKeyValue(change.current.count)}`,
+      ].join(":");
+    }
+    return change.type;
   }).join("|");
 }
 
@@ -351,7 +470,23 @@ function publicProductFields(product) {
   };
 }
 
+export function updateStockWatchSettings(watchData, { digestEnabled } = {}) {
+  const data = normalizeWatchData(watchData);
+  if (digestEnabled !== undefined) data.digestEnabled = digestEnabled === true;
+  return data;
+}
+
+function normalizeTargetPrice(value) {
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0 ? price : null;
+}
+
 function normalizeWatchData(data) {
   const items = Array.isArray(data?.items) ? data.items.filter((item) => item?.productId) : [];
-  return { version: 1, items };
+  return {
+    version: 1,
+    digestEnabled: data?.digestEnabled === true,
+    lastDigestAt: data?.lastDigestAt || null,
+    items,
+  };
 }

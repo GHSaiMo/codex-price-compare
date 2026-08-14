@@ -4,6 +4,8 @@ const stats = document.querySelector("#stats");
 const emptyState = document.querySelector("#emptyState");
 const sortButton = document.querySelector("#sortButton");
 const includeOutOfStock = document.querySelector("#includeOutOfStock");
+const searchInput = document.querySelector("#searchInput");
+const shopFilter = document.querySelector("#shopFilter");
 const backToTop = document.querySelector("#backToTop");
 const shareButton = document.querySelector("#shareButton");
 const shareOverlay = document.querySelector("#shareOverlay");
@@ -44,6 +46,7 @@ const modeConfigs = {
     defaultSubtype: "plus",
     subtypes: [
       { id: "free", label: "Free" },
+      { id: "go", label: "Go" },
       { id: "plus", label: "Plus" },
       { id: "pro_5x", label: "5x" },
       { id: "pro_20x", label: "20x" },
@@ -66,6 +69,7 @@ const modeConfigs = {
 const subtypeValuesFromUrl = new Map([
   ["free", "free"],
   ["plus", "plus"],
+  ["go", "go"],
   ["trial", "plus"],
   ["plus_trial", "plus"],
   ["ready", "plus"],
@@ -103,12 +107,16 @@ const urlStateKeys = {
   subtype: "type",
   stock: "stock",
   sort: "sort",
+  query: "q",
+  shop: "shop",
 };
 
 let allProducts = [];
 let currentSort = defaultSort;
 let currentMode = "codex";
 let currentSubtype = modeConfigs.codex.defaultSubtype;
+let currentQuery = "";
+let currentShopId = "";
 let shareToastFrame = 0;
 let shareToastTimer = 0;
 
@@ -164,6 +172,13 @@ function sortProducts(items) {
   });
 }
 
+function matchesSearch(item, query = currentQuery) {
+  const tokens = String(query || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const haystack = `${displayProductTitle(item.title)} ${item.sourceName || ""}`.toLowerCase();
+  return tokens.every((token) => haystack.includes(token));
+}
+
 function matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock = true } = {}) {
   const subtypeValues = currentSubtypeValues();
   if (productBrand(item) !== currentMode) return false;
@@ -171,6 +186,8 @@ function matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock = tr
   if (item.subtype !== currentSubtype) return false;
   if (typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE) return false;
   if (!allowOutOfStock && item.stockStatus === "out_of_stock") return false;
+  if (currentShopId && item.sourceId !== currentShopId) return false;
+  if (!matchesSearch(item)) return false;
   return true;
 }
 
@@ -270,6 +287,51 @@ function updateSummary(time) {
   if (isSummaryOverflowing()) summary.textContent = compact;
 }
 
+function shopsForCurrentMode() {
+  const shops = new Map();
+  for (const item of allProducts) {
+    if (productBrand(item) !== currentMode || !item.sourceId) continue;
+    if (!shops.has(item.sourceId)) shops.set(item.sourceId, item.sourceName || item.sourceId);
+  }
+  return [...shops.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+}
+
+function syncShopFilter() {
+  if (!shopFilter) return;
+  const shops = shopsForCurrentMode();
+  const previous = currentShopId;
+  clearElement(shopFilter);
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "全部店铺";
+  shopFilter.appendChild(allOption);
+  for (const shop of shops) {
+    const option = document.createElement("option");
+    option.value = shop.id;
+    option.textContent = shop.name;
+    shopFilter.appendChild(option);
+  }
+  if (previous && shops.some((shop) => shop.id === previous)) {
+    currentShopId = previous;
+    shopFilter.value = previous;
+  } else {
+    currentShopId = "";
+    shopFilter.value = "";
+  }
+}
+
+function formatDataAge(item) {
+  const stamp = item.fetchedAt;
+  if (!stamp) return "";
+  const ageMs = Date.now() - new Date(stamp).getTime();
+  if (!Number.isFinite(ageMs) || ageMs < 2 * 60 * 60 * 1000) return "";
+  const hours = ageMs / (60 * 60 * 1000);
+  if (hours < 48) return `${Math.round(hours)}小时前`;
+  return `${Math.round(hours / 24)}天前`;
+}
+
 function createProductCard(item) {
   const card = document.createElement("article");
   card.className = `product-card ${item.stockStatus === "out_of_stock" ? "is-out" : ""}`;
@@ -296,6 +358,13 @@ function createProductCard(item) {
 
   title.append(link);
   card.append(title, source, stock, price);
+  const age = formatDataAge(item);
+  if (age) {
+    const freshness = document.createElement("span");
+    freshness.className = "data-age";
+    freshness.textContent = age;
+    card.append(freshness);
+  }
   return card;
 }
 
@@ -321,6 +390,8 @@ function readStateFromUrl() {
   const subtype = subtypeValuesFromUrl.get(params.get(urlStateKeys.subtype));
   const stock = params.get(urlStateKeys.stock);
   const sort = params.get(urlStateKeys.sort);
+  const query = params.get(urlStateKeys.query);
+  const shop = params.get(urlStateKeys.shop);
 
   if (mode === "codex" || mode === "grok") {
     currentMode = mode;
@@ -345,6 +416,11 @@ function readStateFromUrl() {
   } else if (sort === "asc") {
     currentSort = "price-asc";
   }
+  if (query) {
+    currentQuery = query;
+    if (searchInput) searchInput.value = query;
+  }
+  if (shop) currentShopId = shop;
 }
 
 function writeStateToUrl() {
@@ -363,6 +439,10 @@ function createShareUrl() {
   url.searchParams.set(urlStateKeys.subtype, subtypeForUrl(currentSubtype));
   url.searchParams.set(urlStateKeys.stock, includeOutOfStock.checked ? "all" : "available");
   url.searchParams.set(urlStateKeys.sort, currentSort === "price-desc" ? "desc" : "asc");
+  if (currentQuery) url.searchParams.set(urlStateKeys.query, currentQuery);
+  else url.searchParams.delete(urlStateKeys.query);
+  if (currentShopId) url.searchParams.set(urlStateKeys.shop, currentShopId);
+  else url.searchParams.delete(urlStateKeys.shop);
   return url;
 }
 
@@ -635,6 +715,7 @@ async function loadData() {
     const products = await productsResponse.json();
     const meta = await metaResponse.json();
     allProducts = Array.isArray(products.items) ? products.items : [];
+    syncShopFilter();
 
     const time = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
     updateSummary(time);
@@ -655,6 +736,7 @@ function setMode(mode, { animate = true } = {}) {
   syncModeButtons();
   syncModeChrome();
   renderSubtypeButtons();
+  syncShopFilter();
   writeStateToUrl();
   // 已有商品数据时直接重绘；同时刷新摘要中的模式计数。
   if (allProducts.length > 0) {
@@ -677,6 +759,18 @@ sortButton.addEventListener("click", () => {
 });
 
 includeOutOfStock.addEventListener("change", () => {
+  writeStateToUrl();
+  render({ animate: true });
+});
+
+searchInput?.addEventListener("input", () => {
+  currentQuery = searchInput.value.trim();
+  writeStateToUrl();
+  render({ animate: true });
+});
+
+shopFilter?.addEventListener("change", () => {
+  currentShopId = shopFilter.value;
   writeStateToUrl();
   render({ animate: true });
 });

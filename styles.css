@@ -166,7 +166,6 @@ h1 {
 
 #adminSummary {
   max-width: none;
-  white-space: nowrap;
 }
 
 .page-footer {
@@ -197,6 +196,25 @@ h1 {
 .filter-panel {
   display: grid;
   gap: 8px;
+}
+
+.toolbar-row-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 220px);
+  gap: 8px;
+  align-items: center;
+}
+
+.search-field,
+.shop-field {
+  display: block;
+  min-width: 0;
+}
+
+.search-field input,
+.shop-field select {
+  width: 100%;
+  min-height: 40px;
 }
 
 
@@ -493,6 +511,16 @@ input {
   border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
+}
+
+.product-card:has(.data-age) {
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+}
+
+.data-age {
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .product-card.is-out {
@@ -827,6 +855,57 @@ input {
   flex: 1 1 220px;
 }
 
+.stock-watch-form .field-target {
+  flex: 0 1 140px;
+}
+
+.stock-watch-digest {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.source-health {
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.status-pill {
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-muted);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.status-ok {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.status-skipped {
+  border-color: var(--line);
+}
+
+.status-cooldown,
+.status-failed {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.status-cooldown {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
 .refresh-form input {
   max-width: 120px;
 }
@@ -942,6 +1021,17 @@ input {
   .product-list,
   .filter-panel {
     grid-template-columns: 1fr;
+  }
+
+  .toolbar-row-search {
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 36%);
+    gap: 6px;
+  }
+
+  .search-field input,
+  .shop-field select {
+    min-height: 34px;
+    font-size: 0.78rem;
   }
 
   .filter-actions {

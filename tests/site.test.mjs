@@ -26,6 +26,7 @@ import {
   reclassifyProductItems,
   resolveLdxpFetchMode,
   resolveLdxpSchedulerConfig,
+  buildSourceHealth,
 } from "../src/refresh.mjs";
 import {
   parseDotEnv,
@@ -108,9 +109,11 @@ assert.deepEqual(
     title: "Gpt Free",
     sourceName: "Ai小八",
     enabled: true,
+    targetPrice: null,
     createdAt: "2026-05-29T08:00:00.000Z",
     updatedAt: "2026-05-29T08:00:00.000Z",
     lastSeenAt: "2026-05-29T08:00:00.000Z",
+    missingSince: null,
     lastPrice: 0.85,
     lastStockStatus: "out_of_stock",
     lastStockCount: 0,
@@ -166,10 +169,111 @@ assert.deepEqual(
     productId: notification.entry.productId,
     changes: notification.changes,
   })),
-  [{
-    productId: "ldxp-xiaoba:2mlvd7",
-    changes: [{ type: "price", previous: 0.85, current: 0.95 }],
-  }],
+  [],
+);
+
+assert.deepEqual(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      lastPrice: 0.85,
+      lastStockStatus: "in_stock",
+      lastStockCount: 12,
+      lastNotifyStatus: null,
+    }],
+    previousProducts: [{ ...stockWatchProducts[0], stockStatus: "in_stock", stockCount: 12, price: 0.85 }],
+    currentProducts: [{ ...stockWatchProducts[0], stockStatus: "in_stock", stockCount: 9, price: 0.85 }],
+    now: new Date("2026-05-29T08:40:00.000Z"),
+  }).notifications,
+  [],
+);
+
+assert.equal(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      title: "Gpt Free",
+      sourceName: "Ai小八",
+      url: "https://pay.ldxp.cn/item/2mlvd7",
+      lastSeenAt: "2026-05-01T00:00:00.000Z",
+      lastNotifyStatus: null,
+    }],
+    previousProducts: stockWatchProducts,
+    currentProducts: [],
+    now: new Date("2026-05-29T08:45:00.000Z"),
+  }).notifications[0]?.kind,
+  "gone",
+);
+
+assert.deepEqual(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      missingSince: "2026-05-29T08:45:00.000Z",
+      lastNotifyChangeKey: "gone:2026-05-29T08:45:00.000Z",
+      lastNotifyStatus: "sent",
+    }],
+    previousProducts: [],
+    currentProducts: [],
+    now: new Date("2026-05-29T09:45:00.000Z"),
+  }).notifications,
+  [],
+);
+
+assert.equal(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      lastPrice: 140,
+      lastStockStatus: "in_stock",
+      lastStockCount: 3,
+      lastNotifyStatus: null,
+    }],
+    previousProducts: [{ ...stockWatchProducts[0], price: 140, stockStatus: "in_stock", stockCount: 3 }],
+    currentProducts: [{ ...stockWatchProducts[0], price: 120, stockStatus: "in_stock", stockCount: 3 }],
+    now: new Date("2026-05-29T08:50:00.000Z"),
+  }).notifications[0]?.kind,
+  "price_drop",
+);
+
+assert.deepEqual(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      lastPrice: 140,
+      lastStockStatus: "in_stock",
+      lastStockCount: 3,
+      targetPrice: 120,
+      lastNotifyStatus: null,
+    }],
+    previousProducts: [{ ...stockWatchProducts[0], price: 140, stockStatus: "in_stock", stockCount: 3 }],
+    currentProducts: [{ ...stockWatchProducts[0], price: 130, stockStatus: "in_stock", stockCount: 3 }],
+    now: new Date("2026-05-29T08:55:00.000Z"),
+  }).notifications,
+  [],
+);
+
+assert.equal(
+  buildStockWatchNotificationUpdates({
+    watchItems: [{
+      productId: "ldxp-xiaoba:2mlvd7",
+      enabled: true,
+      lastPrice: 140,
+      lastStockStatus: "in_stock",
+      lastStockCount: 3,
+      targetPrice: 120,
+      lastNotifyStatus: null,
+    }],
+    previousProducts: [{ ...stockWatchProducts[0], price: 140, stockStatus: "in_stock", stockCount: 3 }],
+    currentProducts: [{ ...stockWatchProducts[0], price: 119, stockStatus: "in_stock", stockCount: 3 }],
+    now: new Date("2026-05-29T09:00:00.000Z"),
+  }).notifications[0]?.kind,
+  "price_drop",
 );
 
 assert.equal(DEFAULT_WECHATBRIDGE_TARGET, "");
@@ -224,7 +328,7 @@ try {
   });
   assert.deepEqual(result, { notificationCount: 1, enabled: true });
   assert.equal(notificationPayload.target, "test-contact");
-  assert.match(notificationPayload.text, /库存变化/);
+  assert.match(notificationPayload.text, /补货/);
   assert.deepEqual(Object.keys(notificationPayload).sort(), ["target", "text"]);
   const savedWatch = JSON.parse(await readFile(watchPath, "utf8"));
   assert.equal(savedWatch.items[0].lastNotifyStatus, "sent");
@@ -338,6 +442,29 @@ assert.deepEqual(
     now: new Date("2026-05-30T00:00:00.000Z"),
   }).skipped.map((entry) => entry.source.id),
   ["core-1", "normal-1"],
+);
+assert.deepEqual(
+  buildSourceHealth({
+    sources: [
+      { id: "core-1", name: "核心店", adapter: "ldxp", core: true },
+      { id: "skip-1", name: "轮空店", adapter: "ldxp" },
+      { id: "fail-1", name: "失败店", adapter: "ldxp" },
+    ],
+    items: [
+      { sourceId: "core-1", fetchedAt: "2026-08-14T00:00:00.000Z" },
+      { sourceId: "skip-1", fetchedAt: "2026-08-13T21:00:00.000Z" },
+    ],
+    skipped: [{ sourceId: "skip-1", reason: "ldxp 本轮未排到，保留旧数据" }],
+    errors: [{ sourceId: "fail-1", message: "HTTP 522" }],
+    lastSuccess: { "core-1": "2026-08-14T00:00:00.000Z" },
+    lastFailures: { "fail-1": { at: "2026-08-14T00:00:00.000Z", message: "HTTP 522" } },
+    now: new Date("2026-08-14T03:00:00.000Z"),
+  }).map((entry) => ({ id: entry.sourceId, status: entry.status, ageHours: entry.ageHours })),
+  [
+    { id: "core-1", status: "ok", ageHours: 3 },
+    { id: "skip-1", status: "skipped", ageHours: 6 },
+    { id: "fail-1", status: "failed", ageHours: null },
+  ],
 );
 assert.deepEqual(
   mergeProductsWithStaleSourceItems({
@@ -861,14 +988,14 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("ChatGPT GO 会员账号 成品号", "", rules).subtype,
-  "free",
+  "go",
 );
 for (const title of [
   "【印区卡冲】Gpt go 卡冲（质保一个月）",
   "【IOS】GPT GO官方充值 仅质保不掉订阅，封号无售后",
 ]) {
   assert.equal(classifyProduct(title, "", rules).category, "codex");
-  assert.equal(classifyProduct(title, "", rules).subtype, "free");
+  assert.equal(classifyProduct(title, "", rules).subtype, "go");
 }
 assert.equal(
   classifyProduct("ChatGPT Google Voice 账号", "", rules).subtype,
@@ -1183,7 +1310,9 @@ assert.deepEqual(
 
 assert.match(html, /data-products-url="data\/products\.json"/);
 assert.match(html, /包含缺货/);
-assert.doesNotMatch(html, /id="searchInput"/);
+assert.match(html, /id="searchInput"/);
+assert.match(html, /id="shopFilter"/);
+assert.match(html, /搜索标题或店铺/);
 assert.match(html, /Codex 比价/);
 assert.match(html, /id="documentTitle"/);
 assert.match(html, /href="assets\/logo\.svg"/);
@@ -1228,6 +1357,7 @@ assert.match(html, /data-mode="codex" aria-pressed="true">Codex/);
 assert.match(html, /data-mode="grok" aria-pressed="false">Grok/);
 assert.match(html, /id="subtypeGroup"/);
 assert.match(html, /data-subtype="free" aria-pressed="false">Free/);
+assert.match(html, /data-subtype="go" aria-pressed="false">Go/);
 assert.match(html, /data-subtype="plus" aria-pressed="true">Plus/);
 assert.match(html, /data-subtype="pro_5x" aria-pressed="false">5x/);
 assert.match(html, /data-subtype="pro_20x" aria-pressed="false">20x/);
@@ -1253,6 +1383,12 @@ assert.match(app, /shareImage\.style\.height = `\$\{height\}px`/);
 assert.match(app, /function readStateFromUrl/);
 assert.match(app, /function writeStateToUrl/);
 assert.match(app, /function createShareUrl/);
+assert.match(app, /urlStateKeys/);
+assert.match(app, /searchInput/);
+assert.match(app, /shopFilter/);
+assert.match(app, /function matchesSearch/);
+assert.match(app, /function formatDataAge/);
+assert.match(app, /\{ id: "go", label: "Go" \}/);
 assert.match(app, /modeConfigs/);
 assert.match(app, /currentMode/);
 assert.match(app, /data-mode/);
@@ -1429,9 +1565,12 @@ assert.match(adminHtml, /id="refreshForm"/);
 assert.match(adminHtml, /id="refreshIntervalMinutes"/);
 assert.match(adminHtml, /id="refreshNow"/);
 assert.match(adminHtml, /id="refreshStatus"/);
-assert.match(adminHtml, /价格\/库存变动通知/);
+assert.match(adminHtml, /价格库存观察/);
 assert.match(adminHtml, /id="stockWatchForm"/);
 assert.match(adminHtml, /id="stockWatchUrl"/);
+assert.match(adminHtml, /id="stockWatchTarget"/);
+assert.match(adminHtml, /id="stockWatchDigest"/);
+assert.match(adminHtml, /每日摘要/);
 assert.match(adminHtml, /id="stockWatchList"/);
 assert.match(adminHtml, /id="sourceList"/);
 assert.match(adminHtml, /src="source-sort\.js"/);
@@ -1456,7 +1595,10 @@ assert.match(adminApp, /refreshStatusUrl/);
 assert.match(adminApp, /refreshSettingsUrl/);
 assert.match(adminApp, /refreshNowUrl/);
 assert.match(adminApp, /stockWatchUrlApi/);
-assert.match(adminApp, /查找商品/);
+assert.match(adminApp, /sourceHealth/);
+assert.match(adminApp, /本轮抓取/);
+assert.match(adminApp, /每日摘要/);
+assert.match(adminApp, /targetPrice/);
 assert.match(adminApp, /加入观察区/);
 assert.match(adminApp, /lastPrice/);
 assert.match(adminApp, /测试通知/);
@@ -1475,7 +1617,9 @@ assert.match(server, /handleStockWatchTest/);
 assert.match(server, /sendWeChatBridgeText/);
 assert.doesNotMatch(server, /WEIXIN_GATEWAY_ALERT/);
 assert.match(styles, /\.source-products/);
-assert.match(styles, /\.stock-watch-panel/);
+assert.match(styles, /\.search-field/);
+assert.match(styles, /\.data-age/);
+assert.match(styles, /\.source-health/);
 assert.match(styles, /\.stock-watch-list/);
 assert.match(styles, /\.stock-watch-row/);
 assert.match(styles, /\.source-card-empty/);
@@ -1505,6 +1649,7 @@ const publicItem = toPublicProductItem({
   sourceUrl: "https://pay.ldxp.cn/shop/test",
   sourceAdapter: "ldxp",
   sourceCategory: "gpt",
+  fetchedAt: "2026-08-14T01:00:00.000Z",
   confidence: 0.9,
   tags: ["plus"],
   matchReasons: ["命中套餐词: plus"],
@@ -1513,6 +1658,7 @@ const publicItem = toPublicProductItem({
 });
 assert.equal(publicItem.title, "ChatGPT Plus 成品号");
 assert.equal(publicItem.subtype, "plus");
+assert.equal(publicItem.fetchedAt, "2026-08-14T01:00:00.000Z");
 assert.equal(Object.hasOwn(publicItem, "raw"), false);
 assert.equal(Object.hasOwn(publicItem, "descriptionText"), false);
 assert.equal(Object.hasOwn(publicItem, "matchReasons"), false);
@@ -1524,6 +1670,7 @@ assert.deepEqual(
       products: "/Users/hal9000/Websites/codex-price-compare/data/backups/x-products.json",
       meta: "/Users/hal9000/Websites/codex-price-compare/data/backups/x-meta.json",
     },
+    sources: [{ sourceId: "ldxp-test", lastError: "HTTP 522" }],
   }),
   { itemCount: 10 },
 );

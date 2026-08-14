@@ -6,6 +6,8 @@ const refreshNow = document.querySelector("#refreshNow");
 const refreshStatus = document.querySelector("#refreshStatus");
 const stockWatchForm = document.querySelector("#stockWatchForm");
 const stockWatchUrl = document.querySelector("#stockWatchUrl");
+const stockWatchTarget = document.querySelector("#stockWatchTarget");
+const stockWatchDigest = document.querySelector("#stockWatchDigest");
 const stockWatchStatus = document.querySelector("#stockWatchStatus");
 const stockWatchList = document.querySelector("#stockWatchList");
 
@@ -29,6 +31,41 @@ function clearElement(element) {
   while (element.firstChild) {
     element.removeChild(element.firstChild);
   }
+}
+
+function sourceHealth(sourceId) {
+  if (Array.isArray(meta.sources)) {
+    return meta.sources.find((entry) => entry.sourceId === sourceId) || null;
+  }
+  const skipped = (meta.ldxp?.skipped || []).find((entry) => entry.sourceId === sourceId);
+  if (skipped) {
+    return {
+      status: String(skipped.reason || "").includes("冷却") ? "cooldown" : "skipped",
+      reason: skipped.reason || null,
+      ageHours: null,
+    };
+  }
+  const error = (meta.errors || []).find((entry) => entry.sourceId === sourceId);
+  if (error) {
+    return { status: "failed", reason: error.message, ageHours: null };
+  }
+  return null;
+}
+
+function healthStatusLabel(status) {
+  return {
+    ok: "已刷新",
+    skipped: "本轮跳过",
+    cooldown: "冷却中",
+    failed: "失败",
+  }[status] || status || "未知";
+}
+
+function formatAgeHours(hours) {
+  if (hours == null || !Number.isFinite(hours)) return "年龄未知";
+  if (hours < 1) return "刚刚刷新";
+  if (hours < 48) return `${Math.round(hours)} 小时前`;
+  return `${Math.round(hours / 24)} 天前`;
 }
 
 function unknownProductsForSource(sourceId) {
@@ -112,7 +149,10 @@ function renderSources() {
   const lastRefresh = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
   const nextRefreshAt = meta.nextRefreshAt ? new Date(meta.nextRefreshAt).toLocaleString("zh-CN") : "等待服务端调度";
   const unknownCount = products.filter((item) => item.subtype === "unknown").length;
-  adminSummary.textContent = `共 ${sources.length} 个店铺，${unknownCount} 条 unknown 商品。最近刷新：${lastRefresh}；下次刷新：${nextRefreshAt}`;
+  const attempted = meta.attemptedCount ?? meta.successCount ?? sources.length;
+  const skipped = meta.skippedCount ?? meta.ldxp?.staleSourceCount ?? 0;
+  const failed = meta.failureCount ?? 0;
+  adminSummary.textContent = `共 ${sources.length} 个店铺，本轮抓取 ${attempted}、跳过 ${skipped}、失败 ${failed}；${unknownCount} 条 unknown。最近刷新：${lastRefresh}；下次刷新：${nextRefreshAt}`;
 
   for (const source of sources) {
     const unknownProducts = unknownProductsForSource(source.id);
@@ -133,6 +173,19 @@ function renderSources() {
     count.className = "count-pill";
     count.textContent = `unknown: ${unknownProducts.length}`;
 
+    const health = sourceHealth(source.id);
+    if (health) {
+      const status = document.createElement("span");
+      status.className = `status-pill status-${health.status || "skipped"}`;
+      status.textContent = `${healthStatusLabel(health.status)} · ${formatAgeHours(health.ageHours)}`;
+      header.append(name, adapter, count, status);
+    } else {
+      header.append(name, adapter, count);
+    }
+    if (source.adapter === "ldxp") {
+      header.appendChild(createCoreSourceToggle(source));
+    }
+
     const productRows = document.createElement("div");
     productRows.className = "source-products";
     if (unknownProducts.length === 0) {
@@ -143,11 +196,14 @@ function renderSources() {
       }
     }
 
-    header.append(name, adapter, count);
-    if (source.adapter === "ldxp") {
-      header.appendChild(createCoreSourceToggle(source));
+    if (health?.reason) {
+      const reason = document.createElement("p");
+      reason.className = "source-health";
+      reason.textContent = health.reason;
+      card.append(header, reason, productRows);
+    } else {
+      card.append(header, productRows);
     }
-    card.append(header, productRows);
     sourceList.appendChild(card);
   }
 }
@@ -179,7 +235,11 @@ function renderStockWatch() {
 
     const metaLine = document.createElement("span");
     metaLine.className = "match-reasons";
-    metaLine.textContent = `${current.sourceName || entry.sourceName || "未知来源"} · ${entry.productId}`;
+    const missingLabel = !entry.current && entry.missingSince
+      ? ` · 已消失 ${formatTime(entry.missingSince)}`
+      : "";
+    const targetLabel = typeof entry.targetPrice === "number" ? ` · 到价 ¥${entry.targetPrice}` : "";
+    metaLine.textContent = `${current.sourceName || entry.sourceName || "未知来源"} · ${entry.productId}${targetLabel}${missingLabel}`;
 
     main.append(title, metaLine);
 
@@ -188,11 +248,12 @@ function renderStockWatch() {
     price.textContent = formatPrice(typeof current.price === "number" ? current.price : entry.lastPrice);
 
     const stock = document.createElement("span");
-    stock.className = `stock-pill stock-${current.stockStatus || entry.lastStockStatus || "unknown"}`;
-    stock.textContent = stockLabel(current.stockStatus ? current : {
-      stockStatus: entry.lastStockStatus,
+    const stockItem = current.stockStatus ? current : {
+      stockStatus: entry.missingSince ? "missing" : entry.lastStockStatus,
       stockCount: entry.lastStockCount,
-    });
+    };
+    stock.className = `stock-pill stock-${stockItem.stockStatus || "unknown"}`;
+    stock.textContent = entry.missingSince && !current.stockStatus ? "已消失" : stockLabel(stockItem);
 
     const notify = document.createElement("span");
     notify.className = "count-pill";
@@ -263,6 +324,7 @@ async function loadAdminData() {
     sources = sortSources(Array.isArray(sourcesData.sources) ? sourcesData.sources : []);
     meta = metaData && typeof metaData === "object" ? metaData : {};
     stockWatchItems = Array.isArray(stockWatchData.items) ? stockWatchData.items : [];
+    if (stockWatchDigest) stockWatchDigest.checked = stockWatchData.digestEnabled === true;
     renderRefreshStatus(refreshData);
     renderStockWatch();
     renderSources();
@@ -272,11 +334,13 @@ async function loadAdminData() {
   }
 }
 
-async function addStockWatch(url) {
+async function addStockWatch(url, targetPrice) {
+  const payload = { url };
+  if (targetPrice) payload.targetPrice = targetPrice;
   const response = await fetch(stockWatchUrlApi, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify(payload),
   });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
@@ -371,12 +435,33 @@ stockWatchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   stockWatchStatus.textContent = "正在查找商品...";
   try {
-    await addStockWatch(stockWatchUrl.value);
+    await addStockWatch(stockWatchUrl.value, stockWatchTarget?.value);
     stockWatchUrl.value = "";
+    if (stockWatchTarget) stockWatchTarget.value = "";
     stockWatchStatus.textContent = "已匹配商品 ID 并加入观察区。";
     await loadAdminData();
   } catch (error) {
     stockWatchStatus.textContent = `关注失败：${error.message}`;
+  }
+});
+
+stockWatchDigest?.addEventListener("change", async () => {
+  stockWatchDigest.disabled = true;
+  stockWatchStatus.textContent = "正在保存摘要设置...";
+  try {
+    const response = await fetch(stockWatchUrlApi, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ digestEnabled: stockWatchDigest.checked }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
+    stockWatchStatus.textContent = result.digestEnabled ? "已开启每日摘要。" : "已关闭每日摘要。";
+  } catch (error) {
+    stockWatchDigest.checked = !stockWatchDigest.checked;
+    stockWatchStatus.textContent = `摘要设置失败：${error.message}`;
+  } finally {
+    stockWatchDigest.disabled = false;
   }
 });
 
