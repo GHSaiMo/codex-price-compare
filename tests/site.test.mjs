@@ -16,6 +16,7 @@ const styles = await readFile(new URL("styles.css", root), "utf8");
 
 assert.match(html, /data-products-url="data\/products\.json"/);
 assert.match(html, /包含缺货/);
+assert.match(html, /class="toolbar-row toolbar-row-search" hidden/);
 assert.match(html, /id="searchInput"/);
 assert.match(html, /id="shopFilter"/);
 assert.match(html, /搜索标题或店铺/);

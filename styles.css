@@ -205,6 +205,10 @@ h1 {
   align-items: center;
 }
 
+.toolbar-row-search[hidden] {
+  display: none;
+}
+
 .search-field,
 .shop-field {
   display: block;
