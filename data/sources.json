@@ -61,9 +61,11 @@
       "id": "ldxp-haoai",
       "name": "Ai小店",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/haoai",
-      "token": "haoai"
+      "token": "haoai",
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-aishop86",
@@ -77,10 +79,12 @@
       "id": "ldxp-ai-shop",
       "name": "AI小铺",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/echo_dream",
       "token": "echo_dream",
-      "core": false
+      "core": false,
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-catfk-mrnf",
@@ -94,9 +98,11 @@
       "id": "ldxp-z7krwfir",
       "name": "AI最严厉的父亲",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/Z7KRWFIR",
-      "token": "Z7KRWFIR"
+      "token": "Z7KRWFIR",
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-akkkk",
@@ -110,10 +116,12 @@
       "id": "ldxp-catcoder",
       "name": "CatCoder AI",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/catcoder",
       "token": "catcoder",
-      "core": false
+      "core": false,
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-t7q1v995",
@@ -127,10 +135,12 @@
       "id": "ldxp-doghubx",
       "name": "doghubx",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/JBJJWNA5",
       "token": "JBJJWNA5",
-      "core": false
+      "core": false,
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-ft7",
@@ -144,10 +154,12 @@
       "id": "ldxp-ai-yuantou",
       "name": "嘎子AI",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/YQUOBIW1",
       "token": "YQUOBIW1",
-      "core": true
+      "core": true,
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-ljmzqqh3",
@@ -211,9 +223,11 @@
       "id": "ldxp-longteng",
       "name": "龙腾专卖店",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/DEQLOPDB",
-      "token": "DEQLOPDB"
+      "token": "DEQLOPDB",
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-maomao-ai",
@@ -236,9 +250,11 @@
       "id": "ldxp-niuniushop",
       "name": "牛牛ai专卖店",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/niuniushop",
-      "token": "niuniushop"
+      "token": "niuniushop",
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 525"
     },
     {
       "id": "ldxp-qihangai",
@@ -277,10 +293,12 @@
       "id": "ldxp-shenqibaobei",
       "name": "神奇宝贝",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/6Q8DVZ9B",
       "token": "6Q8DVZ9B",
-      "core": false
+      "core": false,
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-pay-ldxp-cn-irpbfs50",
@@ -294,10 +312,12 @@
       "id": "ldxp-xiaojiu",
       "name": "小久",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
       "url": "https://pay.ldxp.cn/shop/VUOJQOHY",
       "token": "VUOJQOHY",
-      "core": false
+      "core": false,
+      "disabledAt": "2026-08-14T02:00:00.000Z",
+      "disabledReason": "HTTP 522"
     },
     {
       "id": "ldxp-rtdz8p7i",

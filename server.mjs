@@ -10,6 +10,7 @@ import {
   toPublicMeta,
   toPublicProductsDocument,
 } from "./src/public-payload.mjs";
+import { readPriceHistory, summarizeHistory } from "./src/price-history.mjs";
 import { refreshProducts } from "./src/refresh.mjs";
 import {
   buildStockWatchView,
@@ -31,6 +32,7 @@ const metaPath = join(ROOT, "data/meta.json");
 const productsPath = join(ROOT, "data/products.json");
 const refreshSettingsPath = join(ROOT, "data/refresh-settings.json");
 const stockWatchPath = join(ROOT, "data/stock-watch.json");
+const priceHistoryPath = join(ROOT, "data/price-history.json");
 const knownAdapters = new Set(["ldxp", "acg", "dujiao"]);
 let refreshTimer = null;
 let refreshInProgress = false;
@@ -323,14 +325,24 @@ async function handleSourceUpdate(sourceId, request, response) {
 }
 
 async function handleStockWatchList(response) {
-  const [watchData, products] = await Promise.all([
+  const [watchData, products, history] = await Promise.all([
     readStockWatch(stockWatchPath),
     readProducts(),
+    readPriceHistory(priceHistoryPath),
   ]);
   sendJson(response, 200, {
     digestEnabled: watchData.digestEnabled === true,
     lastDigestAt: watchData.lastDigestAt,
-    items: buildStockWatchView(watchData.items, products),
+    items: buildStockWatchView(watchData.items, products).map((entry) => {
+      const points = history.items[entry.productId]?.points || [];
+      return {
+        ...entry,
+        history: {
+          ...summarizeHistory(points),
+          points,
+        },
+      };
+    }),
   });
 }
 

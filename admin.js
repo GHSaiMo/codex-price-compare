@@ -68,6 +68,52 @@ function formatAgeHours(hours) {
   return `${Math.round(hours / 24)} 天前`;
 }
 
+function createHistorySparkline(history) {
+  const points = Array.isArray(history?.points) ? history.points.filter((point) => typeof point.p === "number") : [];
+  if (points.length < 2 && history?.low == null) return null;
+
+  const wrap = document.createElement("div");
+  wrap.className = "watch-history";
+
+  const label = document.createElement("span");
+  if (typeof history?.low === "number" && typeof history?.high === "number") {
+    label.textContent = `14日 ¥${history.low}–¥${history.high}`;
+  } else {
+    label.textContent = "暂无价格走势";
+  }
+  wrap.append(label);
+
+  if (points.length >= 2) {
+    const prices = points.map((point) => point.p);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const width = 120;
+    const height = 28;
+    const pad = 2;
+    const coords = prices.map((price, index) => {
+      const x = pad + (index / (prices.length - 1)) * (width - pad * 2);
+      const y = max === min
+        ? height / 2
+        : pad + (1 - (price - min) / (max - min)) * (height - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "watch-sparkline");
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", String(width));
+    svg.setAttribute("height", String(height));
+    svg.setAttribute("aria-hidden", "true");
+    const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    polyline.setAttribute("fill", "none");
+    polyline.setAttribute("stroke", "currentColor");
+    polyline.setAttribute("stroke-width", "1.5");
+    polyline.setAttribute("points", coords);
+    svg.append(polyline);
+    wrap.append(svg);
+  }
+  return wrap;
+}
+
 function unknownProductsForSource(sourceId) {
   return products.filter((item) => item.sourceId === sourceId && item.subtype === "unknown");
 }
@@ -174,7 +220,12 @@ function renderSources() {
     count.textContent = `unknown: ${unknownProducts.length}`;
 
     const health = sourceHealth(source.id);
-    if (health) {
+    if (source.enabled === false) {
+      const status = document.createElement("span");
+      status.className = "status-pill status-failed";
+      status.textContent = "已停用";
+      header.append(name, adapter, count, status);
+    } else if (health) {
       const status = document.createElement("span");
       status.className = `status-pill status-${health.status || "skipped"}`;
       status.textContent = `${healthStatusLabel(health.status)} · ${formatAgeHours(health.ageHours)}`;
@@ -196,10 +247,10 @@ function renderSources() {
       }
     }
 
-    if (health?.reason) {
+    if (health?.reason || source.disabledReason) {
       const reason = document.createElement("p");
       reason.className = "source-health";
-      reason.textContent = health.reason;
+      reason.textContent = source.disabledReason || health.reason;
       card.append(header, reason, productRows);
     } else {
       card.append(header, productRows);
@@ -242,6 +293,8 @@ function renderStockWatch() {
     metaLine.textContent = `${current.sourceName || entry.sourceName || "未知来源"} · ${entry.productId}${targetLabel}${missingLabel}`;
 
     main.append(title, metaLine);
+    const history = createHistorySparkline(entry.history);
+    if (history) main.append(history);
 
     const price = document.createElement("span");
     price.className = "admin-product-price stock-watch-price";

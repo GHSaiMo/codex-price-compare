@@ -15,7 +15,8 @@ import {
   shouldUseFallbackForError,
 } from "./fallback-proxy.mjs";
 import { fetchLdxpViaPlaywright } from "./ldxp-playwright.mjs";
-import { processStockWatchNotifications } from "./stock-watch.mjs";
+import { updateWatchPriceHistory } from "./price-history.mjs";
+import { processStockWatchNotifications, readStockWatch } from "./stock-watch.mjs";
 
 const root = new URL("../", import.meta.url);
 const dataDir = new URL("data/", root);
@@ -25,11 +26,27 @@ const ldxpSchedulerPath = new URL("ldxp-scheduler.json", dataDir);
 const PRODUCTS_PATH = "data/products.json";
 const META_PATH = "data/meta.json";
 const STOCK_WATCH_PATH = "data/stock-watch.json";
+const PRICE_HISTORY_PATH = "data/price-history.json";
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
 const BACKUP_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
 const LDXP_MAX_SOURCES_PER_RUN = 15;
 const LDXP_DELAY_MIN_MS = 8 * 1000;
 const LDXP_DELAY_MAX_MS = 25 * 1000;
+const DEAD_SOURCE_STALE_MS = 14 * 24 * 60 * 60 * 1000;
+const PERMANENT_SOURCE_FAILURE_PATTERNS = [
+  /商家已被关闭/,
+  /关闭交易/,
+  /店铺不存在/,
+  /商家不存在/,
+  /店铺已关闭/,
+];
+const TRANSIENT_SOURCE_FAILURE_PATTERNS = [
+  /同域名/,
+  /冷却/,
+  /WAF/i,
+  /本轮跳过/,
+  /HTTP 403\b/,
+];
 const DOMAIN_SKIP_ERROR_PATTERNS = [
   /HTTP 403\b/,
   /WAF/i,
@@ -270,6 +287,65 @@ export function buildLdxpRefreshPlan({
       lastSuccess: state.lastSuccess || {},
     },
   };
+}
+
+export function isPermanentSourceFailure(message) {
+  return PERMANENT_SOURCE_FAILURE_PATTERNS.some((pattern) => pattern.test(String(message || "")));
+}
+
+export function isTransientSourceFailure(message) {
+  return TRANSIENT_SOURCE_FAILURE_PATTERNS.some((pattern) => pattern.test(String(message || "")));
+}
+
+export function shouldDisableFailedSource({
+  message,
+  failedAt,
+  lastSuccessAt = null,
+  now = new Date(),
+  staleMs = DEAD_SOURCE_STALE_MS,
+} = {}) {
+  if (isPermanentSourceFailure(message)) return true;
+  if (isTransientSourceFailure(message)) return false;
+  const failedTime = new Date(failedAt || 0).getTime();
+  if (!Number.isFinite(failedTime) || now.getTime() - failedTime < staleMs) return false;
+  if (lastSuccessAt && new Date(lastSuccessAt).getTime() >= failedTime) return false;
+  return /HTTP 5\d\d/.test(String(message || ""));
+}
+
+export function disableDeadSources(sources = [], {
+  lastFailures = {},
+  lastSuccess = {},
+  now = new Date(),
+} = {}) {
+  let changed = false;
+  const next = sources.map((source) => {
+    if (source.enabled === false) return source;
+    const failure = lastFailures[source.id];
+    if (!failure) return source;
+    if (!shouldDisableFailedSource({
+      message: failure.message,
+      failedAt: failure.at,
+      lastSuccessAt: lastSuccess[source.id],
+      now,
+    })) return source;
+    changed = true;
+    return {
+      ...source,
+      enabled: false,
+      disabledAt: now.toISOString(),
+      disabledReason: failure.message,
+    };
+  });
+  return { sources: next, changed };
+}
+
+export function pruneUnknownSourceFailures(lastFailures = {}, sources = []) {
+  const knownIds = new Set(sources.map((source) => source.id));
+  const next = {};
+  for (const [sourceId, failure] of Object.entries(lastFailures)) {
+    if (knownIds.has(sourceId)) next[sourceId] = failure;
+  }
+  return next;
 }
 
 export function buildSourceHealth({
@@ -523,10 +599,18 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
   ]);
   const previousProducts = await readJsonOrNull(PRODUCTS_PATH);
   const backup = await backupCurrentData();
-  const enabledSources = sourcesConfig.sources.filter((source) => source.enabled !== false);
   const ldxpFetchMode = resolveLdxpFetchMode();
   const ldxpSchedulerConfig = resolveLdxpSchedulerConfig();
   const ldxpSchedulerState = await readLdxpSchedulerState();
+  const deadSources = disableDeadSources(sourcesConfig.sources, {
+    lastFailures: ldxpSchedulerState.lastFailures,
+    lastSuccess: ldxpSchedulerState.lastSuccess,
+  });
+  if (deadSources.changed) {
+    sourcesConfig.sources = deadSources.sources;
+    await writeFile(new URL("data/sources.json", root), `${JSON.stringify(sourcesConfig, null, 2)}\n`);
+  }
+  const enabledSources = sourcesConfig.sources.filter((source) => source.enabled !== false);
   const ldxpPlan = buildLdxpRefreshPlan({
     sources: enabledSources,
     state: ldxpSchedulerState,
@@ -597,6 +681,10 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     }
   } finally {
     await fallbackProxy.close();
+    nextLdxpState.lastFailures = pruneUnknownSourceFailures(
+      nextLdxpState.lastFailures,
+      sourcesConfig.sources,
+    );
     await writeLdxpSchedulerState(nextLdxpState);
   }
 
@@ -711,6 +799,25 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     } catch (error) {
       meta.stockWatch = {
         enabled: process.env.STOCK_NOTIFY_ENABLED !== "0",
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+    try {
+      const watchData = await readStockWatch(new URL(STOCK_WATCH_PATH, root));
+      const watchIds = watchData.items.filter((item) => item.enabled !== false).map((item) => item.productId);
+      const history = await updateWatchPriceHistory({
+        historyPath: new URL(PRICE_HISTORY_PATH, root),
+        backupDir,
+        productIds: watchIds,
+        products: sortedItems,
+        now: new Date(generatedAt),
+      });
+      meta.priceHistory = {
+        trackedCount: watchIds.length,
+        pointCount: Object.values(history.items).reduce((sum, series) => sum + (series.points?.length || 0), 0),
+      };
+    } catch (error) {
+      meta.priceHistory = {
         error: error instanceof Error ? error.message : String(error),
       };
     }

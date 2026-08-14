@@ -874,6 +874,19 @@ input {
   line-height: 1.45;
 }
 
+.watch-history {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.watch-sparkline {
+  display: block;
+  color: var(--accent);
+}
+
 .status-pill {
   padding: 3px 7px;
   border: 1px solid var(--line);

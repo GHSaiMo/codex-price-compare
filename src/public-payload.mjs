@@ -59,6 +59,6 @@ export function toPublicProductsDocument(products) {
 
 export function toPublicMeta(meta) {
   if (!meta || typeof meta !== "object") return {};
-  const { backup, sources, ...publicMeta } = meta;
+  const { backup, sources, priceHistory, ...publicMeta } = meta;
   return publicMeta;
 }

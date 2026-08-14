@@ -3,6 +3,7 @@ data/products.json
 data/refresh-settings.json
 data/refresh-cooldown.json
 data/stock-watch.json
+data/price-history.json
 data/ldxp-scheduler.json
 data/backups/
 .playwright-ldxp-profile/
