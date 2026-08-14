@@ -326,16 +326,6 @@ function syncShopFilter() {
   }
 }
 
-function formatDataAge(item) {
-  const stamp = item.fetchedAt;
-  if (!stamp) return "";
-  const ageMs = Date.now() - new Date(stamp).getTime();
-  if (!Number.isFinite(ageMs) || ageMs < 2 * 60 * 60 * 1000) return "";
-  const hours = ageMs / (60 * 60 * 1000);
-  if (hours < 48) return `${Math.round(hours)}小时前`;
-  return `${Math.round(hours / 24)}天前`;
-}
-
 function createProductCard(item) {
   const card = document.createElement("article");
   card.className = `product-card ${item.stockStatus === "out_of_stock" ? "is-out" : ""}`;
@@ -362,13 +352,6 @@ function createProductCard(item) {
 
   title.append(link);
   card.append(title, source, stock, price);
-  const age = formatDataAge(item);
-  if (age) {
-    const freshness = document.createElement("span");
-    freshness.className = "data-age";
-    freshness.textContent = age;
-    card.append(freshness);
-  }
   return card;
 }
 

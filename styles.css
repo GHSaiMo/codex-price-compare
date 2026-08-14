@@ -517,16 +517,6 @@ input {
   box-shadow: var(--shadow);
 }
 
-.product-card:has(.data-age) {
-  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
-}
-
-.data-age {
-  color: var(--muted);
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
 .product-card.is-out {
   color: #707783;
   background: var(--out-panel);
