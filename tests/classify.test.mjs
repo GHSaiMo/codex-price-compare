@@ -301,14 +301,14 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("ChatGPT GO 会员账号 成品号", "", rules).subtype,
-  "go",
+  "free",
 );
 for (const title of [
   "【印区卡冲】Gpt go 卡冲（质保一个月）",
   "【IOS】GPT GO官方充值 仅质保不掉订阅，封号无售后",
 ]) {
   assert.equal(classifyProduct(title, "", rules).category, "codex");
-  assert.equal(classifyProduct(title, "", rules).subtype, "go");
+  assert.equal(classifyProduct(title, "", rules).subtype, "free");
 }
 assert.equal(
   classifyProduct("ChatGPT Google Voice 账号", "", rules).subtype,
@@ -628,6 +628,10 @@ assert.deepEqual(
 assert.deepEqual(
   refineCodexPlanSubtype("chatgpt plus 月卡 正价官方直充", "plus", rules).subtype,
   "plus",
+);
+assert.equal(
+  refineCodexPlanSubtype("ChatGPT GO 会员账号 成品号", "go", rules).subtype,
+  "free",
 );
 assert.equal(
   refineCodexPlanSubtype("chatgpt pro 20x 月卡", "pro", rules).subtype,

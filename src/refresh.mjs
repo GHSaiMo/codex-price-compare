@@ -706,7 +706,6 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Codex",
         subtypes: [
           { id: "free", label: "Free" },
-          { id: "go", label: "Go" },
           { id: "plus", label: "Plus" },
           { id: "pro_5x", label: "5x" },
           { id: "pro_20x", label: "20x" },

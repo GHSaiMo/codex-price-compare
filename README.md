@@ -1,6 +1,6 @@
 # Codex 比价
 
-一个轻量的 Codex / ChatGPT 与 Grok 相关商品信息聚合与比价页面，用于汇总多个卡网店铺的公开商品信息。首页支持 Codex / Grok 双模式切换：Codex 按 Free、Go、Plus、5x、20x、SMS 分类，Grok 按 Free、1M、3M、1Y 分类，展示价格、库存和店铺来源。
+一个轻量的 Codex / ChatGPT 与 Grok 相关商品信息聚合与比价页面，用于汇总多个卡网店铺的公开商品信息。首页支持 Codex / Grok 双模式切换：Codex 按 Free、Plus、5x、20x、SMS 分类，Grok 按 Free、1M、3M、1Y 分类，展示价格、库存和店铺来源。
 
 > 本站仅汇总公开商品信息供参考，不代表对任何店铺或商品质量作出背书。
 
@@ -12,13 +12,13 @@
 
 ![Grok 比价主页面截图](assets/grok-price-compare-home.png)
 
-主页面支持 Codex / Grok 模式切换。Codex 模式默认聚焦 Plus 商品，并提供 Free、Go、Plus、5x、20x、SMS 分类；Grok 模式默认聚焦 1M，并提供 Free、1M、3M、1Y 分类。同一列表展示商品标题、来源店铺、库存状态和价格，也可搜索标题、按店铺筛选，或开启“包含缺货”对比完整供给。
+主页面支持 Codex / Grok 模式切换。Codex 模式默认聚焦 Plus 商品，并提供 Free、Plus、5x、20x、SMS 分类；Grok 模式默认聚焦 1M，并提供 Free、1M、3M、1Y 分类。同一列表展示商品标题、来源店铺、库存状态和价格，也可搜索标题、按店铺筛选，或开启“包含缺货”对比完整供给。
 
 ## 项目特性
 
 - 汇总多个卡网店铺的公开商品数据，统一展示商品标题、价格、库存和来源店铺。
 - 首页支持 Codex / Grok 双模式切换，店铺列表与商品采集链路共享。
-- Codex 按 Free、Go、Plus、5x、20x、SMS 分类筛选；Grok 按 Free、1M、3M、1Y 分类筛选。
+- Codex 按 Free、Plus、5x、20x、SMS 分类筛选；Grok 按 Free、1M、3M、1Y 分类筛选。
 - Codex 默认聚焦 Plus（含缺货），Grok 默认聚焦 1M。
 - 支持标题搜索、店铺筛选、价格升序 / 降序排序，并可选择是否包含缺货商品。
 - 商品列表采用紧凑单行布局，便于快速比较不同店铺的库存与价格。
@@ -44,7 +44,7 @@ http://127.0.0.1:49173/
 主页面展示商品列表，包含：
 
 - 模式切换：`Codex` / `Grok`
-- Codex 分类：`Free`、`Go`、`Plus`、`5x`、`20x`、`SMS`
+- Codex 分类：`Free`、`Plus`、`5x`、`20x`、`SMS`
 - Grok 分类：`Free`、`1M`、`3M`、`1Y`
 - 搜索标题或店铺，并按店铺筛选
 - 排序：价格从低到高 / 价格从高到低

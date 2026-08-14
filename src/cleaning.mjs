@@ -143,6 +143,10 @@ export function refineCodexPlanSubtype(haystack, subtype, rules = {}) {
     return { subtype: "plus", parent: "plus", matches: [] };
   }
 
+  if (subtype === "go") {
+    return { subtype: "free", parent: "free", matches: [] };
+  }
+
   if (subtype === "pro") {
     const heavyMatches = matchedTerms(haystack, rules.pro20xTerms || []);
     if (heavyMatches.length > 0) {

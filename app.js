@@ -46,7 +46,6 @@ const modeConfigs = {
     defaultSubtype: "plus",
     subtypes: [
       { id: "free", label: "Free" },
-      { id: "go", label: "Go" },
       { id: "plus", label: "Plus" },
       { id: "pro_5x", label: "5x" },
       { id: "pro_20x", label: "20x" },
@@ -69,7 +68,7 @@ const modeConfigs = {
 const subtypeValuesFromUrl = new Map([
   ["free", "free"],
   ["plus", "plus"],
-  ["go", "go"],
+  ["go", "free"],
   ["trial", "plus"],
   ["plus_trial", "plus"],
   ["ready", "plus"],
@@ -179,11 +178,16 @@ function matchesSearch(item, query = currentQuery) {
   return tokens.every((token) => haystack.includes(token));
 }
 
+function canonicalSubtype(item) {
+  return item?.subtype === "go" ? "free" : item?.subtype;
+}
+
 function matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock = true } = {}) {
   const subtypeValues = currentSubtypeValues();
+  const itemSubtype = canonicalSubtype(item);
   if (productBrand(item) !== currentMode) return false;
-  if (!subtypeValues.includes(item.subtype)) return false;
-  if (item.subtype !== currentSubtype) return false;
+  if (!subtypeValues.includes(itemSubtype)) return false;
+  if (itemSubtype !== currentSubtype) return false;
   if (typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE) return false;
   if (!allowOutOfStock && item.stockStatus === "out_of_stock") return false;
   if (currentShopId && item.sourceId !== currentShopId) return false;
