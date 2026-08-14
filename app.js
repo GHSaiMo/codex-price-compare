@@ -41,11 +41,14 @@ const modeConfigs = {
     id: "codex",
     label: "Codex",
     title: "Codex 比价",
-    defaultSubtype: "plus",
+    defaultSubtype: "plus_ready",
     subtypes: [
       { id: "free", label: "Free" },
-      { id: "plus", label: "Plus" },
-      { id: "pro", label: "Pro" },
+      { id: "plus_trial", label: "日抛" },
+      { id: "plus_ready", label: "成品" },
+      { id: "plus_topup", label: "直充" },
+      { id: "pro_5x", label: "5x" },
+      { id: "pro_20x", label: "20x" },
       { id: "codex_sms", label: "SMS" },
     ],
   },
@@ -64,8 +67,18 @@ const modeConfigs = {
 };
 const subtypeValuesFromUrl = new Map([
   ["free", "free"],
-  ["plus", "plus"],
-  ["pro", "pro"],
+  ["plus", "plus_ready"],
+  ["trial", "plus_trial"],
+  ["plus_trial", "plus_trial"],
+  ["ready", "plus_ready"],
+  ["plus_ready", "plus_ready"],
+  ["topup", "plus_topup"],
+  ["plus_topup", "plus_topup"],
+  ["pro", "pro_5x"],
+  ["5x", "pro_5x"],
+  ["pro_5x", "pro_5x"],
+  ["20x", "pro_20x"],
+  ["pro_20x", "pro_20x"],
   ["sms", "codex_sms"],
   ["codex_sms", "codex_sms"],
   ["m12", "m12"],
@@ -80,6 +93,15 @@ const subtypeValuesFromUrl = new Map([
   ["y1", "y1"],
   ["1y", "y1"],
   ["year", "y1"],
+]);
+const subtypeToUrlValue = new Map([
+  ["codex_sms", "sms"],
+  ["m12", "m1"],
+  ["plus_trial", "trial"],
+  ["plus_ready", "ready"],
+  ["plus_topup", "topup"],
+  ["pro_5x", "5x"],
+  ["pro_20x", "20x"],
 ]);
 const urlStateKeys = {
   mode: "mode",
@@ -336,15 +358,14 @@ function writeStateToUrl() {
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
+function subtypeForUrl(subtype) {
+  return subtypeToUrlValue.get(subtype) || subtype;
+}
+
 function createShareUrl() {
   const url = new URL(window.location.href);
   url.searchParams.set(urlStateKeys.mode, currentMode);
-  url.searchParams.set(
-    urlStateKeys.subtype,
-    currentSubtype === "codex_sms"
-      ? "sms"
-      : (currentSubtype === "m12" ? "m1" : currentSubtype),
-  );
+  url.searchParams.set(urlStateKeys.subtype, subtypeForUrl(currentSubtype));
   url.searchParams.set(urlStateKeys.stock, includeOutOfStock.checked ? "all" : "available");
   url.searchParams.set(urlStateKeys.sort, currentSort === "price-desc" ? "desc" : "asc");
   return url;

@@ -5,6 +5,11 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadDotEnv } from "./src/env.mjs";
+import {
+  isPublicStaticPath,
+  toPublicMeta,
+  toPublicProductsDocument,
+} from "./src/public-payload.mjs";
 import { refreshProducts } from "./src/refresh.mjs";
 import {
   buildStockWatchView,
@@ -95,6 +100,24 @@ function sendJson(response, statusCode, payload) {
     "cache-control": "no-store",
   });
   response.end(`${JSON.stringify(payload, null, 2)}\n`);
+}
+
+async function sendPublicJson(response, method, filePath, transform) {
+  try {
+    const payload = transform(JSON.parse(await readFile(filePath, "utf8")));
+    response.writeHead(200, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    });
+    if (method === "HEAD") {
+      response.end();
+      return;
+    }
+    response.end(`${JSON.stringify(payload)}\n`);
+  } catch {
+    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Not Found");
+  }
 }
 
 function slugify(value) {
@@ -429,9 +452,24 @@ function createStaticServer(defaultFile, port, allowApi = false) {
       return;
     }
 
+    if (!allowApi && !isPublicStaticPath(pathname)) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not Found");
+      return;
+    }
+
     if (request.method !== "GET" && request.method !== "HEAD") {
       response.writeHead(405, { Allow: "GET, HEAD, POST, PATCH" });
       response.end("Method Not Allowed");
+      return;
+    }
+
+    if (!allowApi && pathname === "/data/products.json") {
+      await sendPublicJson(response, request.method, productsPath, toPublicProductsDocument);
+      return;
+    }
+    if (!allowApi && pathname === "/data/meta.json") {
+      await sendPublicJson(response, request.method, metaPath, toPublicMeta);
       return;
     }
 

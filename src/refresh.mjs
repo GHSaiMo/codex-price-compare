@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import {
@@ -26,6 +26,7 @@ const PRODUCTS_PATH = "data/products.json";
 const META_PATH = "data/meta.json";
 const STOCK_WATCH_PATH = "data/stock-watch.json";
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
+const BACKUP_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
 const LDXP_MAX_SOURCES_PER_RUN = 15;
 const LDXP_DELAY_MIN_MS = 8 * 1000;
 const LDXP_DELAY_MAX_MS = 25 * 1000;
@@ -62,14 +63,50 @@ async function backupCurrentData(date = new Date()) {
   for (const name of ["products", "meta"]) {
     try {
       const source = new URL(`data/${name}.json`, root);
-      const target = new URL(`${stamp}-${name}.json`, backupDir);
+      const filename = `${stamp}-${name}.json`;
+      const target = new URL(filename, backupDir);
       await copyFile(source, target);
-      backups[name] = target.pathname;
+      backups[name] = `data/backups/${filename}`;
     } catch {
       // 首次刷新时可能还没有历史文件。
     }
   }
+  await pruneExpiredBackups({ now: date });
   return backups;
+}
+
+export function parseBackupFilenameDate(filename) {
+  const match = String(filename || "").match(/^(\d{4}-\d{2}-\d{2}T)(\d{2})-(\d{2})-(\d{2})-(\d{3}Z)-/);
+  if (!match) return null;
+  const date = new Date(`${match[1]}${match[2]}:${match[3]}:${match[4]}.${match[5]}`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export async function pruneExpiredBackups({
+  dir = backupDir,
+  now = new Date(),
+  retentionMs = BACKUP_RETENTION_MS,
+} = {}) {
+  const cutoff = now.getTime() - retentionMs;
+  let names = [];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return [];
+  }
+
+  const removed = [];
+  for (const name of names) {
+    const createdAt = parseBackupFilenameDate(name);
+    if (!createdAt || createdAt.getTime() >= cutoff) continue;
+    try {
+      await unlink(new URL(name, dir));
+      removed.push(name);
+    } catch {
+      // 单个过期备份删除失败时继续清理其余文件。
+    }
+  }
+  return removed;
 }
 
 async function readCooldown() {
@@ -517,8 +554,11 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Codex",
         subtypes: [
           { id: "free", label: "Free" },
-          { id: "plus", label: "Plus" },
-          { id: "pro", label: "Pro" },
+          { id: "plus_trial", label: "日抛" },
+          { id: "plus_ready", label: "成品" },
+          { id: "plus_topup", label: "直充" },
+          { id: "pro_5x", label: "5x" },
+          { id: "pro_20x", label: "20x" },
           { id: "codex_sms", label: "SMS" },
         ],
       },

@@ -1054,7 +1054,7 @@ input {
   .mode-group,
   .subtype-group,
   .filters {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 6px;
   }
 
@@ -1073,13 +1073,12 @@ input {
   .subtype-group {
     flex: 1 1 auto;
     min-width: 0;
-    height: 34px;
   }
 
   .subtype-button {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-width: 0;
-    padding: 0 6px;
+    padding: 0 8px;
   }
 
   .brand-kicker .mode-group {

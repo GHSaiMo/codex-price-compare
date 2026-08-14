@@ -137,6 +137,47 @@ function buildResult(category, subtype, confidence, tags, matchReasons, extra = 
   };
 }
 
+export function refineCodexPlanSubtype(haystack, subtype, rules = {}) {
+  if (subtype === "plus") {
+    const trialMatches = matchedTerms(haystack, rules.plusTrialTerms || []);
+    if (trialMatches.length > 0) {
+      return { subtype: "plus_trial", parent: "plus", matches: trialMatches };
+    }
+    const topupMatches = matchedTerms(haystack, rules.plusTopupTerms || []);
+    if (topupMatches.length > 0) {
+      return { subtype: "plus_topup", parent: "plus", matches: topupMatches };
+    }
+    const readyMatches = matchedTerms(haystack, rules.plusReadyTerms || []);
+    return { subtype: "plus_ready", parent: "plus", matches: readyMatches };
+  }
+
+  if (subtype === "pro") {
+    const heavyMatches = matchedTerms(haystack, rules.pro20xTerms || []);
+    if (heavyMatches.length > 0) {
+      return { subtype: "pro_20x", parent: "pro", matches: heavyMatches };
+    }
+    const standardMatches = matchedTerms(haystack, rules.pro5xTerms || []);
+    return { subtype: "pro_5x", parent: "pro", matches: standardMatches };
+  }
+
+  return { subtype, parent: subtype, matches: [] };
+}
+
+function finalizeCodexPlanResult(result, haystack, rules) {
+  if (!result || result.category !== "codex") return result;
+  const refined = refineCodexPlanSubtype(haystack, result.subtype, rules);
+  if (refined.subtype === result.subtype) return result;
+  return {
+    ...result,
+    subtype: refined.subtype,
+    tags: [...new Set([refined.parent, refined.subtype, ...(result.tags || [])])],
+    matchReasons: [
+      ...(result.matchReasons || []),
+      ...refined.matches.slice(0, 2).map((term) => `命中交付词: ${term}`),
+    ],
+  };
+}
+
 function stripNoiseDurationText(text, noiseTerms = []) {
   let output = text;
   for (const term of noiseTerms) {
@@ -393,7 +434,11 @@ export function classifyProduct(title, description = "", rules) {
     if (codexAnchorMatches.length === 0) return grokResult;
   }
 
-  return classifyCodexProduct(titleText, descriptionText, rules);
+  return finalizeCodexPlanResult(
+    classifyCodexProduct(titleText, descriptionText, rules),
+    titleOnly,
+    rules,
+  );
 }
 
 function withCommonFields(raw, source, rules, fields) {

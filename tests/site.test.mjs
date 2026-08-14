@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   classifyProduct,
   normalizeAcgProduct,
   normalizeDujiaoProduct,
   normalizeLdxpProduct,
+  refineCodexPlanSubtype,
   sortProductsForDisplay,
 } from "../src/cleaning.mjs";
 import {
@@ -19,6 +21,8 @@ import {
 import {
   buildLdxpRefreshPlan,
   mergeProductsWithStaleSourceItems,
+  parseBackupFilenameDate,
+  pruneExpiredBackups,
   reclassifyProductItems,
   resolveLdxpFetchMode,
   resolveLdxpSchedulerConfig,
@@ -26,6 +30,12 @@ import {
 import {
   parseDotEnv,
 } from "../src/env.mjs";
+import {
+  isPublicStaticPath,
+  toPublicMeta,
+  toPublicProductItem,
+  toPublicProductsDocument,
+} from "../src/public-payload.mjs";
 import {
   buildLdxpPlaywrightPayload,
   buildLdxpPlaywrightRunners,
@@ -585,11 +595,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接码 | 谷歌账号家宽IP注册", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("谷歌账号注册的ChatGPT Plus｜已使用美区实卡长效接码 （后期随时用）", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("plus pro邀请额度增加 自行使用卖出无售后", "卡密激活 plus和pro额度增加 邀请 自行使用 自行确认自己账号邀请是否有资格 如果自己codex页面不显示邀请获取多少奖励就是0", rules).category,
@@ -644,7 +654,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("ChatGPT Plus 成品号（看教程还不会使用的别拍）", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 for (const title of [
   "【GPT-K12充值】理论2年，可用codex，无需接码",
@@ -687,11 +697,19 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("plus--【codex可用】--该商品质保30天", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("ChatGPT Pro 20x 月卡 正价官方直充", "codex 额度刷新", rules).subtype,
-  "pro",
+  "pro_20x",
+);
+assert.equal(
+  classifyProduct("ChatGPT Pro 5x 月卡 正价官方直充", "codex 额度刷新", rules).subtype,
+  "pro_5x",
+);
+assert.equal(
+  classifyProduct("ChatGPT Pro 成品号", "", rules).subtype,
+  "pro_5x",
 );
 for (const title of [
   "Claude Pro 成品号/代充【质保一个月】美区",
@@ -723,7 +741,7 @@ for (const title of [
 }
 assert.equal(
   classifyProduct("ChatGPT Plus 月卡 正价官方直充", "稳定性仅次于纯Pro线路", rules).subtype,
-  "plus",
+  "plus_topup",
 );
 assert.equal(
   classifyProduct("Perplexity Pro max功能都有，破解版软件，只支持安卓系统", "ChatGPT 分类", rules).category,
@@ -890,7 +908,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("福利网页Plus号,无法反代,不能直接登录codex.如需使用自行接码", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("GPT普号|Free Plan成品✅|账密直登+RT|长效邮箱|带接码地址|适合业务", "", rules).subtype,
@@ -958,23 +976,23 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("gptplus稳定cdk成品账密（需接码质保首登）", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("GPT puls 成品号 质保首登", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("GPT半成品账号 质保首登", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("ChatGPT土区直充月卡", "", rules).subtype,
-  "plus",
+  "plus_topup",
 );
 assert.equal(
   classifyProduct("【日抛】PLUS未接码-仅网页-icloud📭（质保三小时内首登）", "ChatGPT Codex 可用", rules).subtype,
-  "plus",
+  "plus_trial",
 );
 assert.equal(
   classifyProduct("gptplus稳定cdk成品账密（需接码质保首登）", "", rules).category,
@@ -982,11 +1000,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("可达鸭GPT 额度卡 5个号", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("可达鸭GPT 额度卡 10个号", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("gpt team【成品号json反代专用】", "", rules).subtype,
@@ -994,11 +1012,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GPT Plus新号CDK充值（pix渠道）", "请勿使用team空间的token充值", rules).subtype,
-  "plus",
+  "plus_topup",
 );
 assert.equal(
   classifyProduct("GPt Plus 充值CDK kakao 新渠道 自动充值非成品需自备账号，自己账号有team不能冲", "", rules).subtype,
-  "plus",
+  "plus_topup",
 );
 assert.equal(
   classifyProduct("GPt Plus 充值CDK kakao 新渠道 自动充值非成品需自备账号，自己账号有team不能冲", "", rules).matchReasons.some((reason) => reason.includes("plus")),
@@ -1006,11 +1024,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GPT成品号（三天内封号换新号，30天内质保掉订阅）", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("GPT成品号（三天内封号换新号，中转可用）", "", rules).subtype,
-  "plus",
+  "plus_ready",
 );
 assert.equal(
   classifyProduct("GPT PLUS 镜像站(天卡)", "", rules).category,
@@ -1151,7 +1169,7 @@ const dujiao = normalizeDujiaoProduct(
   { name: "Spark-zone", url: "https://spark-zone.org/", adapter: "dujiao" },
   rules,
 );
-assert.equal(dujiao.subtype, "plus");
+assert.equal(dujiao.subtype, "plus_topup");
 assert.equal(dujiao.stockStatus, "low_stock");
 
 assert.deepEqual(
@@ -1210,8 +1228,11 @@ assert.match(html, /data-mode="codex" aria-pressed="true">Codex/);
 assert.match(html, /data-mode="grok" aria-pressed="false">Grok/);
 assert.match(html, /id="subtypeGroup"/);
 assert.match(html, /data-subtype="free" aria-pressed="false">Free/);
-assert.match(html, /data-subtype="plus" aria-pressed="true">Plus/);
-assert.match(html, /data-subtype="pro" aria-pressed="false">Pro/);
+assert.match(html, /data-subtype="plus_trial" aria-pressed="false">日抛/);
+assert.match(html, /data-subtype="plus_ready" aria-pressed="true">成品/);
+assert.match(html, /data-subtype="plus_topup" aria-pressed="false">直充/);
+assert.match(html, /data-subtype="pro_5x" aria-pressed="false">5x/);
+assert.match(html, /data-subtype="pro_20x" aria-pressed="false">20x/);
 assert.match(html, /data-subtype="codex_sms" aria-pressed="false">SMS/);
 assert.doesNotMatch(html, /value="unknown"/);
 assert.doesNotMatch(html, /命中/);
@@ -1245,7 +1266,12 @@ assert.match(app, /1Y/);
 assert.match(app, /defaultSubtype: "m12"/);
 assert.match(app, /切换品牌时回到该模式默认标签/);
 assert.match(app, /\["sms", "codex_sms"\]/);
-assert.match(app, /currentSubtype === "m12" \? "m1" : currentSubtype/);
+assert.match(app, /function subtypeForUrl/);
+assert.match(app, /plus_ready/);
+assert.match(app, /plus_trial/);
+assert.match(app, /plus_topup/);
+assert.match(app, /pro_5x/);
+assert.match(app, /pro_20x/);
 assert.match(app, /\["m1", "m12"\]/);
 assert.match(app, /function createQrImage/);
 assert.match(app, /qrcode/);
@@ -1276,7 +1302,7 @@ assert.doesNotMatch(app, /sortSelect/);
 assert.match(app, /card\.append\(title, source, stock, price\)/);
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);
-assert.match(app, /defaultSubtype: "plus"/);
+assert.match(app, /defaultSubtype: "plus_ready"/);
 assert.match(app, /currentSubtype = modeConfigs.codex.defaultSubtype/);
 assert.match(app, /syncSubtypeButtons/);
 assert.match(app, /syncSortButton/);
@@ -1304,6 +1330,10 @@ assert.match(server, /createStaticServer\("index\.html"/);
 assert.match(server, /createStaticServer\("admin\.html"/);
 assert.match(server, /function isAdminStaticPath/);
 assert.match(server, /!isAdminStaticPath\(pathname\)/);
+assert.match(server, /isPublicStaticPath/);
+assert.match(server, /toPublicProductsDocument/);
+assert.match(server, /toPublicMeta/);
+assert.match(server, /!allowApi && !isPublicStaticPath/);
 assert.match(server, /"\/source-sort\.js"/);
 assert.match(server, /POST/);
 assert.match(server, /knownAdapters/);
@@ -1452,3 +1482,98 @@ assert.match(styles, /\.stock-watch-list/);
 assert.match(styles, /\.stock-watch-row/);
 assert.match(styles, /\.source-card-empty/);
 assert.match(styles, /\.match-reasons/);
+
+assert.equal(isPublicStaticPath("/"), true);
+assert.equal(isPublicStaticPath("/index.html"), true);
+assert.equal(isPublicStaticPath("/data/products.json"), true);
+assert.equal(isPublicStaticPath("/.env"), false);
+assert.equal(isPublicStaticPath("/src/refresh.mjs"), false);
+assert.equal(isPublicStaticPath("/data/stock-watch.json"), false);
+assert.equal(isPublicStaticPath("/data/backups/latest-products.json"), false);
+
+const publicItem = toPublicProductItem({
+  id: "ldxp-test:1",
+  brand: "codex",
+  category: "codex",
+  subtype: "plus_ready",
+  title: "ChatGPT Plus 成品号",
+  price: 12,
+  currency: "CNY",
+  stockStatus: "in_stock",
+  stockCount: 3,
+  url: "https://pay.ldxp.cn/item/1",
+  sourceId: "ldxp-test",
+  sourceName: "test",
+  sourceUrl: "https://pay.ldxp.cn/shop/test",
+  sourceAdapter: "ldxp",
+  sourceCategory: "gpt",
+  confidence: 0.9,
+  tags: ["plus", "plus_ready"],
+  matchReasons: ["命中套餐词: plus"],
+  descriptionText: "内部描述",
+  raw: { goodsKey: "1" },
+});
+assert.equal(publicItem.title, "ChatGPT Plus 成品号");
+assert.equal(publicItem.subtype, "plus_ready");
+assert.equal(Object.hasOwn(publicItem, "raw"), false);
+assert.equal(Object.hasOwn(publicItem, "descriptionText"), false);
+assert.equal(Object.hasOwn(publicItem, "matchReasons"), false);
+assert.equal(Object.hasOwn(publicItem, "confidence"), false);
+assert.deepEqual(
+  toPublicMeta({
+    itemCount: 10,
+    backup: {
+      products: "/Users/hal9000/Websites/codex-price-compare/data/backups/x-products.json",
+      meta: "/Users/hal9000/Websites/codex-price-compare/data/backups/x-meta.json",
+    },
+  }),
+  { itemCount: 10 },
+);
+assert.deepEqual(
+  toPublicProductsDocument({
+    generatedAt: "2026-08-14T00:00:00.000Z",
+    brands: [{ id: "codex" }],
+    categories: [{ id: "codex" }],
+    items: [{
+      id: "ldxp-test:1",
+      title: "Plus",
+      raw: { goodsKey: "1" },
+      descriptionText: "secret",
+    }],
+  }).items.map((item) => Object.keys(item).sort()),
+  [["id", "title"].sort()],
+);
+
+assert.deepEqual(
+  refineCodexPlanSubtype("【日抛】plus 未接码", "plus", rules).subtype,
+  "plus_trial",
+);
+assert.deepEqual(
+  refineCodexPlanSubtype("chatgpt plus 月卡 正价官方直充", "plus", rules).subtype,
+  "plus_topup",
+);
+assert.equal(
+  refineCodexPlanSubtype("chatgpt pro 20x 月卡", "pro", rules).subtype,
+  "pro_20x",
+);
+
+assert.equal(parseBackupFilenameDate("2026-08-01T00-00-00-000Z-products.json")?.toISOString(), "2026-08-01T00:00:00.000Z");
+assert.equal(parseBackupFilenameDate("notes.txt"), null);
+
+const backupDir = await mkdtemp(join(tmpdir(), "codex-price-compare-backups-"));
+try {
+  const keepName = "2026-08-10T00-00-00-000Z-products.json";
+  const dropName = "2026-07-01T00-00-00-000Z-products.json";
+  await writeFile(join(backupDir, keepName), "{}\n");
+  await writeFile(join(backupDir, dropName), "{}\n");
+  await writeFile(join(backupDir, "readme.txt"), "keep\n");
+  const removed = await pruneExpiredBackups({
+    dir: pathToFileURL(`${backupDir}/`),
+    now: new Date("2026-08-14T00:00:00.000Z"),
+    retentionMs: 14 * 24 * 60 * 60 * 1000,
+  });
+  assert.deepEqual(removed, [dropName]);
+  assert.deepEqual((await readdir(backupDir)).sort(), ["readme.txt", keepName].sort());
+} finally {
+  await rm(backupDir, { recursive: true, force: true });
+}
