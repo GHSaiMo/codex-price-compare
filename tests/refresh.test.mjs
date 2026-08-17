@@ -6,8 +6,13 @@ import { pathToFileURL } from "node:url";
 
 import {
   FallbackProxyContext,
+  buildConnectTo,
   buildFallbackProxyConfig,
+  createHttpError,
+  isUnusableAddress,
+  pickUsableIpv4,
   shouldProtectRefreshResult,
+  shouldRetryWithPinnedAddress,
   shouldUseFallbackForError,
 } from "../src/fallback-proxy.mjs";
 import {
@@ -100,14 +105,68 @@ const retryingFallback = new FallbackProxyContext({
 }, {
   execFileAsync: async () => {
     fallbackCommandAttempts += 1;
-    if (fallbackCommandAttempts < 3) throw new Error("SSL_ERROR_SYSCALL");
+    if (fallbackCommandAttempts < 4) throw new Error("SSL_ERROR_SYSCALL");
     return { stdout: '{"ok":true}\n__HTTP_STATUS__:200' };
   },
+  resolveDohIpv4: async () => null,
   wait: async (delayMs) => fallbackRetryWaits.push(delayMs),
 });
 assert.deepEqual(await retryingFallback.fetchJson("https://example.com/data"), { ok: true });
-assert.equal(fallbackCommandAttempts, 3);
+assert.equal(fallbackCommandAttempts, 4);
 assert.deepEqual(fallbackRetryWaits, [100, 200]);
+assert.equal(isUnusableAddress("::1"), true);
+assert.equal(isUnusableAddress("127.0.0.1"), true);
+assert.equal(isUnusableAddress("0.0.0.0"), true);
+assert.equal(isUnusableAddress("104.21.50.237"), false);
+assert.equal(pickUsableIpv4({
+  Answer: [
+    { type: 1, data: "127.0.0.1" },
+    { type: 1, data: "104.21.50.237" },
+  ],
+}), "104.21.50.237");
+assert.equal(
+  buildConnectTo("https://ac-card.org/api/v1/public/products", "104.21.50.237"),
+  "ac-card.org:443:104.21.50.237:443",
+);
+assert.equal(shouldRetryWithPinnedAddress(new Error("SSL_ERROR_SYSCALL")), true);
+assert.equal(shouldRetryWithPinnedAddress(createHttpError(404, "https://example.com")), false);
+const pinnedCalls = [];
+const pinningFallback = new FallbackProxyContext({
+  enabled: true,
+  proxyUrl: "http://127.0.0.1:7890",
+  requestAttempts: 1,
+  retryDelayMs: 0,
+}, {
+  execFileAsync: async (_command, args) => {
+    pinnedCalls.push(args);
+    if (!args.includes("--connect-to")) throw new Error("SSL_ERROR_SYSCALL");
+    return { stdout: '{"ok":true}\n__HTTP_STATUS__:200' };
+  },
+  resolveDohIpv4: async () => "104.21.50.237",
+  wait: async () => {},
+});
+assert.deepEqual(
+  await pinningFallback.fetchJson("https://ac-card.org/api/v1/public/products"),
+  { ok: true },
+);
+assert.equal(pinnedCalls.length, 2);
+assert.ok(pinnedCalls[1].includes("--connect-to"));
+assert.ok(pinnedCalls[1].includes("ac-card.org:443:104.21.50.237:443"));
+let httpFallbackCalls = 0;
+const httpFallback = new FallbackProxyContext({
+  enabled: true,
+  proxyUrl: "http://127.0.0.1:7890",
+  requestAttempts: 3,
+  retryDelayMs: 0,
+}, {
+  execFileAsync: async () => {
+    httpFallbackCalls += 1;
+    return { stdout: "nope\n__HTTP_STATUS__:404" };
+  },
+  resolveDohIpv4: async () => "1.2.3.4",
+});
+await assert.rejects(() => httpFallback.fetchJson("https://example.com/missing"), /HTTP 404/);
+assert.equal(httpFallbackCalls, 1);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 520"), { status: 520 })), true);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 403"), { status: 403 })), true);
 assert.equal(shouldUseFallbackForError(Object.assign(new Error("HTTP 404"), { status: 404 })), false);

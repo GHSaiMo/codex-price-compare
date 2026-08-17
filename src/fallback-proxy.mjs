@@ -1,5 +1,6 @@
 import { execFile, spawn } from "node:child_process";
-import { connect } from "node:net";
+import dns from "node:dns/promises";
+import { connect, isIP } from "node:net";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -7,6 +8,18 @@ const DEFAULT_LOCAL_HOST = "127.0.0.1";
 const DEFAULT_LOCAL_PORT = 7891;
 const DEFAULT_REQUEST_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1000;
+const DOH_URL = "https://cloudflare-dns.com/dns-query";
+const PINNED_ADDRESS_ERROR_PATTERNS = [
+  /SSL_ERROR_SYSCALL/,
+  /SSL_connect/,
+  /Could not resolve/i,
+  /Connection timed out/i,
+  /Failed to connect/i,
+  /Connection reset/i,
+  /empty reply/i,
+  /TLS connect error/i,
+  /DNS 解析结果不可用/,
+];
 const HTTP_FALLBACK_STATUSES = new Set([403, 408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
 const PROTECTIVE_ERROR_PATTERNS = [
   /HTTP 4(?:03|08|29)\b/,
@@ -54,6 +67,87 @@ export function shouldUseFallbackForError(error) {
     return HTTP_FALLBACK_STATUSES.has(error.status);
   }
   return true;
+}
+
+export function isUnusableAddress(address) {
+  const ip = String(address || "").trim();
+  if (!ip) return true;
+  const version = isIP(ip);
+  if (version === 4) {
+    const [first] = ip.split(".").map(Number);
+    return first === 0 || first === 127;
+  }
+  if (version === 6) {
+    const normalized = ip.toLowerCase();
+    return normalized === "::"
+      || normalized === "::1"
+      || normalized === "0:0:0:0:0:0:0:0"
+      || normalized === "0:0:0:0:0:0:0:1"
+      || normalized.startsWith("fe80:")
+      || normalized.startsWith("::ffff:127.");
+  }
+  return true;
+}
+
+export function pickUsableIpv4(dohResponse) {
+  return (dohResponse?.Answer || [])
+    .filter((answer) => Number(answer.type) === 1 && answer.data)
+    .map((answer) => String(answer.data).trim())
+    .find((ip) => !isUnusableAddress(ip)) || null;
+}
+
+export function buildConnectTo(url, ip) {
+  const parsed = new URL(url);
+  const port = parsed.port || (parsed.protocol === "https:" ? "443" : "80");
+  const host = ip.includes(":") ? `[${ip}]` : ip;
+  return `${parsed.hostname}:${port}:${host}:${port}`;
+}
+
+export function shouldRetryWithPinnedAddress(error) {
+  if (Number.isInteger(error?.status)) return false;
+  const message = String(error?.message || error?.stderr || "");
+  return PINNED_ADDRESS_ERROR_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+export async function systemLookupLooksPoisoned(hostname) {
+  try {
+    const records = await dns.lookup(hostname, { all: true, verbatim: true });
+    return records.some((record) => isUnusableAddress(record.address));
+  } catch {
+    return false;
+  }
+}
+
+export async function resolveDohIpv4(hostname, context = null) {
+  const url = `${DOH_URL}?name=${encodeURIComponent(hostname)}&type=A`;
+  try {
+    const response = await fetch(url, {
+      headers: { accept: "application/dns-json" },
+    });
+    if (response.ok) {
+      const ip = pickUsableIpv4(await response.json());
+      if (ip) return ip;
+    }
+  } catch {
+    // fall through to proxy curl
+  }
+
+  if (!context?.config?.proxyUrl || !context.execFileAsync) return null;
+  try {
+    const { stdout } = await context.execFileAsync("curl", [
+      "-sS",
+      "-m",
+      "15",
+      "-x",
+      context.config.proxyUrl,
+      "-H",
+      "accept: application/dns-json",
+      url,
+    ], { maxBuffer: 1024 * 1024 });
+    return pickUsableIpv4(JSON.parse(stdout));
+  } catch {
+    return null;
+  }
 }
 
 export function shouldProtectRefreshResult({
@@ -138,6 +232,7 @@ export class FallbackProxyContext {
     this.config = config;
     this.execFileAsync = dependencies.execFileAsync || execFileAsync;
     this.wait = dependencies.wait || wait;
+    this.resolveDohIpv4 = dependencies.resolveDohIpv4 || ((hostname) => resolveDohIpv4(hostname, this));
     this.child = null;
     this.ownsTunnel = false;
   }
@@ -184,33 +279,55 @@ export class FallbackProxyContext {
     throw lastError;
   }
 
-  async fetchJson(url, { method = "GET", headers = {}, body = null } = {}) {
-    if (this.config.sshHost) {
-      return this.fetchJsonOverSsh(url, { method, headers, body });
-    }
-
-    await this.ensureTunnel();
-
-    const args = [
-      "-sS",
-      "-m",
-      "60",
+  buildCurlArgs(url, { method = "GET", headers = {}, body = null, connectTo = null } = {}) {
+    const args = ["-sS", "-m", "60"];
+    if (connectTo) args.push("--connect-to", connectTo);
+    args.push(
       "-x",
       this.config.proxyUrl,
       "-w",
       "\n__HTTP_STATUS__:%{http_code}",
-    ];
+    );
     for (const [name, value] of Object.entries(headers)) {
       args.push("-H", `${name}: ${value}`);
     }
     if (method !== "GET") args.push("-X", method);
     if (body !== null) args.push("--data", body);
     args.push(String(url));
+    return args;
+  }
 
-    const { stdout } = await this.runCommand("curl", args, { maxBuffer: 20 * 1024 * 1024 });
+  async curlJson(url, options = {}, { attempts } = {}) {
+    const args = this.buildCurlArgs(url, options);
+    const exec = attempts === 1
+      ? (command, commandArgs, execOptions) => this.execFileAsync(command, commandArgs, execOptions)
+      : (command, commandArgs, execOptions) => this.runCommand(command, commandArgs, execOptions);
+    const { stdout } = await exec("curl", args, { maxBuffer: 20 * 1024 * 1024 });
     const { body: responseBody, status } = splitCurlOutput(stdout);
     if (status < 200 || status >= 300) throw createHttpError(status, url);
     return parseJsonResponse(responseBody, url);
+  }
+
+  async resolveConnectTo(url) {
+    const ip = await this.resolveDohIpv4(new URL(url).hostname);
+    return ip ? buildConnectTo(url, ip) : null;
+  }
+
+  async fetchJson(url, { method = "GET", headers = {}, body = null } = {}) {
+    if (this.config.sshHost) {
+      return this.fetchJsonOverSsh(url, { method, headers, body });
+    }
+
+    await this.ensureTunnel();
+    const options = { method, headers, body };
+    try {
+      return await this.curlJson(url, options, { attempts: 1 });
+    } catch (error) {
+      if (!shouldRetryWithPinnedAddress(error)) throw error;
+      const connectTo = await this.resolveConnectTo(url);
+      if (connectTo) return await this.curlJson(url, { ...options, connectTo });
+      return await this.curlJson(url, options);
+    }
   }
 
   async fetchJsonOverSsh(url, { method = "GET", headers = {}, body = null } = {}) {

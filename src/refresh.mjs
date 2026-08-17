@@ -13,6 +13,7 @@ import {
   createHttpError,
   shouldProtectRefreshResult,
   shouldUseFallbackForError,
+  systemLookupLooksPoisoned,
 } from "./fallback-proxy.mjs";
 import { fetchLdxpViaPlaywright } from "./ldxp-playwright.mjs";
 import { updateWatchPriceHistory } from "./price-history.mjs";
@@ -454,6 +455,9 @@ async function requestJson(url, { method = "GET", body = null, fallbackProxy = n
   };
 
   try {
+    if (await systemLookupLooksPoisoned(new URL(url).hostname)) {
+      throw new Error(`DNS 解析结果不可用: ${new URL(url).hostname}`);
+    }
     const response = await fetch(url, {
       method,
       headers,
