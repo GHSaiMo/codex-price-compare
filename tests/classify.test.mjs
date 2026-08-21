@@ -102,6 +102,29 @@ assert.equal(
   "other",
 );
 assert.equal(
+  classifyProduct("icloud 隐私邮箱 只关注可不可以注册GPT", "iCloud隐私邮箱，发货形式为邮箱----取码url，自行开通plus后,取件链接失效概不负责", rules).category,
+  "other",
+);
+assert.equal(
+  normalizeLdxpProduct({
+    goods_key: "s9njn2",
+    name: "icloud 隐私邮箱 只关注可不可以注册GPT",
+    description: "iCloud隐私邮箱，发货形式为邮箱----取码url,自行开通plus后,取件链接失效概不负责",
+    price: "0.18",
+    extend: { stock_count: "20" },
+    link: "/item/s9njn2",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+  null,
+);
+assert.equal(
+  classifyProduct("iCloud邮箱子号--指纹浏览器注册，已注册GPT，带有试用资格", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("谷歌临时邮箱 注册gpt专用", "", rules).category,
+  "other",
+);
+assert.equal(
   normalizeLdxpProduct({
     goods_key: "jftyl3",
     name: "📚 ChatGPT 土区开通稳定订阅教程【帮您少踩坑】",

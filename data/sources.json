@@ -417,7 +417,8 @@
       "name": "沐风小铺",
       "adapter": "dujiao",
       "enabled": true,
-      "url": "https://shop.mfttai.com/"
+      "url": "https://mfhubs.com/",
+      "apiBase": "https://api.mfhubs.com/"
     },
     {
       "id": "dujiao-nexakey",

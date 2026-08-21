@@ -65,7 +65,7 @@ function explicitPlanSubtype(haystack, subtypeTerms = {}) {
 
 function stripPlusUpgradeContext(text) {
   return text
-    .replace(/可\s*(?:升级|开通|开)\s*(?:plus|puls)/g, "可")
+    .replace(/(?:可|自行|自己|如需|支持)?\s*(?:升级|开通|开|充值)\s*(?:plus|puls)/g, " ")
     .replace(/(?:非|不是|并非)\s*[-_]?\s*(?:plus|puls)/g, "")
     .replace(/(?:不含|没有|无)\s*[-_]?\s*(?:plus|puls)/g, "")
     .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "");

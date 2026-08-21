@@ -473,7 +473,9 @@ assert.ok(sources.sources.some((source) => (
   && source.token === "haoai"
 )));
 assert.ok(sources.sources.some((source) => source.url === "https://gmail91.shop/"));
-assert.ok(sources.sources.some((source) => source.url === "https://shop.mfttai.com/"));
+assert.ok(
+  sources.sources.some((source) => source.url === "https://mfhubs.com/" && source.apiBase === "https://api.mfhubs.com/"),
+);
 assert.ok(
   sources.sources.some((source) => source.url === "https://kelaode.vip/" && source.apiBase === "https://api.kelaode.vip/"),
 );
