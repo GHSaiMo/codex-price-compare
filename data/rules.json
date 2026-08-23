@@ -78,10 +78,13 @@
   ],
   "grokAnchorTerms": [
     "grok",
+    "gork",
     "xai",
     "x.ai",
     "supergrok",
-    "super grok"
+    "super grok",
+    "supergork",
+    "super gork"
   ],
   "grokExclusionTerms": [
     "x premium",

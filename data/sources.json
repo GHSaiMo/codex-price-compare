@@ -2,6 +2,14 @@
   "version": 1,
   "sources": [
     {
+      "id": "ldxp-niceai",
+      "name": "91ai小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://pay.ldxp.cn/shop/niceai",
+      "token": "niceai"
+    },
+    {
       "id": "ldxp-kk1818",
       "name": "阿k业务充值",
       "adapter": "ldxp",
@@ -397,13 +405,6 @@
       "adapter": "acg",
       "enabled": true,
       "url": "https://buy.aishopstore.com/"
-    },
-    {
-      "id": "dujiao-gmail91",
-      "name": "91的小店",
-      "adapter": "dujiao",
-      "enabled": true,
-      "url": "https://gmail91.shop/"
     },
     {
       "id": "dujiao-ac-card",

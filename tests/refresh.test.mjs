@@ -472,7 +472,12 @@ assert.ok(sources.sources.some((source) => (
   && source.url === "https://pay.ldxp.cn/shop/haoai"
   && source.token === "haoai"
 )));
-assert.ok(sources.sources.some((source) => source.url === "https://gmail91.shop/"));
+assert.ok(sources.sources.some((source) => (
+  source.id === "ldxp-niceai"
+  && source.name === "91ai小店"
+  && source.url === "https://pay.ldxp.cn/shop/niceai"
+  && source.token === "niceai"
+)));
 assert.ok(
   sources.sources.some((source) => source.url === "https://mfhubs.com/" && source.apiBase === "https://api.mfhubs.com/"),
 );

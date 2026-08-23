@@ -24,9 +24,9 @@ function includesTerm(haystack, term) {
   if (normalizedTerm === "go") {
     return /(^|[^a-z0-9])go(?=$|[^a-z0-9])/.test(haystack);
   }
-  // grok 只限制左侧边界，避免 xgrok 域名误命中，同时保留 grok4.5 这类标题。
-  if (normalizedTerm === "grok") {
-    return /(^|[^a-z0-9])grok/.test(haystack);
+  // grok / gork 只限制左侧边界，避免 xgrok 域名误命中，同时保留 grok4.5 这类标题与错拼别名。
+  if (normalizedTerm === "grok" || normalizedTerm === "gork") {
+    return /(^|[^a-z0-9])(grok|gork)/.test(haystack);
   }
   return haystack.includes(normalizedTerm);
 }

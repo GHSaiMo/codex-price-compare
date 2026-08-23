@@ -291,6 +291,18 @@ assert.equal(
   "1Y",
 );
 assert.equal(
+  classifyProduct("绝版 gork super 1年成品，", "一年x会员绑定成品Grok账号", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("绝版 gork super 1年成品，", "一年x会员绑定成品Grok账号", rules).subtype,
+  "y1",
+);
+assert.equal(
+  classifyProduct("绝版 gork super 1年成品，", "一年x会员绑定成品Grok账号", rules).durationLabel,
+  "1Y",
+);
+assert.equal(
   classifyProduct("Super Grok 1.5视频模型平替", "", rules).category,
   "other",
 );
