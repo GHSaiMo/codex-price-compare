@@ -54,11 +54,23 @@ assert.equal(
   "sms",
 );
 assert.equal(
+  classifyProduct("美国实卡长效接马codex绑定注册通用🔥20-30天【质保不来马】PLUS接马codex接马", "", rules).category,
+  "sms",
+);
+assert.equal(
   classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接码 | 谷歌账号家宽IP注册", "", rules).category,
   "codex",
 );
 assert.equal(
   classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接码 | 谷歌账号家宽IP注册", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接马 | 谷歌账号家宽IP注册", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接马 | 谷歌账号家宽IP注册", "", rules).subtype,
   "plus",
 );
 assert.equal(
@@ -75,6 +87,10 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("gmail 短效谷歌 接码邮箱（GPT注册专用）", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("gmail 短效谷歌 接马邮箱（GPT注册专用）", "", rules).category,
   "other",
 );
 assert.equal(
@@ -355,6 +371,18 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("gpt接码（美卡，无质保，介意勿拍）", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("G接马，美国实卡（25min内可多次验证）", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("G接马，美国实卡（25min内可多次验证）", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("G接码，美国实卡（25min内可多次验证）", "", rules).category,
   "sms",
 );
 assert.equal(
