@@ -43,21 +43,23 @@ function firstMatchedSubtype(haystack, subtypeTerms = {}) {
 
 function titleReasonTermsForSubtype(rules, subtype) {
   return [
-    ...(rules.titleSubtypeTerms?.[subtype] || []),
-    ...(rules.subtypeTerms?.[subtype] || []),
+    ...new Set([
+      ...(rules.titleSubtypeTerms?.[subtype] || []),
+      ...(rules.subtypeTerms?.[subtype] || []),
+    ]),
   ];
 }
 
 function explicitPlanSubtype(haystack, subtypeTerms = {}) {
-  // 标题里的 free/plus/pro/go 明确套餐词优先，避免次要上下文词（如 team 限制）抢分类。
+  // 标题里的 free/plus/pro/go 明确套餐词优先。如果包含 team 则优先归为 free。
   // 这里只认核心套餐词，不直接复用 subtypeTerms 全量词表。
   const termsBySubtype = {
+    free: ["team", "free", "fre", "free号", "普号"],
     pro: ["pro", "5x", "20x"],
     plus: ["plus", "puls"],
     go: ["go"],
-    free: ["free", "fre", "free号", "普号"],
   };
-  for (const subtype of ["pro", "plus", "go", "free"]) {
+  for (const subtype of ["free", "pro", "plus", "go"]) {
     if (matchedTerms(haystack, termsBySubtype[subtype]).length > 0) return subtype;
   }
   return "unknown";
@@ -69,6 +71,13 @@ function stripPlusUpgradeContext(text) {
     .replace(/(?:非|不是|并非)\s*[-_]?\s*(?:plus|puls)/g, "")
     .replace(/(?:不含|没有|无)\s*[-_]?\s*(?:plus|puls)/g, "")
     .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "");
+}
+
+function stripTeamWarningContext(text) {
+  return text
+    .replace(/(?:自己账号|账号)?\s*(?:有|带|含)?\s*team\s*(?:不能|不可|无法|请勿|禁止|别|禁)\s*(?:冲|充|使用)?/g, " ")
+    .replace(/(?:请勿|不要|禁|不支持|不能|无法)\s*(?:使用|带|有)?\s*team/g, " ")
+    .replace(/(?:非|不是|并非|不含|没有|无)\s*[-_]?\s*team/g, " ");
 }
 
 function matchFreeUpgradePurpose(text) {
@@ -335,8 +344,8 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
 function classifyCodexProduct(titleText, descriptionText, rules) {
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   const titleOnly = titleText.toLowerCase();
-  const subtypeCombined = stripPlusUpgradeContext(combined);
-  const subtypeTitleOnly = stripPlusUpgradeContext(titleOnly);
+  const subtypeCombined = stripTeamWarningContext(stripPlusUpgradeContext(combined));
+  const subtypeTitleOnly = stripTeamWarningContext(stripPlusUpgradeContext(titleOnly));
   const freeUpgradePurposeMatch = matchFreeUpgradePurpose(titleOnly);
   const nonPlusNegationMatch = matchNonPlusNegation(titleOnly);
   const freeTitleHintMatch = freeUpgradePurposeMatch || nonPlusNegationMatch;

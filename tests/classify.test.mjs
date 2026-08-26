@@ -486,6 +486,26 @@ assert.equal(
   "free",
 );
 assert.equal(
+  classifyProduct(
+    "【5x team车 8月26日21点发车】周限制，质保下单后4小时使用，额度最少400刀，401可找回",
+    "1. 本商品为 GPT Team 成品 JSON，谷歌邮箱注册。",
+    rules,
+  ).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct(
+    "【5x team车 8月26日21点发车】周限制，质保下单后4小时使用，额度最少400刀，401可找回",
+    "1. 本商品为 GPT Team 成品 JSON，谷歌邮箱注册。",
+    rules,
+  ).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("Codex Team 月权益【车位】（正规车位）【可与plus并存，缓解额度不够用问题】", "", rules).subtype,
+  "free",
+);
+assert.equal(
   classifyProduct("GPT Plus新号CDK充值（pix渠道）", "请勿使用team空间的token充值", rules).subtype,
   "plus",
 );
