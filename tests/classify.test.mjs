@@ -58,6 +58,46 @@ assert.equal(
   "sms",
 );
 assert.equal(
+  classifyProduct("CDK 美国实卡codex 单次接马 可以api对接 自动化codex绑定 PLUS接马codex接马", "注意注意：这是单次的 直接绑定可以下载josn 发货格式：CDK 兑换地址： https://cdk.sms688.cc/ 多号码自动轮换 绑定成功可以直接导出json文件 看清楚这是单次绑定 CDK发货 兑换网站兑换 如遇库存不足，需要大量可以联系客服。", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("CDK 美国实卡codex 单次接马 可以api对接 自动化codex绑定 PLUS接马codex接马", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("【高质量】Plus/codex接马 短效接马 美区（美卡百分百接马）源头可对接", "万号真实成功率94%！！！ 没有验证码之前不会过期不会失效 全自动发卡取码系统，拍下发送卡密和兑换地址，自助操作即可，无需人工 Codex接码，美区，100%一次通过✅", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("【高质量】Plus/codex接马 短效接马 美区（美卡百分百接马）源头可对接", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("ChatG plus Codex 接马 【单次接马】【智利】", "单次接码 看清楚 在下单 无售后", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("ChatG plus Codex 接马 【单次接马】【智利】", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("CDK 美国实卡codex 10次接马 可以api对接 自动化codex绑定 PLUS接马codex接马", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("CDK 美国实卡codex 10次接马 可以api对接 自动化codex绑定 PLUS接马codex接马", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("G接马free号 有RT，附送微软长效邮箱", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("G接马free号 有RT，附送微软长效邮箱", "", rules).subtype,
+  "free",
+);
+assert.equal(
   classifyProduct("【福利价】GPT Plus（直卡渠道）| 美区长效接码 | 谷歌账号家宽IP注册", "", rules).category,
   "codex",
 );

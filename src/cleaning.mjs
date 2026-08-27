@@ -70,7 +70,9 @@ function stripPlusUpgradeContext(text) {
     .replace(/(?:可|自行|自己|如需|支持)?\s*(?:升级|开通|开|充值)\s*(?:plus|puls)/g, " ")
     .replace(/(?:非|不是|并非)\s*[-_]?\s*(?:plus|puls)/g, "")
     .replace(/(?:不含|没有|无)\s*[-_]?\s*(?:plus|puls)/g, "")
-    .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "");
+    .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "")
+    .replace(/(?:plus|puls|pro|free)\s*(?:[/／]\s*(?:plus|puls|pro|free|codex|gpt))*\s*接[码马]/g, " ")
+    .replace(/(?:chatg|chatgpt|gpt)\s+(?:plus|puls)\s+codex\s+接[码马]/g, " ");
 }
 
 function stripTeamWarningContext(text) {
@@ -91,19 +93,31 @@ function matchNonPlusNegation(text) {
 }
 
 function hasSmsNegation(text) {
-  return /不支持.{0,8}接[码马]|不能.{0,8}接[码马]|无法.{0,8}接[码马]|禁止.{0,8}接[码马]|如需.{0,8}接[码马]|(?:需要|需)\s*(?:自行|自己|手机|自己手机)?\s*接[码马]|自行接[码马]|自己接[码马]/.test(text);
+  return /不支持.{0,8}接[码马]|不能.{0,8}接[码马]|无法.{0,8}接[码马]|禁止.{0,8}接[码马]|如需.{0,8}接[码马]|(?:需要|需)\s*(?:自行|自己|手机|自己手机)?\s*接[码马]|自行接[码马]|自己接[码马]|接[码马]可登|接[码马]登录|接[码马]以后|不含接[码马]|无接[码马]|没绑手机|未绑手机|需绑卡|需绑手机|官方充值|直充/.test(text);
 }
 
 function hasStrongSmsServiceSignal(text) {
-  return /(?:短效|长效|单次)?接[码马]专用|短效接[码马]|长效接[码马]|短效[码马]|单次接[码马]|接[码马]成功率|质保接[码马]成功|质保不来[码马]|不出[码马]支持换号|包接到|codex接[码马]|gpt接[码马]|g接[码马]|手机接[码马]|接手机验证[码马]|【接[码马]】|(?:plus|puls|pro|free)接[码马]|(?:实卡|实体卡|虚拟卡).{0,10}(?:多次|单次)?验证|可多次验证/.test(text);
+  return (
+    /(?:短效|长效|单次|\d+次|一次性)?接[码马]专用/.test(text)
+    || /短效接[码马]|长效接[码马]|短效[码马]|长效[码马]|单次接[码马]|单次[码马]|\d+次接[码马]|\d+次[码马]|一次性接[码马]|一次性[码马]/.test(text)
+    || /接[码马]成功率|质保接[码马]成功|质保不来[码马]|不出[码马]支持换号|包接到|质保首[码马]|质保首接|保首接[码马]/.test(text)
+    || /(?:可|支持|自助|自动)换号|\d+次自助换号|换号\d+次|换号码/.test(text)
+    || /(?:全)?自动(?:发卡)?(?:取[码马]|接[码马])|自助(?:取[码马]|接[码马])|无限取[码马]|接[码马]服务/.test(text)
+    || /(?:plus|puls|pro|free|gpt|chatg|codex|g)[\s/／]+(?:plus|puls|pro|free|gpt|chatg|codex|g)*[\s/／]*接[码马]|(?:plus|puls|pro|free|gpt|chatg|codex|g)接[码马]/.test(text)
+    || /接手机验证[码马]|手机验证[码马]|短信接[码马]|短信验证[码马]?/.test(text)
+    || /(?:实卡|实体卡|虚拟卡|美卡).{0,10}(?:多次|单次|\d+次)?验证|可多次验证|多次验证/.test(text)
+    || /(?:实卡|实体卡).{0,12}接[码马]/.test(text)
+    || /(?:自动化|自动)?codex绑定|绑定codex/.test(text)
+    || /【(?:单次|短效|长效)?接[码马]】|t-mobile/.test(text)
+  );
 }
 
 function isFinishedAccountSmsMention(text) {
   // Plus/Free 成品号会写“美区长效接码/已使用...接码”，这是账号卖点而不是接码服务本身。
   return (
     /已使用.{0,12}(?:长效|短效|单次)?接[码马]/.test(text)
-    || /(?:成品|直卡|现货|账号注册|谷歌账号|google\s*账号).{0,24}(?:长效|短效|单次)?接[码马]/.test(text)
-    || /(?:长效|短效|单次)?接[码马].{0,24}(?:成品|直卡|现货|账号注册|谷歌账号|google\s*账号)/.test(text)
+    || /(?:成品|直卡|现货|账号注册|谷歌账号|google\s*账号|rt\s*文件|首登|free号|plus号|pro号|账号|帐号|有\s*rt).{0,24}(?:长效|短效|单次)?接[码马]/.test(text)
+    || /(?:长效|短效|单次)?接[码马].{0,24}(?:成品|直卡|现货|账号注册|谷歌账号|google\s*账号|rt\s*文件|首登|free号|plus号|pro号|账号|帐号|有\s*rt)/.test(text)
   ) && !/(?:质保不来[码马]|注册通用|接[码马]专用|单次接[码马]|短效[码马]|包接到|质保接[码马]成功|接[码马]成功率)/.test(text);
 }
 
@@ -352,6 +366,7 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
   const titleExclusionMatches = matchedTerms(titleOnly, rules.titleExclusionTerms || []);
   const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
   const anchorMatches = matchedTerms(combined, rules.anchorTerms || []);
+  const titleAccountStateMatches = matchedTerms(titleOnly, rules.accountStateTerms || []);
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
   const codexMatches = matchedTerms(combined, rules.codexTerms || []);
@@ -383,7 +398,7 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
   }
 
   if (anchorMatches.length > 0 || freeTitleHintMatch) {
-    if (isSmsServiceProduct(titleOnly, smsMatches, accountStateMatches)) {
+    if (isSmsServiceProduct(titleOnly, smsMatches, titleAccountStateMatches)) {
       return buildResult(
         "sms",
         rules.smsSubtype || "codex_sms",
@@ -403,7 +418,7 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
       return buildResult("codex", titleSubtype, 0.9, [titleSubtype], reasons);
     }
 
-    if (smsMatches.length > 0 && accountStateMatches.length === 0 && !hasSmsNegation(titleOnly)) {
+    if (smsMatches.length > 0 && titleAccountStateMatches.length === 0 && !hasSmsNegation(titleOnly) && !isFinishedAccountSmsMention(titleOnly)) {
       return buildResult(
         "sms",
         rules.smsSubtype || "codex_sms",
