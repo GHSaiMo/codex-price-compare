@@ -11,7 +11,8 @@ import {
   toPublicProductsDocument,
 } from "./src/public-payload.mjs";
 import { readPriceHistory, summarizeHistory } from "./src/price-history.mjs";
-import { refreshProducts } from "./src/refresh.mjs";
+import { reclassifyProductItems, refreshProducts } from "./src/refresh.mjs";
+import { sortProductsForDisplay } from "./src/cleaning.mjs";
 import {
   buildStockWatchView,
   createStockWatchEntryFromUrl,
@@ -517,11 +518,32 @@ function createStaticServer(defaultFile, port, allowApi = false) {
   });
 }
 
+async function syncClassifiedProductsOnStartup() {
+  try {
+    const [productsRaw, rulesRaw] = await Promise.all([
+      readFile(productsPath, "utf8").catch(() => null),
+      readFile(join(ROOT, "data/rules.json"), "utf8").catch(() => null),
+    ]);
+    if (!productsRaw || !rulesRaw) return;
+    const products = JSON.parse(productsRaw);
+    const rules = JSON.parse(rulesRaw);
+    if (Array.isArray(products?.items)) {
+      const reclassified = reclassifyProductItems(products.items, rules);
+      products.items = sortProductsForDisplay(reclassified);
+      await writeFile(productsPath, `${JSON.stringify(products, null, 2)}\n`);
+      logWithTimestamp("log", `启动重分类完成：${products.items.length} 条商品已同步最新规则`);
+    }
+  } catch (error) {
+    logWithTimestamp("error", `启动重分类失败：${error.message}`);
+  }
+}
+
 const server = createStaticServer("index.html", PORT);
 const adminServer = createStaticServer("admin.html", ADMIN_PORT, true);
 
 await loadDotEnv();
 await loadRefreshSettings();
+await syncClassifiedProductsOnStartup();
 scheduleNextRefresh(5 * 1000);
 
 server.listen(PORT, "127.0.0.1", () => {
