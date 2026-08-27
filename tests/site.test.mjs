@@ -89,6 +89,7 @@ assert.match(app, /function lockShareImageSize/);
 assert.match(app, /shareImage\.style\.width = `\$\{width\}px`/);
 assert.match(app, /shareImage\.style\.height = `\$\{height\}px`/);
 assert.match(app, /function readStateFromUrl/);
+assert.match(app, /isIndexDomain/);
 assert.match(app, /function writeStateToUrl/);
 assert.match(app, /function createShareUrl/);
 assert.match(app, /urlStateKeys/);

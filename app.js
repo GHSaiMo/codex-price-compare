@@ -380,13 +380,19 @@ function readStateFromUrl() {
   const query = params.get(urlStateKeys.query);
   const shop = params.get(urlStateKeys.shop);
 
+  const host = String(window.location?.hostname || "").toLowerCase();
+  const isIndexDomain = /(?:^|\.)index(?:\.|$)/.test(host);
+  const isCodexDomain = /(?:^|\.)codex(?:\.|$)/.test(host);
+  const isGrokDomain = /(?:^|\.)grok(?:\.|$)/.test(host);
+
   if (mode === "codex" || mode === "grok") {
     currentMode = mode;
+  } else if (isIndexDomain || isCodexDomain) {
+    currentMode = "codex";
+  } else if (isGrokDomain) {
+    currentMode = "grok";
   } else {
-    try {
-      const saved = window.localStorage?.getItem(MODE_STORAGE_KEY);
-      if (saved === "codex" || saved === "grok") currentMode = saved;
-    } catch {}
+    currentMode = "codex";
   }
 
   ensureSubtypeForMode();

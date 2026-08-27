@@ -760,3 +760,88 @@ assert.equal(
   refineCodexPlanSubtype("chatgpt pro 20x 月卡", "pro", rules).subtype,
   "pro_20x",
 );
+assert.equal(
+  refineCodexPlanSubtype("ChatGPT Pro 成品号", "pro", rules).subtype,
+  "pro_5x",
+);
+assert.equal(
+  refineCodexPlanSubtype("Codex额度补充包（10美元codex额度补充包对应250额度）", "pro", rules).subtype,
+  "unknown",
+);
+
+const creditPackDesc = "CODEX额度补充包，10美元官方直充（需要账号本身已经是plus或pro订阅） 写在前面：充值成品号，脚本号，反代，破限，频繁共享，包括但不限于上述原因导致的封号不提供任何质保，正价实充，只保功能不保封号。 充值步骤： 购买后会得到一个CDK，去指定平台完成充值操作即可。 对应的额度如下：10刀=250额度";
+assert.deepEqual(
+  classifyProduct("Codex额度补充包（10美元codex额度补充包对应250额度）", creditPackDesc, rules),
+  {
+    brand: "codex",
+    category: "codex",
+    subtype: "unknown",
+    confidence: 0.68,
+    tags: ["unknown"],
+    matchReasons: ["命中Codex锚点词: codex"],
+  },
+);
+assert.equal(
+  classifyProduct("Codex 点数额度充值 (Free账号勿下)", "", rules).subtype,
+  "unknown",
+);
+
+// Grok 规避词变体测试
+assert.equal(
+  classifyProduct("G rok Super heavy 速刷只接大量｜质保发货10分钟内首登（不接受不要买）散户不建议买！", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("gro Super heavy速刷成品号|无质保 一个月(源头)【安卓IOS通用】无bot", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("gro Super heavy速刷成品号|无质保 一个月(源头)【安卓IOS通用】无bot", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Super gro heavy成品30天订阅质保，不质保封号", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Supergro Heavy月卡谷歌内购成品号，质保订阅24小时，可开发票", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("【直充】X-Premium+Super gro一个月自助直充卡密【质保一个月】", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("【直充】X-Premium+Super gro一个月自助直充卡密【质保一个月】", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Super G r o k Heavy 特殊渠道月卡成品号2（质保首登，首登成功后账号问题不会有任何售后和补偿，现货）", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Supergr0k Heavy月卡(质保2h内首登）", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("gro普号（新号）", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("gro普号（库存）", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("【gro 普号】【帐密+sso】成品｜域名邮箱】无保---不支持gro build,量大联系", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("gro4.6 build号 质保一周", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("chatgpt group buy 拼车", "", rules).category,
+  "codex",
+);
+
+

@@ -125,12 +125,20 @@
   "grokAnchorTerms": [
     "grok",
     "gork",
-    "xai",
-    "x.ai",
+    "gr0k",
+    "g rok",
+    "g r o k",
     "supergrok",
     "super grok",
+    "supergr0k",
+    "super gr0k",
     "supergork",
-    "super gork"
+    "super gork",
+    "supergro",
+    "super gro",
+    "gro",
+    "xai",
+    "x.ai"
   ],
   "grokExclusionTerms": [
     "x premium",
@@ -308,8 +316,11 @@
   "grokFreeTerms": [
     "普号",
     "普通号",
+    "白号",
     "free",
     "无会员",
+    "build号",
+    "build",
     "福利号",
     "福利",
     "尝鲜",

@@ -19,16 +19,25 @@ export function stripHtml(value) {
 }
 
 function includesTerm(haystack, term) {
+  const normalizedHaystack = String(haystack || "").toLowerCase();
   const normalizedTerm = term.toLowerCase();
   // go 需要完整词边界，避免 google / good 误命中。
   if (normalizedTerm === "go") {
-    return /(^|[^a-z0-9])go(?=$|[^a-z0-9])/.test(haystack);
+    return /(^|[^a-z0-9])go(?=$|[^a-z0-9])/.test(normalizedHaystack);
   }
-  // grok / gork 只限制左侧边界，避免 xgrok 域名误命中，同时保留 grok4.5 这类标题与错拼别名。
-  if (normalizedTerm === "grok" || normalizedTerm === "gork") {
-    return /(^|[^a-z0-9])(grok|gork)/.test(haystack);
+  // gro 限制右侧边界不能直接接英文单词，避免 group / grow / gross 等词误命中。
+  if (normalizedTerm === "gro") {
+    return /(^|[^a-z0-9])gro(?=[^a-z]|$)/.test(normalizedHaystack);
   }
-  return haystack.includes(normalizedTerm);
+  // grok / gork / gr0k 限制边界，保留 grok4.5 这类标题与错拼别名。
+  if (normalizedTerm === "grok" || normalizedTerm === "gork" || normalizedTerm === "gr0k") {
+    return /(^|[^a-z0-9])(grok|gork|gr0k)/.test(normalizedHaystack);
+  }
+  // 规避变体：G rok / G r o k / g r 0 k 等带空格拼写
+  if (normalizedTerm === "g rok" || normalizedTerm === "g r o k") {
+    return /(^|[^a-z0-9])g\s+r\s*[o0]\s*k(?=$|[^a-z0-9]|\d)/.test(normalizedHaystack);
+  }
+  return normalizedHaystack.includes(normalizedTerm);
 }
 
 function matchedTerms(haystack, terms) {
@@ -80,6 +89,16 @@ function stripTeamWarningContext(text) {
     .replace(/(?:自己账号|账号)?\s*(?:有|带|含)?\s*team\s*(?:不能|不可|无法|请勿|禁止|别|禁)\s*(?:冲|充|使用)?/g, " ")
     .replace(/(?:请勿|不要|禁|不支持|不能|无法)\s*(?:使用|带|有)?\s*team/g, " ")
     .replace(/(?:非|不是|并非|不含|没有|无)\s*[-_]?\s*team/g, " ");
+}
+
+function stripPlanPrerequisiteContext(text) {
+  return text
+    .replace(
+      /(?:(?:需|需要)\s*(?:自备)?\s*(?:账号|帐号)?\s*(?:本身)?\s*(?:已经是|已有|已开通|需是|需要是|需要|需|是)?|自备\s*(?:账号|帐号)?\s*(?:本身)?\s*(?:已经是|已有|已开通|需是|需要是|需要|需|是)?|(?:账号|帐号)\s*(?:本身)?\s*(?:已经是|已有|已开通|需是|需要是)|(?:本身)\s*(?:已经是|已有|已开通|需是|需要是)|已经是|已有|已开通)\s*(?:plus|puls|pro)(?:[或/与及和、\s]+(?:plus|puls|pro))*\s*(?:订阅|会员|账号|帐号)?/gi,
+      " ",
+    )
+    .replace(/[（(]\s*(?:free|Free)账号勿[下拍].*?[)）]/gi, " ")
+    .replace(/(?:free|Free)账号勿[下拍]/gi, " ");
 }
 
 function matchFreeUpgradePurpose(text) {
@@ -176,7 +195,13 @@ export function refineCodexPlanSubtype(haystack, subtype, rules = {}) {
       return { subtype: "pro_20x", parent: "pro", matches: heavyMatches };
     }
     const standardMatches = matchedTerms(haystack, rules.pro5xTerms || []);
-    return { subtype: "pro_5x", parent: "pro", matches: standardMatches };
+    if (standardMatches.length > 0) {
+      return { subtype: "pro_5x", parent: "pro", matches: standardMatches };
+    }
+    if (matchedTerms(haystack, ["pro"]).length > 0) {
+      return { subtype: "pro_5x", parent: "pro", matches: ["pro"] };
+    }
+    return { subtype: "unknown", parent: "unknown", matches: [] };
   }
 
   return { subtype, parent: subtype, matches: [] };
@@ -186,10 +211,14 @@ function finalizeCodexPlanResult(result, haystack, rules) {
   if (!result || result.category !== "codex") return result;
   const refined = refineCodexPlanSubtype(haystack, result.subtype, rules);
   if (refined.subtype === result.subtype) return result;
+  const tags = refined.subtype === "unknown"
+    ? ["unknown"]
+    : [...new Set([refined.parent, refined.subtype, ...(result.tags || [])])];
   return {
     ...result,
     subtype: refined.subtype,
-    tags: [...new Set([refined.parent, refined.subtype, ...(result.tags || [])])],
+    confidence: refined.subtype === "unknown" ? Math.min(result.confidence, 0.68) : result.confidence,
+    tags,
     matchReasons: [
       ...(result.matchReasons || []),
       ...refined.matches.slice(0, 2).map((term) => `命中交付词: ${term}`),
@@ -269,7 +298,13 @@ function matchGrokDuration(text, durationTerms = {}) {
 function classifyGrokProduct(titleText, descriptionText, rules) {
   const titleOnly = titleText.toLowerCase();
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
-  const exclusionMatches = matchedTerms(combined, rules.grokExclusionTerms || []);
+  const exclusionMatches = matchedTerms(combined, rules.grokExclusionTerms || [])
+    .filter((term) => {
+      if (term === "x premium" || term === "twitter premium") {
+        return matchedTerms(titleOnly, rules.grokAnchorTerms || []).length === 0;
+      }
+      return true;
+    });
   if (exclusionMatches.length > 0) {
     return buildResult(
       "other",
@@ -358,8 +393,8 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
 function classifyCodexProduct(titleText, descriptionText, rules) {
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   const titleOnly = titleText.toLowerCase();
-  const subtypeCombined = stripTeamWarningContext(stripPlusUpgradeContext(combined));
-  const subtypeTitleOnly = stripTeamWarningContext(stripPlusUpgradeContext(titleOnly));
+  const subtypeCombined = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(combined)));
+  const subtypeTitleOnly = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(titleOnly)));
   const freeUpgradePurposeMatch = matchFreeUpgradePurpose(titleOnly);
   const nonPlusNegationMatch = matchNonPlusNegation(titleOnly);
   const freeTitleHintMatch = freeUpgradePurposeMatch || nonPlusNegationMatch;
