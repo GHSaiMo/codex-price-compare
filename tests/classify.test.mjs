@@ -339,12 +339,68 @@ assert.equal(
   "m12",
 );
 assert.equal(
-  classifyProduct("Super grok heavy一年（质保首登，直充质保会员到账）", "Super grok heavy一年官方价值3000美刀/年", rules).subtype,
+  classifyProduct("Super gro heavy 速刷号成品（质保30分钟内首登，大概率活3天！介意不要下单）", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("Super gro heavy 速刷号成品（质保30分钟内首登，大概率活3天！介意不要下单）", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Super gro heavy 速刷号成品（质保30分钟内首登，大概率活3天！介意不要下单）", "", rules).durationLabel,
+  "1M",
+);
+assert.equal(
+  classifyProduct("【质保30分钟首登)】Gro Heavy成品号 活2-3天", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("【质保30分钟首登)】Gro Heavy成品号 活2-3天", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Supergro Heavy 成品！(成品质保订阅24h，不质保封号)", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("Supergro Heavy 成品！(成品质保订阅24h，不质保封号)", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Supergro Heavy 成品！(成品质保订阅24h，不质保封号)", "", rules).durationLabel,
+  "1M",
+);
+assert.equal(
+  classifyProduct("Super G r o k Heavy 特殊渠道月卡成品号2（质保首登，首登成功后账号问题不会有任何售后和补偿，现货）", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Supergr0k Heavy月卡(质保2h内首登）", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("gro-Heavy 1 个月成品 已稳11天｜质保发货10分钟内首登（不接受不要买）散户不建议买！", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Super gro heavy一年（质保首登，直充质保会员到账）", "Super gro heavy一年官方价值3000美刀/年", rules).subtype,
   "y1",
 );
 assert.equal(
-  classifyProduct("Super grok heavy一年（质保首登，直充质保会员到账）", "", rules).durationLabel,
+  classifyProduct("Super gro heavy一年（质保首登，直充质保会员到账）", "", rules).durationLabel,
   "1Y",
+);
+assert.equal(
+  classifyProduct("SuperGrok Heavy12个月年卡质保订阅7天，可开发票", "", rules).subtype,
+  "y1",
+);
+assert.equal(
+  classifyProduct("SuperGrok Heavy12个月年卡质保订阅7天，可开发票", "", rules).durationLabel,
+  "1Y",
+);
+assert.equal(
+  classifyProduct("【IOS美区】gro Supergro Heavy 官方充值（月卡） (ID直充)", "", rules).subtype,
+  "m12",
 );
 assert.equal(
   classifyProduct("绝版 gork super 1年成品，", "一年x会员绑定成品Grok账号", rules).category,

@@ -234,6 +234,18 @@ function stripNoiseDurationText(text, noiseTerms = []) {
   return output.replace(/\s+/g, " ").trim();
 }
 
+function stripGrokWarrantyNoiseText(text) {
+  let output = text;
+  output = output.replace(/(?:大概率)?\s*活\s*\d+(?:\s*[-~～]\s*\d+)?\s*天/gi, " ");
+  output = output.replace(/已稳\s*\d+\s*天/gi, " ");
+  output = output.replace(/成品质保订阅\s*\d+\s*(?:h|小时)/gi, " ");
+  output = output.replace(/质保订阅\s*\d+\s*天/gi, " ");
+  output = output.replace(/质保\s*\d+\s*天订阅/gi, " ");
+  output = output.replace(/质保\s*\d+\s*天/gi, " ");
+  output = output.replace(/质保\s*(?:发货\s*)?\d+\s*(?:分钟|小时|h|m|天)(?:内首登|内激活)?/gi, " ");
+  return output.replace(/\s+/g, " ").trim();
+}
+
 function durationMeta(subtype, matches = []) {
   if (subtype === "m12") {
     return { subtype, durationDays: 30, durationLabel: "1M", matches };
@@ -321,62 +333,100 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
     return buildResult("other", "unknown", 0, [], []);
   }
 
-  const freeMatches = matchedTerms(titleOnly, rules.grokFreeTerms || []);
-  const cleanedTitle = stripNoiseDurationText(titleOnly, rules.grokNoiseDurationTerms || []);
-  const cleanedCombined = stripNoiseDurationText(combined, rules.grokNoiseDurationTerms || []);
-  const titleDuration = matchGrokDuration(cleanedTitle, rules.grokDurationTerms || {});
-  const combinedDuration = matchGrokDuration(cleanedCombined, rules.grokDurationTerms || {});
-  // 标题里的付费时长最优先（月卡/一年），避免“质保3天”抢分类。
-  // 标题 free 词次之（普号），避免描述里的“1个月质保”把普号送进 1M。
-  // 再退回描述/综合文本中的付费时长。
-  const duration = ["m12", "m3", "y1"].includes(titleDuration.subtype)
-    ? titleDuration
-    : (freeMatches.length > 0
-      ? titleDuration
-      : ( ["m12", "m3", "y1"].includes(combinedDuration.subtype)
-        ? combinedDuration
-        : (titleDuration.matches.length > 0 ? titleDuration : combinedDuration)));
+  const cleanedTitleForNoise = stripGrokWarrantyNoiseText(stripNoiseDurationText(titleOnly, rules.grokNoiseDurationTerms || []));
+  const cleanedCombinedForNoise = stripGrokWarrantyNoiseText(stripNoiseDurationText(combined, rules.grokNoiseDurationTerms || []));
 
-  if (["m12", "m3", "y1"].includes(duration.subtype) && ( ["m12", "m3", "y1"].includes(titleDuration.subtype) || freeMatches.length === 0 )) {
+  const freeMatches = matchedTerms(cleanedTitleForNoise, rules.grokFreeTerms || []);
+  const paidMatches = matchedTerms(titleOnly, rules.grokPaidTerms || []);
+
+  const titleDuration = matchGrokDuration(cleanedTitleForNoise, rules.grokDurationTerms || {});
+  const combinedDuration = matchGrokDuration(cleanedCombinedForNoise, rules.grokDurationTerms || {});
+
+  const explicitDuration = ["m12", "m3", "y1"].includes(titleDuration.subtype)
+    ? titleDuration
+    : (["m12", "m3", "y1"].includes(combinedDuration.subtype) ? combinedDuration : null);
+
+  // 1. 如果包含短效/体验词（如 7天、尝鲜、7-10天），且未明确指定付费时长（如 12个月年卡质保7天），归入 free 并标注对应天数
+  const isTrial = (freeMatches.some((term) => /7天|七天|10天|15天|尝鲜|试玩|试用|体验|日抛/.test(term)) ||
+                  (titleDuration.subtype === "others" && titleDuration.durationDays && titleDuration.durationDays <= 15)) &&
+                  !explicitDuration;
+
+  if (isTrial) {
+    const trialDuration = (titleDuration.durationDays && titleDuration.durationDays <= 15)
+      ? titleDuration
+      : { durationDays: 7, durationLabel: "7D", matches: freeMatches };
     return buildResult(
       "grok",
-      duration.subtype,
+      "free",
       0.9,
-      ["grok", duration.subtype],
+      ["grok", "free"],
       [
         ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
-        ...duration.matches.slice(0, 2).map((term) => `命中时长: ${term}`),
+        ...freeMatches.slice(0, 2).map((term) => `命中体验词: ${term}`),
       ],
       {
-        durationDays: duration.durationDays,
-        durationLabel: duration.durationLabel,
+        durationDays: trialDuration.durationDays,
+        durationLabel: trialDuration.durationLabel || "7D",
       },
     );
   }
 
-  // Free：普号 / 短体验 / 无明确付费时长。
-  if (freeMatches.length > 0 || duration.subtype === "others") {
-    const freeDurationMatches = freeMatches.length > 0
-      ? freeMatches
-      : duration.matches;
+  // 2. 如果是明确的付费 Grok（命中 heavy / supergrok 等付费词），或者具有付费时长 (y1, m3, m12)
+  const isPaidGrok = paidMatches.length > 0 || explicitDuration !== null;
+  if (isPaidGrok && (paidMatches.length > 0 || freeMatches.length === 0)) {
+    // 若无明确时长，付费 Grok 默认按 1M 处理
+    const finalDuration = explicitDuration || {
+      subtype: "m12",
+      durationDays: 30,
+      durationLabel: "1M",
+      matches: paidMatches.length > 0 ? [`默认1M(${paidMatches[0]})`] : ["默认1M"],
+    };
+
+    const reasons = [
+      ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
+    ];
+    if (paidMatches.length > 0) {
+      reasons.push(...paidMatches.slice(0, 2).map((term) => `命中付费特征: ${term}`));
+    }
+    if (explicitDuration) {
+      reasons.push(...explicitDuration.matches.slice(0, 2).map((term) => `命中时长: ${term}`));
+    } else {
+      reasons.push("未指定时长默认1M");
+    }
+
+    return buildResult(
+      "grok",
+      finalDuration.subtype,
+      0.9,
+      ["grok", finalDuration.subtype],
+      reasons,
+      {
+        durationDays: finalDuration.durationDays,
+        durationLabel: finalDuration.durationLabel,
+      },
+    );
+  }
+
+  // 3. 普号 / Free 号
+  if (freeMatches.length > 0 || titleDuration.subtype === "others") {
+    const freeDurationMatches = freeMatches.length > 0 ? freeMatches : titleDuration.matches;
     return buildResult(
       "grok",
       "free",
-      freeMatches.length > 0 || duration.matches.length > 0 ? 0.9 : 0.75,
+      freeMatches.length > 0 ? 0.9 : 0.75,
       ["grok", "free"],
       [
         ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
         ...freeDurationMatches.slice(0, 2).map((term) => `命中Free词: ${term}`),
       ],
       {
-        durationDays: duration.durationDays,
-        durationLabel: freeMatches.length > 0 && duration.subtype === "others" && duration.matches.length === 0
-          ? "Free"
-          : (duration.durationLabel || "Free"),
+        durationDays: null,
+        durationLabel: "Free",
       },
     );
   }
 
+  // 4. 兜底 Free
   return buildResult(
     "grok",
     "free",
