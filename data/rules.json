@@ -112,7 +112,10 @@
     "普号",
     "api额度",
     "中转站",
-    "刀额度"
+    "刀额度",
+    "g pro",
+    "g plus",
+    "g free"
   ],
   "anchorTerms": [
     "codex",
@@ -120,7 +123,10 @@
     "gpt",
     "openai",
     "g接码",
-    "g接马"
+    "g接马",
+    "g pro",
+    "g plus",
+    "g free"
   ],
   "grokAnchorTerms": [
     "grok",
@@ -130,8 +136,12 @@
     "g r o k",
     "supergrok",
     "super grok",
+    "supergrok heavy",
+    "super grok heavy",
     "supergr0k",
     "super gr0k",
+    "supergr0k heavy",
+    "super gr0k heavy",
     "supergork",
     "super gork",
     "supergro",
@@ -151,8 +161,12 @@
     "hevey",
     "supergrok",
     "super grok",
+    "supergrok heavy",
+    "super grok heavy",
     "supergr0k",
     "super gr0k",
+    "supergr0k heavy",
+    "super gr0k heavy",
     "supergork",
     "super gork",
     "supergro",

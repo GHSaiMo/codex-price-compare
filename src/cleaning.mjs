@@ -59,18 +59,33 @@ function titleReasonTermsForSubtype(rules, subtype) {
   ];
 }
 
-function explicitPlanSubtype(haystack, subtypeTerms = {}) {
+function explicitPlanSubtype(haystack, subtypeTerms = {}, rules = {}) {
   // 标题里的 free/plus/pro/go 明确套餐词优先。如果包含 team 则优先归为 free。
   // 这里只认核心套餐词，不直接复用 subtypeTerms 全量词表。
-  const termsBySubtype = {
-    free: ["team", "free", "fre", "free号", "普号"],
-    pro: ["pro", "5x", "20x"],
-    plus: ["plus", "puls"],
-    go: ["go"],
-  };
-  for (const subtype of ["free", "pro", "plus", "go"]) {
-    if (matchedTerms(haystack, termsBySubtype[subtype]).length > 0) return subtype;
+  if (matchedTerms(haystack, ["team", "free", "fre", "free号", "普号"]).length > 0) {
+    return "free";
   }
+  const hasPlus = matchedTerms(haystack, ["plus", "puls"]).length > 0;
+  const has5x = matchedTerms(haystack, rules?.pro5xTerms || ["5x", "5倍"]).length > 0;
+  const has20x = matchedTerms(haystack, rules?.pro20xTerms || ["20x", "20倍"]).length > 0;
+  const hasPro = matchedTerms(haystack, ["pro", "5x", "20x"]).length > 0;
+
+  if (hasPlus) {
+    // 包含 plus 且无明确 5x / 20x 交付词时，优先归为 plus（如 "G pro plus" 无5x归入plus）
+    if (!has5x && !has20x) {
+      return "plus";
+    }
+    return "pro";
+  }
+
+  if (hasPro) {
+    return "pro";
+  }
+
+  if (matchedTerms(haystack, ["go"]).length > 0) {
+    return "go";
+  }
+
   return "unknown";
 }
 
@@ -198,6 +213,10 @@ export function refineCodexPlanSubtype(haystack, subtype, rules = {}) {
     if (standardMatches.length > 0) {
       return { subtype: "pro_5x", parent: "pro", matches: standardMatches };
     }
+    const plusMatches = matchedTerms(haystack, ["plus", "puls"]);
+    if (plusMatches.length > 0) {
+      return { subtype: "plus", parent: "plus", matches: plusMatches };
+    }
     if (matchedTerms(haystack, ["pro"]).length > 0) {
       return { subtype: "pro_5x", parent: "pro", matches: ["pro"] };
     }
@@ -236,13 +255,13 @@ function stripNoiseDurationText(text, noiseTerms = []) {
 
 function stripGrokWarrantyNoiseText(text) {
   let output = text;
-  output = output.replace(/(?:大概率)?\s*活\s*\d+(?:\s*[-~～]\s*\d+)?\s*天/gi, " ");
+  output = output.replace(/(?:大概率|大概|只能|只|能|可|保)?\s*活\s*\d+(?:\s*[-~～至到]\s*\d+)?\s*天/gi, " ");
   output = output.replace(/已稳\s*\d+\s*天/gi, " ");
-  output = output.replace(/成品质保订阅\s*\d+\s*(?:h|小时)/gi, " ");
-  output = output.replace(/质保订阅\s*\d+\s*天/gi, " ");
-  output = output.replace(/质保\s*\d+\s*天订阅/gi, " ");
-  output = output.replace(/质保\s*\d+\s*天/gi, " ");
-  output = output.replace(/质保\s*(?:发货\s*)?\d+\s*(?:分钟|小时|h|m|天)(?:内首登|内激活)?/gi, " ");
+  output = output.replace(/(?:成品质保|质保|保)?\s*订阅\s*\d+\s*(?:h|小时|天|周)/gi, " ");
+  output = output.replace(/质保\s*(?:订阅)?\s*(?:一|1|两|2)\s*周(?:订阅)?/gi, " ");
+  output = output.replace(/(?:成品)?质保\s*\d+\s*(?:h|小时|天)(?:订阅)?/gi, " ");
+  output = output.replace(/质保\s*(?:发货\s*)?\d+\s*(?:分钟|小时|h|m|天)(?:内)?(?:首登|激活)?/gi, " ");
+  output = output.replace(/保\s*\d+\s*(?:分钟|小时|h|m|天)(?:内)?(?:首登|激活)/gi, " ");
   return output.replace(/\s+/g, " ").trim();
 }
 
@@ -346,34 +365,9 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
     ? titleDuration
     : (["m12", "m3", "y1"].includes(combinedDuration.subtype) ? combinedDuration : null);
 
-  // 1. 如果包含短效/体验词（如 7天、尝鲜、7-10天），且未明确指定付费时长（如 12个月年卡质保7天），归入 free 并标注对应天数
-  const isTrial = (freeMatches.some((term) => /7天|七天|10天|15天|尝鲜|试玩|试用|体验|日抛/.test(term)) ||
-                  (titleDuration.subtype === "others" && titleDuration.durationDays && titleDuration.durationDays <= 15)) &&
-                  !explicitDuration;
-
-  if (isTrial) {
-    const trialDuration = (titleDuration.durationDays && titleDuration.durationDays <= 15)
-      ? titleDuration
-      : { durationDays: 7, durationLabel: "7D", matches: freeMatches };
-    return buildResult(
-      "grok",
-      "free",
-      0.9,
-      ["grok", "free"],
-      [
-        ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
-        ...freeMatches.slice(0, 2).map((term) => `命中体验词: ${term}`),
-      ],
-      {
-        durationDays: trialDuration.durationDays,
-        durationLabel: trialDuration.durationLabel || "7D",
-      },
-    );
-  }
-
-  // 2. 如果是明确的付费 Grok（命中 heavy / supergrok 等付费词），或者具有付费时长 (y1, m3, m12)
-  const isPaidGrok = paidMatches.length > 0 || explicitDuration !== null;
-  if (isPaidGrok && (paidMatches.length > 0 || freeMatches.length === 0)) {
+  // 1. 如果是明确的付费 Grok（命中 heavy / supergrok 等付费词），或者具有付费时长 (y1, m3, m12) 且无明确普号词
+  const isPaidGrok = paidMatches.length > 0 || (explicitDuration !== null && freeMatches.length === 0);
+  if (isPaidGrok) {
     // 若无明确时长，付费 Grok 默认按 1M 处理
     const finalDuration = explicitDuration || {
       subtype: "m12",
@@ -403,6 +397,31 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
       {
         durationDays: finalDuration.durationDays,
         durationLabel: finalDuration.durationLabel,
+      },
+    );
+  }
+
+  // 2. 如果包含短效/体验词（如 7天、尝鲜、7-10天），且非明确付费 Grok，归入 free 并标注对应天数
+  const isTrial = (freeMatches.some((term) => /7天|七天|10天|15天|尝鲜|试玩|试用|体验|日抛/.test(term)) ||
+                  (titleDuration.subtype === "others" && titleDuration.durationDays && titleDuration.durationDays <= 15)) &&
+                  !explicitDuration;
+
+  if (isTrial) {
+    const trialDuration = (titleDuration.durationDays && titleDuration.durationDays <= 15)
+      ? titleDuration
+      : { durationDays: 7, durationLabel: "7D", matches: freeMatches };
+    return buildResult(
+      "grok",
+      "free",
+      0.9,
+      ["grok", "free"],
+      [
+        ...anchorMatches.slice(0, 2).map((term) => `命中Grok锚点词: ${term}`),
+        ...freeMatches.slice(0, 2).map((term) => `命中体验词: ${term}`),
+      ],
+      {
+        durationDays: trialDuration.durationDays,
+        durationLabel: trialDuration.durationLabel || "7D",
       },
     );
   }
@@ -457,7 +476,7 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
   const codexMatches = matchedTerms(combined, rules.codexTerms || []);
   const explicitTitleSubtype = freeTitleHintMatch
     ? "free"
-    : explicitPlanSubtype(subtypeTitleOnly, rules.subtypeTerms);
+    : explicitPlanSubtype(subtypeTitleOnly, rules.subtypeTerms, rules);
   const titleOnlySubtype = freeTitleHintMatch
     ? "free"
     : firstMatchedSubtype(subtypeTitleOnly, rules.titleSubtypeTerms);

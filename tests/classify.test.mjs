@@ -243,6 +243,22 @@ assert.equal(
   "plus",
 );
 assert.equal(
+  classifyProduct("G pro plus 菲区充值 （质保一个月）", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("G pro plus 菲区充值 （质保一个月）", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct(
+    "G pro plus 菲区充值 （质保一个月）",
+    "菲律宾官方代充 plus 1个月 质保跟随openai官方",
+    rules,
+  ).subtype,
+  "plus",
+);
+assert.equal(
   classifyProduct("ChatGPT Pro 20x 月卡 正价官方直充", "codex 额度刷新", rules).subtype,
   "pro_20x",
 );
@@ -315,12 +331,20 @@ assert.equal(
   "free",
 );
 assert.equal(
-  classifyProduct("Super Grok 7天会员号---带SSO--质保订阅，最长可用15天，稳定供货", "", rules).subtype,
+  classifyProduct("grok 普号（7天体验）", "", rules).subtype,
   "free",
 );
 assert.equal(
+  classifyProduct("grok 普号（7天体验）", "", rules).durationLabel,
+  "7D",
+);
+assert.equal(
+  classifyProduct("Super Grok 7天会员号---带SSO--质保订阅，最长可用15天，稳定供货", "", rules).subtype,
+  "m12",
+);
+assert.equal(
   classifyProduct("supergrok尝鲜版（7-10天有效期特惠价）", "", rules).subtype,
-  "free",
+  "m12",
 );
 assert.equal(
   classifyProduct("Grok Super正规直充卡密（两个月）", "", rules).subtype,
@@ -401,6 +425,30 @@ assert.equal(
 assert.equal(
   classifyProduct("【IOS美区】gro Supergro Heavy 官方充值（月卡） (ID直充)", "", rules).subtype,
   "m12",
+);
+assert.equal(
+  classifyProduct("Super gr0k heavy成品（质保一周订阅）", "supergr0k heavy谷歌内购成品 质保1周", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("Super gr0k heavy成品（质保一周订阅）", "supergr0k heavy谷歌内购成品 质保1周", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("Super gr0k heavy成品（质保一周订阅）", "supergr0k heavy谷歌内购成品 质保1周", rules).durationLabel,
+  "1M",
+);
+assert.equal(
+  classifyProduct("X-Twitter Premium+自助卡密（赠送Super Grok）", "", rules).category,
+  "grok",
+);
+assert.equal(
+  classifyProduct("X-Twitter Premium+自助卡密（赠送Super Grok）", "", rules).subtype,
+  "m12",
+);
+assert.equal(
+  classifyProduct("X-Twitter Premium+自助卡密（赠送Super Grok）", "", rules).durationLabel,
+  "1M",
 );
 assert.equal(
   classifyProduct("绝版 gork super 1年成品，", "一年x会员绑定成品Grok账号", rules).category,
