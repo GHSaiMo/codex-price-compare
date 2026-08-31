@@ -18,6 +18,7 @@ import {
 import { fetchLdxpViaPlaywright } from "./ldxp-playwright.mjs";
 import { updateWatchPriceHistory } from "./price-history.mjs";
 import { processStockWatchNotifications, readStockWatch } from "./stock-watch.mjs";
+import { queryLocalClassifier } from "./ai-classifier.mjs";
 
 const root = new URL("../", import.meta.url);
 const dataDir = new URL("data/", root);
@@ -533,6 +534,30 @@ export function reclassifyProductItems(items = [], rules = null) {
     .filter(Boolean);
 }
 
+export async function applyAiClassifierToUnknowns(items = []) {
+  const result = [];
+  for (const item of items) {
+    if (item.subtype === "unknown") {
+      const aiRes = await queryLocalClassifier(item.title, item.descriptionText);
+      if (aiRes && aiRes.category && aiRes.subtype) {
+        result.push({
+          ...item,
+          brand: aiRes.category === "grok" ? "grok" : "codex",
+          category: aiRes.category,
+          subtype: aiRes.subtype,
+          confidence: 0.95,
+          tags: [...new Set([aiRes.category, aiRes.subtype, ...(item.tags || [])])],
+          matchReasons: [...(item.matchReasons || []), `[AI端侧识别]: ${aiRes.category}/${aiRes.subtype}`],
+        });
+        continue;
+      }
+    }
+    result.push(item);
+  }
+  return result;
+}
+
+
 export function mergeProductsWithStaleSourceItems({
   previousItems = [],
   currentItems = [],
@@ -820,7 +845,9 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
   });
   // 规则更新后统一重算，避免 skipped/stale 以外的旧 subtype 残留（如 Grok 普号误进付费时长档）。
   const reclassifiedItems = reclassifyProductItems(mergedItems, rules);
-  const sortedItems = sortProductsForDisplay(reclassifiedItems);
+  // 当规则判定依然为 unknown 时，按需通过本地 AI 伴生小模型兜底识别
+  const aiResolvedItems = await applyAiClassifierToUnknowns(reclassifiedItems);
+  const sortedItems = sortProductsForDisplay(aiResolvedItems);
   const products = {
     generatedAt,
     brands: [

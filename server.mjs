@@ -11,7 +11,7 @@ import {
   toPublicProductsDocument,
 } from "./src/public-payload.mjs";
 import { readPriceHistory, summarizeHistory } from "./src/price-history.mjs";
-import { reclassifyProductItems, refreshProducts } from "./src/refresh.mjs";
+import { applyAiClassifierToUnknowns, reclassifyProductItems, refreshProducts } from "./src/refresh.mjs";
 import { sortProductsForDisplay } from "./src/cleaning.mjs";
 import {
   buildStockWatchView,
@@ -23,6 +23,7 @@ import {
   writeStockWatch,
 } from "./src/stock-watch.mjs";
 import { sendWeChatBridgeText } from "./src/wechatbridge.mjs";
+import { ensureClassifierDaemon, stopClassifierDaemon } from "./src/ai-classifier.mjs";
 
 const PORT = 49173;
 const ADMIN_PORT = 49174;
@@ -529,9 +530,10 @@ async function syncClassifiedProductsOnStartup() {
     const rules = JSON.parse(rulesRaw);
     if (Array.isArray(products?.items)) {
       const reclassified = reclassifyProductItems(products.items, rules);
-      products.items = sortProductsForDisplay(reclassified);
+      const aiResolved = await applyAiClassifierToUnknowns(reclassified);
+      products.items = sortProductsForDisplay(aiResolved);
       await writeFile(productsPath, `${JSON.stringify(products, null, 2)}\n`);
-      logWithTimestamp("log", `启动重分类完成：${products.items.length} 条商品已同步最新规则`);
+      logWithTimestamp("log", `启动重分类完成：${products.items.length} 条商品已同步最新规则（含 AI 伴生纠偏）`);
     }
   } catch (error) {
     logWithTimestamp("error", `启动重分类失败：${error.message}`);
@@ -543,8 +545,19 @@ const adminServer = createStaticServer("admin.html", ADMIN_PORT, true);
 
 await loadDotEnv();
 await loadRefreshSettings();
+await ensureClassifierDaemon((msg) => logWithTimestamp("log", msg));
 await syncClassifiedProductsOnStartup();
 scheduleNextRefresh(5 * 1000);
+
+process.on("SIGINT", () => {
+  stopClassifierDaemon((msg) => logWithTimestamp("log", msg));
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  stopClassifierDaemon((msg) => logWithTimestamp("log", msg));
+  process.exit(0);
+});
 
 server.listen(PORT, "127.0.0.1", () => {
   logWithTimestamp("log", `Codex Price Compare: http://127.0.0.1:${PORT}`);
@@ -553,3 +566,4 @@ server.listen(PORT, "127.0.0.1", () => {
 adminServer.listen(ADMIN_PORT, "127.0.0.1", () => {
   logWithTimestamp("log", `Codex Price Compare Admin: http://127.0.0.1:${ADMIN_PORT}`);
 });
+

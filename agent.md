@@ -41,3 +41,29 @@ node --check server.mjs && node --check src/cleaning.mjs && node --check app.js 
 - 不要把明显无关的商品强行归入 Codex / ChatGPT 分类。
 - 不要添加需要账号登录、绕过限制或抓取非公开信息的数据源。
 - 编辑 Markdown 文档默认使用中文。
+
+## 端侧 AI 分类器机制与演进（两步走规划）
+
+为了解决卡网黑话（如“接马”、“质保首接”、“带team勿拍”、“可开+”等）导致正则规则与测试用例无限膨胀的问题，本项目已规划并接入端侧轻量 AI 分类模型。
+
+### 第一步：端侧小模型无损兜底（当前状态）
+1. **模型项目位置**：`/Users/hal9000/Projects/codex-classifier-grpo`
+2. **基座与适配器**：`Qwen2.5-0.5B-Instruct-4bit` + MLX LoRA（使用 Apple Silicon Metal 原生加速）。
+3. **工作模式**：
+   - 保留现有的 `src/cleaning.mjs` 规则作为第一道微秒级 Fast-Path；
+   - **伴生自启动机制（Sidecar）**：`server.mjs` 启动时会自动检测 `49175` 端口，若未运行则自动拉起后台伴生进程并在服务退出（SIGINT/SIGTERM）时联动回收；
+   - **按需触发**：采集和重分类时只在遇到 `subtype === "unknown"` 的商品时才触发 AI 推理，绝大部分普通标品依旧毫秒级秒过；
+   - 客户端模块 `src/ai-classifier.mjs` 提供 `queryLocalClassifier(title, description)` 接口；
+   - 若端侧服务未就绪，系统自动静默降级为传统规则结果，保证主采集链路 100% 稳定性。
+4. **模型实测表现**（在 125 条从未见过的真实测试集上）：
+   - JSON 格式合规率：100%
+   - 一级大类准确率：99.2%
+   - 全匹配（Category + Subtype）准确率：96.0%（Plus/Free/20x 等核心分类均为 100%）
+
+### 第二步：验收与正则瘦身重构（后续工作）
+在后续周期由 Agent 进行验收时，执行以下核验流程：
+1. **收集未知样本**：通过 `node scripts/check-unknowns.mjs` 或查看 `data/products.json` 中 `subtype === "unknown"` 的商品；
+2. **测试模型判定**：使用小模型对积累的未知商品进行批处理识别并比对人工直觉；
+3. **沉淀数据集**：将有效样本追加到 `codex-classifier-grpo/data/` 并一键执行训练增量微调；
+4. **精简 cleaning.mjs**：当小模型长期稳定后，逐步剔除 `cleaning.mjs` 中冗余繁琐的 `strip*Context` 和黑话词表，将清洗代码从 700 行精简至 100 行内。
+
