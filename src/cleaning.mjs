@@ -547,6 +547,17 @@ export function classifyProduct(title, description = "", rules) {
   const titleText = stripHtml(title);
   const descriptionText = stripHtml(description);
   const titleOnly = titleText.toLowerCase();
+  const titleExclusionMatches = matchedTerms(titleOnly, rules.titleExclusionTerms || []);
+  if (titleExclusionMatches.length > 0) {
+    return buildResult(
+      "other",
+      "unknown",
+      0,
+      [],
+      titleExclusionMatches.slice(0, 2).map((term) => `命中标题排除词: ${term}`),
+    );
+  }
+
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   // Grok 只看标题锚点，防止描述链接/域名把无关商品拉进 Grok。
   const grokAnchorMatches = matchedTerms(titleOnly, rules.grokAnchorTerms || []);

@@ -280,6 +280,8 @@
     "官方中转api"
   ],
   "titleExclusionTerms": [
+    "补差价",
+    "补差",
     "claude pro",
     "claudepro",
     "claude-pro",
@@ -345,6 +347,7 @@
       "200美金"
     ],
     "plus": [
+      "菲区代充",
       "plus",
       "puls",
       "半成品",

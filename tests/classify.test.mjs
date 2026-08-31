@@ -150,6 +150,10 @@ assert.equal(
   "sms",
 );
 assert.equal(
+  classifyProduct("【groHeavy1个月成品】转直充丨补差价", "", rules).category,
+  "other",
+);
+assert.equal(
   classifyProduct("反代教程【不要下单，直接点开看就行】记得看到最后", "json直接导入反代软件就能用，反代后使用codex，完全体gpt", rules).category,
   "other",
 );
@@ -631,6 +635,14 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("GPT半成品账号 质保首登", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("codex丨菲区代充丨带账单丨质保", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("codex 1个月丨菲区代充丨卡充带账单丨质保丨无法覆盖", "", rules).subtype,
   "plus",
 );
 assert.equal(
