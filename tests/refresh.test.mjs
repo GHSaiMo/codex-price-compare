@@ -21,9 +21,11 @@ import {
   disableDeadSources,
   mergeProductsWithStaleSourceItems,
   parseBackupFilenameDate,
+  probeAndRecoverDisabledSources,
   pruneExpiredBackups,
   pruneUnknownSourceFailures,
   reclassifyProductItems,
+  resolveDisabledSourceProbeIntervalMs,
   resolveLdxpFetchMode,
   resolveLdxpSchedulerConfig,
   shouldDisableFailedSource,
@@ -653,6 +655,79 @@ assert.deepEqual(
   ),
   { keep: { message: "x" } },
 );
+
+// Test probeAndRecoverDisabledSources
+const probeNow = new Date("2026-08-31T12:00:00.000Z");
+const testSchedulerState = {
+  version: 1,
+  cursorByHost: {},
+  cooldowns: {},
+  lastFailures: {
+    recovered: { at: "2026-08-10T00:00:00.000Z", message: "HTTP 522" },
+    stillDown: { at: "2026-08-10T00:00:00.000Z", message: "HTTP 522" },
+  },
+  lastSuccess: {
+    recovered: "2026-08-01T00:00:00.000Z",
+    stillDown: "2026-08-01T00:00:00.000Z",
+  },
+  lastDisabledProbes: {
+    recentProbe: {
+      at: "2026-08-31T06:00:00.000Z", // 6 hours ago
+      ok: false,
+    },
+  },
+};
+
+const testSources = [
+  { id: "active", name: "活跃店铺", enabled: true },
+  { id: "recovered", name: "已恢复店铺", enabled: false, disabledAt: "2026-08-20T00:00:00.000Z", disabledReason: "HTTP 522" },
+  { id: "stillDown", name: "仍挂掉店铺", enabled: false, disabledAt: "2026-08-20T00:00:00.000Z", disabledReason: "HTTP 522" },
+  { id: "recentProbe", name: "刚刚探测过的店铺", enabled: false, disabledAt: "2026-08-20T00:00:00.000Z", disabledReason: "HTTP 522" },
+];
+
+const probedIds = [];
+const mockProbeFn = async (source) => {
+  probedIds.push(source.id);
+  if (source.id === "recovered") return true;
+  throw new Error("HTTP 522 仍然超时");
+};
+
+const probeResult = await probeAndRecoverDisabledSources(testSources, {
+  schedulerState: testSchedulerState,
+  now: probeNow,
+  probeIntervalMs: 24 * 60 * 60 * 1000,
+  probeFn: mockProbeFn,
+});
+
+assert.equal(probeResult.changed, true);
+assert.equal(probeResult.recovered.length, 1);
+assert.equal(probeResult.recovered[0].id, "recovered");
+assert.equal(probeResult.recovered[0].enabled, true);
+assert.equal(probeResult.recovered[0].disabledAt, undefined);
+assert.equal(probeResult.recovered[0].disabledReason, undefined);
+
+// recentProbe should have been skipped because it was probed 6 hours ago (< 24 hours)
+assert.deepEqual(probedIds, ["recovered", "stillDown"]);
+
+// Source array in result
+const recoveredInList = probeResult.sources.find((s) => s.id === "recovered");
+assert.equal(recoveredInList.enabled, true);
+const stillDownInList = probeResult.sources.find((s) => s.id === "stillDown");
+assert.equal(stillDownInList.enabled, false);
+const recentInList = probeResult.sources.find((s) => s.id === "recentProbe");
+assert.equal(recentInList.enabled, false);
+
+// schedulerState mutations
+assert.equal(testSchedulerState.lastFailures.recovered, undefined);
+assert.equal(testSchedulerState.lastSuccess.recovered, "2026-08-31T12:00:00.000Z");
+assert.deepEqual(testSchedulerState.lastDisabledProbes.recovered, {
+  at: "2026-08-31T12:00:00.000Z",
+  ok: true,
+});
+assert.equal(testSchedulerState.lastDisabledProbes.stillDown.ok, false);
+assert.match(testSchedulerState.lastDisabledProbes.stillDown.error, /HTTP 522/);
+assert.equal(resolveDisabledSourceProbeIntervalMs({ DISABLED_SOURCE_PROBE_HOURS: "12" }), 12 * 3600 * 1000);
+
 
 const historyProduct = {
   id: "sku-1",

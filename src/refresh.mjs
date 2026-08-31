@@ -146,9 +146,10 @@ async function readLdxpSchedulerState() {
       cooldowns: state?.cooldowns && typeof state.cooldowns === "object" ? state.cooldowns : {},
       lastFailures: state?.lastFailures && typeof state.lastFailures === "object" ? state.lastFailures : {},
       lastSuccess: state?.lastSuccess && typeof state.lastSuccess === "object" ? state.lastSuccess : {},
+      lastDisabledProbes: state?.lastDisabledProbes && typeof state.lastDisabledProbes === "object" ? state.lastDisabledProbes : {},
     };
   } catch {
-    return { version: 1, cursorByHost: {}, cooldowns: {}, lastFailures: {}, lastSuccess: {} };
+    return { version: 1, cursorByHost: {}, cooldowns: {}, lastFailures: {}, lastSuccess: {}, lastDisabledProbes: {} };
   }
 }
 
@@ -160,6 +161,7 @@ async function writeLdxpSchedulerState(state) {
     cooldowns: state.cooldowns || {},
     lastFailures: state.lastFailures || {},
     lastSuccess: state.lastSuccess || {},
+    lastDisabledProbes: state.lastDisabledProbes || {},
   }, null, 2)}\n`);
 }
 
@@ -201,6 +203,11 @@ export function resolveLdxpSchedulerConfig(env = process.env) {
     delayMinMs,
     delayMaxMs,
   };
+}
+
+export function resolveDisabledSourceProbeIntervalMs(env = process.env) {
+  const hours = numberFromEnv(env.DISABLED_SOURCE_PROBE_HOURS, 24, { min: 0 });
+  return hours * 60 * 60 * 1000;
 }
 
 function sourceHost(source) {
@@ -286,6 +293,7 @@ export function buildLdxpRefreshPlan({
       cooldowns: state.cooldowns || {},
       lastFailures: state.lastFailures || {},
       lastSuccess: state.lastSuccess || {},
+      lastDisabledProbes: state.lastDisabledProbes || {},
     },
   };
 }
@@ -338,6 +346,106 @@ export function disableDeadSources(sources = [], {
     };
   });
   return { sources: next, changed };
+}
+
+export async function probeSource(source, { fallbackProxy = null } = {}) {
+  if (source.adapter === "ldxp") {
+    const info = await postJson(
+      new URL("/shopApi/Shop/info", source.url),
+      { token: source.token },
+      { fallbackProxy },
+    );
+    if (info.code !== 1) {
+      throw new Error(info.msg || "店铺信息异常");
+    }
+    return true;
+  }
+  if (source.adapter === "acg") {
+    const res = await getJson(
+      new URL("/user/api/index/commodity", source.url),
+      { fallbackProxy },
+    );
+    if (res.code !== 200) {
+      throw new Error(res.msg || "商品接口异常");
+    }
+    return true;
+  }
+  if (source.adapter === "dujiao") {
+    const res = await getJson(
+      new URL("/api/v1/public/products", source.apiBase || source.url),
+      { fallbackProxy },
+    );
+    if (res.status_code !== 0) {
+      throw new Error(res.msg || "商品接口异常");
+    }
+    return true;
+  }
+  throw new Error(`未知或不支持探测的适配器: ${source.adapter}`);
+}
+
+export async function probeAndRecoverDisabledSources(sources, {
+  schedulerState = {},
+  fallbackProxy = null,
+  now = new Date(),
+  probeIntervalMs = 24 * 60 * 60 * 1000,
+  probeFn = probeSource,
+} = {}) {
+  const disabledSources = sources.filter((s) => s.enabled === false);
+  if (disabledSources.length === 0) {
+    return { sources, recovered: [], changed: false };
+  }
+
+  const lastDisabledProbes = { ...(schedulerState.lastDisabledProbes || {}) };
+  const lastFailures = { ...(schedulerState.lastFailures || {}) };
+  const lastSuccess = { ...(schedulerState.lastSuccess || {}) };
+  const recoveredMap = new Map();
+  let changed = false;
+
+  for (const source of disabledSources) {
+    const lastProbe = lastDisabledProbes[source.id];
+    if (lastProbe?.at) {
+      const elapsedMs = now.getTime() - new Date(lastProbe.at).getTime();
+      if (elapsedMs < probeIntervalMs) {
+        continue;
+      }
+    }
+
+    try {
+      await probeFn(source, { fallbackProxy });
+      // Probe succeeded! Recover this source
+      recoveredMap.set(source.id, {
+        ...source,
+        enabled: true,
+      });
+      delete recoveredMap.get(source.id).disabledAt;
+      delete recoveredMap.get(source.id).disabledReason;
+
+      delete lastFailures[source.id];
+      lastSuccess[source.id] = now.toISOString();
+      lastDisabledProbes[source.id] = {
+        at: now.toISOString(),
+        ok: true,
+      };
+      changed = true;
+    } catch (error) {
+      lastDisabledProbes[source.id] = {
+        at: now.toISOString(),
+        ok: false,
+        error: error.message || String(error),
+      };
+    }
+  }
+
+  schedulerState.lastDisabledProbes = lastDisabledProbes;
+  schedulerState.lastFailures = lastFailures;
+  schedulerState.lastSuccess = lastSuccess;
+
+  const nextSources = sources.map((source) => recoveredMap.get(source.id) || source);
+  return {
+    sources: nextSources,
+    recovered: Array.from(recoveredMap.values()),
+    changed,
+  };
 }
 
 export function pruneUnknownSourceFailures(lastFailures = {}, sources = []) {
@@ -606,12 +714,23 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
   const ldxpFetchMode = resolveLdxpFetchMode();
   const ldxpSchedulerConfig = resolveLdxpSchedulerConfig();
   const ldxpSchedulerState = await readLdxpSchedulerState();
+  const probeIntervalMs = resolveDisabledSourceProbeIntervalMs();
+  const probeResult = await probeAndRecoverDisabledSources(sourcesConfig.sources, {
+    schedulerState: ldxpSchedulerState,
+    probeIntervalMs,
+    now: new Date(),
+  });
+  if (probeResult.changed) {
+    sourcesConfig.sources = probeResult.sources;
+  }
   const deadSources = disableDeadSources(sourcesConfig.sources, {
     lastFailures: ldxpSchedulerState.lastFailures,
     lastSuccess: ldxpSchedulerState.lastSuccess,
   });
   if (deadSources.changed) {
     sourcesConfig.sources = deadSources.sources;
+  }
+  if (probeResult.changed || deadSources.changed) {
     await writeFile(new URL("data/sources.json", root), `${JSON.stringify(sourcesConfig, null, 2)}\n`);
   }
   const enabledSources = sourcesConfig.sources.filter((source) => source.enabled !== false);

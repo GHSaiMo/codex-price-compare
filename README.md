@@ -170,6 +170,7 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 - `LDXP_MAX_SOURCES_PER_RUN=15`：每轮最多刷新的 ldxp 店铺数。
 - `LDXP_DOMAIN_COOLDOWN_HOURS=6`：同域名触发 WAF 后的冷却小时数。
 - `LDXP_DELAY_MIN_MS=8000` / `LDXP_DELAY_MAX_MS=25000`：ldxp 店铺之间的随机等待区间。
+- `DISABLED_SOURCE_PROBE_HOURS=24`：停用店铺的自动健康探测间隔（小时）。默认每 24 小时对处于停用状态的店铺进行一次轻量级健康检测，若目标站点恢复（HTTP 200 且数据正常）则自动解除停用自愈。
 - `FALLBACK_PROXY_URL=http://127.0.0.1:7890`：直连请求失败时，通过本机代理回退；直连成功时不会使用代理。
 - `FALLBACK_PROXY_REQUEST_ATTEMPTS=3`：代理请求发生连接、TLS 或命令执行失败时的总尝试次数。
 - `FALLBACK_PROXY_RETRY_DELAY_MS=1000`：代理重试的基础间隔，默认按 1 秒、2 秒递增等待。
