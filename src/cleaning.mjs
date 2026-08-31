@@ -146,6 +146,44 @@ function hasStrongSmsServiceSignal(text) {
   );
 }
 
+export function isTutorialProduct(title) {
+  const text = String(title || "").trim();
+  if (!text) return false;
+
+  // 1. 明确的教程标签括号：【教程】、[教程]、(教程) 等，排除账号卖点/免责括号（如【带教程】、【看教程】）
+  const bracketMatches = text.match(/[【\[(（][^】\])）]*?[】\])）]/g) || [];
+  for (const b of bracketMatches) {
+    const inner = b.slice(1, -1).trim();
+    if (/教程/.test(inner)) {
+      if (!/(?:带|送|含|附|包|配|有|赠送|提供|无|不提供|没有|看|请看|参考|阅读|不会|未阅读)/.test(inner)) {
+        return true;
+      }
+    }
+  }
+
+  // 2. 剥离账号商品中常见的教程说明/赠品/免责声明
+  const stripped = text
+    .replace(/[（(][^）)]*?教程[^）)]*?[)）]/gi, " ")
+    .replace(/[【\[][^】\]]*?(?:带|送|含|附|包|配|有|赠送|提供|无|不提供|没有|看|请看|参考|阅读|不会|未阅读)\s*(?:视频|图文|详细|使用|登录|新手|充值|反代|反向代理|注册)?\s*教程[^】\]]*?[】\]]/gi, " ")
+    .replace(/(?:带|送|含|附|包|配|有|赠送|提供|无|不提供|没有|无需|不需要)\s*(?:视频|图文|详细|使用|登录|新手|充值|反代|反向代理|注册)?\s*教程/gi, " ")
+    .replace(/(?:看|看下|请看|阅读|参考|搞不懂|不懂)\s*(?:视频|图文|详细|使用|登录|新手)?\s*教程/gi, " ");
+
+  // 3. 常见独立教程特征词
+  if (/(?:反代|反向代理|订阅|开通|注册|登录|使用|充值|接[码马]|导入|sub2api|sub2|视频|图文|新手|小白|保姆级)\s*教程/i.test(stripped)) {
+    return true;
+  }
+
+  // 4. 以教程开头或以教程结尾
+  if (/^教程(?=$|\s|[:：])/i.test(stripped)) {
+    return true;
+  }
+  if (/教程\s*(?:（.*）|\(.*\)|\{.*\}|【.*】|\[.*\])*\s*$/i.test(stripped)) {
+    return true;
+  }
+
+  return false;
+}
+
 function isFinishedAccountSmsMention(text) {
   // Plus/Free 成品号会写“美区长效接码/已使用...接码”，这是账号卖点而不是接码服务本身。
   return (
@@ -555,6 +593,16 @@ export function classifyProduct(title, description = "", rules) {
       0,
       [],
       titleExclusionMatches.slice(0, 2).map((term) => `命中标题排除词: ${term}`),
+    );
+  }
+
+  if (isTutorialProduct(titleText)) {
+    return buildResult(
+      "other",
+      "unknown",
+      0,
+      [],
+      ["命中教程商品排除规则"],
     );
   }
 

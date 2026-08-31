@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 
 import {
   classifyProduct,
+  isTutorialProduct,
   normalizeAcgProduct,
   normalizeDujiaoProduct,
   normalizeLdxpProduct,
@@ -196,11 +197,38 @@ assert.equal(
   null,
 );
 assert.equal(
+  classifyProduct("【教程】未接马plus G号接马并导入sub2api教程", "非账号！非账号！导入sub2api教程", rules).category,
+  "other",
+);
+assert.equal(
+  normalizeLdxpProduct({
+    goods_key: "26skr0",
+    name: "【教程】未接马plus G号接马并导入sub2api教程",
+    description: "非账号！非账号！导入sub2api教程",
+    price: "0.20",
+    extend: { stock_count: "99" },
+    link: "/item/26skr0",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+  null,
+);
+assert.equal(
+  classifyProduct("反向代理教程（免费的不需要下单）", "", rules).category,
+  "other",
+);
+assert.equal(
   classifyProduct("ChatGPT Plus 成品号（看教程还不会使用的别拍）", "", rules).category,
   "codex",
 );
 assert.equal(
   classifyProduct("ChatGPT Plus 成品号（看教程还不会使用的别拍）", "", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("ChatGPT Plus 成品号【带视频教程】", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("ChatGPT Plus 成品号【带视频教程】", "", rules).subtype,
   "plus",
 );
 for (const title of [
@@ -814,6 +842,12 @@ assert.deepEqual(
 assert.deepEqual(
   productsData.items
     .filter((item) => /claude[\s-]*pro/i.test(item.title || ""))
+    .map((item) => item.url),
+  [],
+);
+assert.deepEqual(
+  productsData.items
+    .filter((item) => isTutorialProduct(item.title || ""))
     .map((item) => item.url),
   [],
 );
