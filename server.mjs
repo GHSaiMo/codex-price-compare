@@ -545,9 +545,6 @@ const adminServer = createStaticServer("admin.html", ADMIN_PORT, true);
 
 await loadDotEnv();
 await loadRefreshSettings();
-await ensureClassifierDaemon((msg) => logWithTimestamp("log", msg));
-await syncClassifiedProductsOnStartup();
-scheduleNextRefresh(5 * 1000);
 
 process.on("SIGINT", () => {
   stopClassifierDaemon((msg) => logWithTimestamp("log", msg));
@@ -559,6 +556,7 @@ process.on("SIGTERM", () => {
   process.exit(0);
 });
 
+// 1. 优先立即监听 HTTP 端口，确保 tmuxctl/外部健康检查（http://127.0.0.1:49173/）秒级通过
 server.listen(PORT, "127.0.0.1", () => {
   logWithTimestamp("log", `Codex Price Compare: http://127.0.0.1:${PORT}`);
 });
@@ -566,4 +564,14 @@ server.listen(PORT, "127.0.0.1", () => {
 adminServer.listen(ADMIN_PORT, "127.0.0.1", () => {
   logWithTimestamp("log", `Codex Price Compare Admin: http://127.0.0.1:${ADMIN_PORT}`);
 });
+
+// 2. 后台异步拉起端侧伴生模型与全库启动重分类，不阻塞 HTTP 端口就绪
+(async () => {
+  await ensureClassifierDaemon((msg) => logWithTimestamp("log", msg));
+  await syncClassifiedProductsOnStartup();
+  scheduleNextRefresh(5 * 1000);
+})().catch((err) => {
+  logWithTimestamp("error", `后台初始化失败: ${err.message}`);
+});
+
 
