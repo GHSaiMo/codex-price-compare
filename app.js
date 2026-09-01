@@ -697,27 +697,59 @@ function render({ animate = false } = {}) {
   if (animate) triggerFilterAnimation();
 }
 
+let productsEtag = null;
+let metaEtag = null;
+
 async function loadData() {
   try {
+    const productsHeaders = {};
+    const metaHeaders = {};
+    if (productsEtag) productsHeaders["If-None-Match"] = productsEtag;
+    if (metaEtag) metaHeaders["If-None-Match"] = metaEtag;
+
     const [productsResponse, metaResponse] = await Promise.all([
-      fetch(productsUrl, { cache: "no-store" }),
-      fetch(metaUrl, { cache: "no-store" }),
+      fetch(productsUrl, { headers: productsHeaders }),
+      fetch(metaUrl, { headers: metaHeaders }),
     ]);
-    if (!productsResponse.ok) throw new Error(`products HTTP ${productsResponse.status}`);
-    if (!metaResponse.ok) throw new Error(`meta HTTP ${metaResponse.status}`);
 
-    const products = await productsResponse.json();
-    const meta = await metaResponse.json();
-    allProducts = Array.isArray(products.items) ? products.items : [];
-    syncShopFilter();
+    if (productsResponse.status === 304 && metaResponse.status === 304) {
+      return;
+    }
 
-    const time = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
-    updateSummary(time);
-    render();
+    let hasUpdate = false;
+    if (productsResponse.status === 200) {
+      const newProductsEtag = productsResponse.headers.get("etag");
+      if (newProductsEtag) productsEtag = newProductsEtag;
+      const products = await productsResponse.json();
+      allProducts = Array.isArray(products.items) ? products.items : [];
+      hasUpdate = true;
+    } else if (productsResponse.status !== 304) {
+      throw new Error(`products HTTP ${productsResponse.status}`);
+    }
+
+    let time = null;
+    if (metaResponse.status === 200) {
+      const newMetaEtag = metaResponse.headers.get("etag");
+      if (newMetaEtag) metaEtag = newMetaEtag;
+      const meta = await metaResponse.json();
+      time = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
+      hasUpdate = true;
+    } else if (metaResponse.status !== 304) {
+      throw new Error(`meta HTTP ${metaResponse.status}`);
+    }
+
+    if (hasUpdate) {
+      syncShopFilter();
+      if (time) updateSummary(time);
+      else updateSummary();
+      render();
+    }
   } catch (error) {
-    summary.textContent = `读取数据失败：${error.message}`;
-    clearElement(productList);
-    emptyState.hidden = true;
+    if (allProducts.length === 0) {
+      summary.textContent = `读取数据失败：${error.message}`;
+      clearElement(productList);
+      emptyState.hidden = true;
+    }
     console.error(error);
   }
 }

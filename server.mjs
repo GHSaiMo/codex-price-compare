@@ -1,8 +1,13 @@
 import { createReadStream } from "node:fs";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
+import { gzip as gzipCb } from "node:zlib";
+import { promisify } from "node:util";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+
+const gzipAsync = promisify(gzipCb);
 
 import { loadDotEnv } from "./src/env.mjs";
 import {
@@ -98,26 +103,119 @@ async function existingFileOrDefault(filePath, defaultFile) {
   return join(ROOT, defaultFile);
 }
 
-function sendJson(response, statusCode, payload) {
-  response.writeHead(statusCode, {
-    "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-  });
-  response.end(`${JSON.stringify(payload, null, 2)}\n`);
+async function sendCompressed(request, response, statusCode, content, contentType, extraHeaders = {}) {
+  const buffer = Buffer.isBuffer(content) ? content : Buffer.from(String(content), "utf8");
+  const headers = {
+    "content-type": contentType,
+    ...extraHeaders,
+  };
+
+  const accept = request ? String(request.headers?.["accept-encoding"] || "") : "";
+  if (buffer.length >= 1024 && /\bgzip\b/i.test(accept)) {
+    try {
+      const compressed = await gzipAsync(buffer);
+      headers["content-encoding"] = "gzip";
+      headers["content-length"] = compressed.length;
+      headers["vary"] = "Accept-Encoding";
+      response.writeHead(statusCode, headers);
+      if (request?.method === "HEAD") {
+        response.end();
+        return;
+      }
+      response.end(compressed);
+      return;
+    } catch {
+      // fallback
+    }
+  }
+
+  headers["content-length"] = buffer.length;
+  response.writeHead(statusCode, headers);
+  if (request?.method === "HEAD") {
+    response.end();
+    return;
+  }
+  response.end(buffer);
 }
 
-async function sendPublicJson(response, method, filePath, transform) {
+function sendJson(response, statusCode, payload) {
+  const body = `${JSON.stringify(payload, null, 2)}\n`;
+  response.writeHead(statusCode, {
+    "content-type": "application/json; charset=utf-8",
+    "content-length": Buffer.byteLength(body),
+    "cache-control": "no-store",
+  });
+  response.end(body);
+}
+
+let publicProductsCache = null;
+let publicMetaCache = null;
+
+async function getPublicProducts() {
+  const fileStat = await stat(productsPath).catch(() => null);
+  const mtimeMs = fileStat ? fileStat.mtimeMs : 0;
+  if (!publicProductsCache || publicProductsCache.mtimeMs !== mtimeMs) {
+    const raw = JSON.parse(await readFile(productsPath, "utf8"));
+    const payload = toPublicProductsDocument(raw);
+    const json = JSON.stringify(payload);
+    const hash = createHash("sha1").update(json).digest("hex");
+    publicProductsCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+  }
+  return publicProductsCache;
+}
+
+async function getPublicMeta() {
+  const fileStat = await stat(metaPath).catch(() => null);
+  const mtimeMs = fileStat ? fileStat.mtimeMs : 0;
+  if (!publicMetaCache || publicMetaCache.mtimeMs !== mtimeMs) {
+    const raw = JSON.parse(await readFile(metaPath, "utf8"));
+    const payload = toPublicMeta(raw);
+    const json = JSON.stringify(payload);
+    const hash = createHash("sha1").update(json).digest("hex");
+    publicMetaCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+  }
+  return publicMetaCache;
+}
+
+function invalidatePublicCaches() {
+  publicProductsCache = null;
+  publicMetaCache = null;
+}
+
+async function sendPublicJson(response, method, filePath, transform, request = null) {
   try {
-    const payload = transform(JSON.parse(await readFile(filePath, "utf8")));
-    response.writeHead(200, {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-    });
-    if (method === "HEAD") {
+    let cached;
+    if (filePath === productsPath) {
+      cached = await getPublicProducts();
+    } else if (filePath === metaPath) {
+      cached = await getPublicMeta();
+    } else {
+      const payload = transform(JSON.parse(await readFile(filePath, "utf8")));
+      const json = JSON.stringify(payload);
+      const hash = createHash("sha1").update(json).digest("hex");
+      cached = { json, etag: `W/"${hash}"` };
+    }
+
+    if (request?.headers?.["if-none-match"] === cached.etag) {
+      response.writeHead(304, {
+        etag: cached.etag,
+        "cache-control": "no-cache",
+      });
       response.end();
       return;
     }
-    response.end(`${JSON.stringify(payload)}\n`);
+
+    await sendCompressed(
+      request,
+      response,
+      200,
+      cached.json,
+      "application/json; charset=utf-8",
+      {
+        etag: cached.etag,
+        "cache-control": "no-cache",
+      }
+    );
   } catch {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     response.end("Not Found");
@@ -199,6 +297,9 @@ async function runScheduledRefresh() {
     logWithTimestamp("log", `自动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
     if (meta.protected) logWithTimestamp("log", `刷新保护生效：${meta.protectionReason || "冷却中，保留旧数据"}`);
     if (meta.errors.length > 0) logWithTimestamp("log", JSON.stringify(meta.errors, null, 2));
+    invalidatePublicCaches();
+    void getPublicProducts();
+    void getPublicMeta();
   } catch (error) {
     logWithTimestamp("error", `自动刷新失败：${error.message}`);
     await updateRefreshMeta(nextRefreshAt);
@@ -256,6 +357,9 @@ async function handleRefreshNow(response) {
     const meta = await refreshProducts({ nextRefreshAt });
     logWithTimestamp("log", `手动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
     if (meta.protected) logWithTimestamp("log", `刷新保护生效：${meta.protectionReason || "冷却中，保留旧数据"}`);
+    invalidatePublicCaches();
+    void getPublicProducts();
+    void getPublicMeta();
     refreshInProgress = false;
     scheduleNextRefresh(refreshIntervalMs);
     sendJson(response, 200, await refreshStatus());
@@ -496,25 +600,46 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     }
 
     if (!allowApi && pathname === "/data/products.json") {
-      await sendPublicJson(response, request.method, productsPath, toPublicProductsDocument);
+      await sendPublicJson(response, request.method, productsPath, toPublicProductsDocument, request);
       return;
     }
     if (!allowApi && pathname === "/data/meta.json") {
-      await sendPublicJson(response, request.method, metaPath, toPublicMeta);
+      await sendPublicJson(response, request.method, metaPath, toPublicMeta, request);
       return;
     }
 
     const filePath = await existingFileOrDefault(resolvePath(request.url, defaultFile, port), defaultFile);
     const contentType = contentTypes[extname(filePath)] || "application/octet-stream";
-    response.writeHead(200, {
-      "content-type": contentType,
-      "cache-control": "no-store",
-    });
-    if (request.method === "HEAD") {
+    const isHtml = filePath.endsWith(".html");
+    const fileStat = await stat(filePath).catch(() => null);
+    if (!fileStat || !fileStat.isFile()) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not Found");
+      return;
+    }
+
+    const etag = `W/"${fileStat.size}-${Math.floor(fileStat.mtimeMs)}"`;
+    if (request.headers["if-none-match"] === etag) {
+      response.writeHead(304, {
+        etag: etag,
+        "cache-control": isHtml ? "no-cache" : "public, max-age=86400",
+      });
       response.end();
       return;
     }
-    createReadStream(filePath).pipe(response);
+
+    const fileContent = await readFile(filePath);
+    await sendCompressed(
+      request,
+      response,
+      200,
+      fileContent,
+      contentType,
+      {
+        etag: etag,
+        "cache-control": isHtml ? "no-cache" : "public, max-age=86400",
+      }
+    );
   });
 }
 
@@ -532,6 +657,8 @@ async function syncClassifiedProductsOnStartup() {
       const aiResolved = await applyAiClassifierToUnknowns(reclassified);
       products.items = sortProductsForDisplay(aiResolved);
       await writeFile(productsPath, `${JSON.stringify(products, null, 2)}\n`);
+      invalidatePublicCaches();
+      void getPublicProducts();
       logWithTimestamp("log", `启动重分类完成：${products.items.length} 条商品已同步最新规则（含 AI 伴生纠偏）`);
     }
   } catch (error) {
