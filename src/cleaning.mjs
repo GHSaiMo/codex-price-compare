@@ -294,10 +294,11 @@ function stripNoiseDurationText(text, noiseTerms = []) {
 function stripGrokWarrantyNoiseText(text) {
   let output = text;
   output = output.replace(/(?:大概率|大概|只能|只|能|可|保)?\s*活\s*\d+(?:\s*[-~～至到]\s*\d+)?\s*天/gi, " ");
-  output = output.replace(/已稳\s*\d+\s*天/gi, " ");
+  output = output.replace(/已稳定?\s*\d+\s*天/gi, " ");
   output = output.replace(/(?:成品质保|质保|保)?\s*订阅\s*\d+\s*(?:h|小时|天|周)/gi, " ");
   output = output.replace(/质保\s*(?:订阅)?\s*(?:一|1|两|2)\s*周(?:订阅)?/gi, " ");
   output = output.replace(/(?:成品)?质保\s*\d+\s*(?:h|小时|天)(?:订阅)?/gi, " ");
+  output = output.replace(/\d+\s*(?:分钟|小时|h|m|天|周|月|个\s*月)\s*(?:质保|保|售后)/gi, " ");
   output = output.replace(/质保\s*(?:发货\s*)?\d+\s*(?:分钟|小时|h|m|天)(?:内)?(?:首登|激活)?/gi, " ");
   output = output.replace(/保\s*\d+\s*(?:分钟|小时|h|m|天)(?:内)?(?:首登|激活)/gi, " ");
   return output.replace(/\s+/g, " ").trim();
@@ -308,10 +309,10 @@ function durationMeta(subtype, matches = []) {
     return { subtype: "m1", durationDays: 30, durationLabel: "1M", matches };
   }
   if (subtype === "m3") {
-    return { subtype, durationDays: 90, durationLabel: "3M", matches };
+    return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches };
   }
   if (subtype === "y1") {
-    return { subtype, durationDays: 365, durationLabel: "1Y", matches };
+    return { subtype: "y1", durationDays: 365, durationLabel: "1Y", matches };
   }
   return { subtype: "others", durationDays: null, durationLabel: "Others", matches };
 }
@@ -321,8 +322,6 @@ function matchGrokDuration(text, durationTerms = {}) {
     ["y1", durationTerms.y1 || []],
     ["m3", durationTerms.m3 || []],
     ["m1", durationTerms.m1 || durationTerms.m12 || []],
-    // 兼容旧规则字段，避免历史 rules 缓存失效。
-    ["m1", [...(durationTerms.m1 || []), ...(durationTerms.m2 || []), ...(durationTerms.m12 || [])]],
   ];
 
   for (const [subtype, terms] of ordered) {
@@ -332,32 +331,41 @@ function matchGrokDuration(text, durationTerms = {}) {
     }
   }
 
-  const yearMatch = text.match(/(?:^|[^a-z0-9])(?:1\s*年|一年|年卡|12\s*(?:个\s*)?月|1\s*year|one\s*year)(?=$|[^a-z0-9])/i);
+  const yearMatch = text.match(/(?:^|[^a-z0-9])(?:(\d+)\s*年|(\d+)\s*(?:个\s*)?年|一年|年卡|(\d+)\s*year|one\s*year)(?=$|[^a-z0-9])/i);
   if (yearMatch) {
     return durationMeta("y1", [yearMatch[0].trim()]);
   }
 
-  const monthMatch = text.match(/(\d+)\s*(?:个\s*)?月/);
+  const monthMatch = text.match(/(\d+|一|两|二|三|四|五|六|七|八|九|十|十二|半)\s*(?:个\s*)?月/);
   if (monthMatch) {
-    const months = Number(monthMatch[1]);
-    if (months === 12) return durationMeta("y1", [monthMatch[0]]);
-    if (months === 3) return durationMeta("m3", [monthMatch[0]]);
-    if (months === 1 || months === 2) return durationMeta("m1", [monthMatch[0]]);
-    // 4-11 个月并入 3M 档；超过 12 个月并入 1Y。
-    if (Number.isFinite(months) && months > 12) return durationMeta("y1", [monthMatch[0]]);
-    if (Number.isFinite(months) && months > 3) return durationMeta("m3", [monthMatch[0]]);
+    const numMap = { "半": 0.5, "一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10, "十二": 12 };
+    const months = numMap[monthMatch[1]] ?? Number(monthMatch[1]);
+    if (Number.isFinite(months)) {
+      if (months <= 1) return durationMeta("m1", [monthMatch[0]]);
+      if (months <= 3) return durationMeta("m3", [monthMatch[0]]);
+      if (months > 3) return durationMeta("y1", [monthMatch[0]]);
+    }
+  }
+
+  const weekMatch = text.match(/(\d+|一|两|二|三|四)\s*(?:个\s*)?周/);
+  if (weekMatch) {
+    const weekMap = { "一": 1, "两": 2, "二": 2, "三": 3, "四": 4 };
+    const weeks = weekMap[weekMatch[1]] ?? Number(weekMatch[1]);
+    if (Number.isFinite(weeks)) {
+      const days = weeks * 7;
+      if (days <= 31) return durationMeta("m1", [weekMatch[0]]);
+      if (days <= 90) return durationMeta("m3", [weekMatch[0]]);
+      return durationMeta("y1", [weekMatch[0]]);
+    }
   }
 
   const dayMatch = text.match(/(\d+)\s*天/);
   if (dayMatch) {
     const days = Number(dayMatch[1]);
-    if (Number.isFinite(days) && days >= 360) return durationMeta("y1", [dayMatch[0]]);
-    if (days === 90 || (Number.isFinite(days) && days > 90 && days < 360)) {
-      return durationMeta("m3", [dayMatch[0]]);
-    }
-    if (days === 30 || days === 60) return durationMeta("m1", [dayMatch[0]]);
-    if (Number.isFinite(days) && days > 0) {
-      return { subtype: "others", durationDays: days, durationLabel: days + "D", matches: [dayMatch[0]] };
+    if (Number.isFinite(days)) {
+      if (days <= 31) return durationMeta("m1", [dayMatch[0]]);
+      if (days <= 90) return durationMeta("m3", [dayMatch[0]]);
+      if (days > 90) return durationMeta("y1", [dayMatch[0]]);
     }
   }
 

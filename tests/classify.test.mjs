@@ -368,7 +368,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("grok 普号（7天体验）", "", rules).durationLabel,
-  "7D",
+  "Free",
 );
 assert.equal(
   classifyProduct("Super Grok 7天会员号---带SSO--质保订阅，最长可用15天，稳定供货", "", rules).subtype,
@@ -380,7 +380,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Grok Super正规直充卡密（两个月）", "", rules).subtype,
-  "m1",
+  "m3",
+);
+assert.equal(
+  classifyProduct("Grok Super正规直充卡密（两个月）", "", rules).durationLabel,
+  "3M",
 );
 assert.equal(
   classifyProduct("SuperGrok 一个月成品号", "", rules).subtype,
@@ -389,6 +393,38 @@ assert.equal(
 assert.equal(
   classifyProduct("Grok Super直充卡密（3个月）", "", rules).subtype,
   "m3",
+);
+assert.equal(
+  classifyProduct("super gro 7天账号（账号/密码）只保证上号带会员无售后", "", rules).subtype,
+  "m1",
+);
+assert.equal(
+  classifyProduct("super gro 7天账号（账号/密码）只保证上号带会员无售后", "", rules).durationLabel,
+  "1M",
+);
+assert.equal(
+  classifyProduct("Super gro 账号｜gro高级会员账户｜3个月有效期｜支持查询到期｜85天质保", "", rules).subtype,
+  "m3",
+);
+assert.equal(
+  classifyProduct("【正规实付】Supergro Lite 6个月 质保订阅180天（包含同时长X Premium会员）【官方直充】", "", rules).subtype,
+  "y1",
+);
+assert.equal(
+  classifyProduct("【正规实付】Supergro Lite 6个月 质保订阅180天（包含同时长X Premium会员）【官方直充】", "", rules).durationLabel,
+  "1Y",
+);
+assert.equal(
+  classifyProduct("【正规实付】X Premium 6个月 质保订阅180天（包含同时长Supergro Lite会员）【官方直充】", "", rules).subtype,
+  "y1",
+);
+assert.equal(
+  classifyProduct("【成品号】Supergrok 7天成品号【质保订阅5天】grok", "", rules).subtype,
+  "m1",
+);
+assert.equal(
+  classifyProduct("超额版super gro 7天会员账号(150$+500$cli额度，无质保,需要速刷）", "", rules).subtype,
+  "m1",
 );
 assert.equal(
   classifyProduct("Supergrok Heavy月卡(可直充可成品，质保3天订阅）", "质保3天订阅！！！不质保封号", rules).subtype,
