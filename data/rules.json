@@ -202,6 +202,10 @@
     "claude",
     "codex",
     "perplexity",
+    "deepseek",
+    "deep-seek",
+    "deep seek",
+    "深度求索",
     "视频模型",
     "视频模型平替",
     "1.5视频"
@@ -263,6 +267,10 @@
   ],
   "exclusionTerms": [
     "perplexity",
+    "deepseek",
+    "deep-seek",
+    "deep seek",
+    "深度求索",
     "gcp",
     "apple id",
     "苹果id",
@@ -280,6 +288,10 @@
     "官方中转api"
   ],
   "titleExclusionTerms": [
+    "deepseek",
+    "deep-seek",
+    "deep seek",
+    "深度求索",
     "补差价",
     "补差",
     "【教程】",

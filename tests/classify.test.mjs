@@ -994,4 +994,27 @@ assert.equal(
   "codex",
 );
 
+// DeepSeek 排除规则测试（防 DeepSeek 混入 Codex / Grok）
+assert.equal(
+  classifyProduct("破甲版deepseekv4（一折，官方十倍额度）周卡", "支持api调用，接入codex/claude", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("破甲版deepseekv4（一折，官方十倍额度）一天试用卡", "支持api调用，接入codex/claude", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("破甲版deepseekv4（一折，官方十倍额度）轻享月卡", "支持api调用，接入codex/claude", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("DeepSeek R1 满血版 API 额度卡", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("深度求索 V3 账号", "", rules).category,
+  "other",
+);
+
+
 

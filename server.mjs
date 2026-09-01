@@ -23,7 +23,6 @@ import {
   writeStockWatch,
 } from "./src/stock-watch.mjs";
 import { sendWeChatBridgeText } from "./src/wechatbridge.mjs";
-import { ensureClassifierDaemon, stopClassifierDaemon } from "./src/ai-classifier.mjs";
 
 const PORT = 49173;
 const ADMIN_PORT = 49174;
@@ -547,12 +546,10 @@ await loadDotEnv();
 await loadRefreshSettings();
 
 process.on("SIGINT", () => {
-  stopClassifierDaemon((msg) => logWithTimestamp("log", msg));
   process.exit(0);
 });
 
 process.on("SIGTERM", () => {
-  stopClassifierDaemon((msg) => logWithTimestamp("log", msg));
   process.exit(0);
 });
 
@@ -565,9 +562,8 @@ adminServer.listen(ADMIN_PORT, "127.0.0.1", () => {
   logWithTimestamp("log", `Codex Price Compare Admin: http://127.0.0.1:${ADMIN_PORT}`);
 });
 
-// 2. 后台异步拉起端侧伴生模型与全库启动重分类，不阻塞 HTTP 端口就绪
+// 2. 后台异步执行全库启动重分类与首轮刷新，不阻塞 HTTP 端口就绪
 (async () => {
-  await ensureClassifierDaemon((msg) => logWithTimestamp("log", msg));
   await syncClassifiedProductsOnStartup();
   scheduleNextRefresh(5 * 1000);
 })().catch((err) => {
