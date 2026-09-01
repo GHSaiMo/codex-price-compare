@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 
 import {
   classifyProduct,
+  isCreditQuotaProduct,
   isTutorialProduct,
   normalizeAcgProduct,
   normalizeDujiaoProduct,
@@ -964,7 +965,7 @@ assert.deepEqual(
     subtype: "unknown",
     confidence: 0,
     tags: [],
-    matchReasons: ["命中标题排除词: 额度补充包"],
+    matchReasons: ["命中标题排除词: 额度补充包", "命中标题排除词: 250额度"],
   },
 );
 assert.equal(
@@ -1077,3 +1078,33 @@ assert.equal(
   classifyProduct("【正规实付】Cursor ultra月卡成品号", "", rules).category,
   "other",
 );
+
+// 额度充值（非api）等额度类商品直接丢弃，不放入 free 测试
+const quotaTitles = [
+  ["【官方充值】Codex 500额度 （非api）", "小久库存 202¥142"],
+  ["【官方充值】Codex 500额度 （非api）", "小溜商店（代理对接码：uirn39bk）库存 202¥162"],
+  ["【官方充值】Codex 1000额度 （非api）", "小久库存 256¥275"],
+  ["【官方充值】Codex 1000额度 （非api）", "小溜商店（代理对接码：uirn39bk）库存 256¥313"],
+  ["【官方充值】Codex 250额度 （非api）", "需知：gpt free账号无法购买额度"],
+  ["【官方充值】Codex 2500额度 （非api）", ""],
+  ["Codex 500额度 （非api）", ""],
+  ["Codex 1000额度 （非api）", ""],
+  ["Codex 500额度", ""],
+  ["Codex 1000额度", ""],
+  ["【官方充值】Codex 800额度", ""],
+  ["Codex 额度充值", ""],
+];
+
+for (const [title, desc] of quotaTitles) {
+  assert.equal(
+    isCreditQuotaProduct(title),
+    true,
+    `isCreditQuotaProduct 应识别为 true: ${title}`,
+  );
+  assert.equal(
+    classifyProduct(title, desc, rules).category,
+    "other",
+    `额度充值商品应归类为 other 并丢弃: ${title}`,
+  );
+}
+
