@@ -924,16 +924,16 @@ assert.deepEqual(
   classifyProduct("Codex额度补充包（10美元codex额度补充包对应250额度）", creditPackDesc, rules),
   {
     brand: "codex",
-    category: "codex",
+    category: "other",
     subtype: "unknown",
-    confidence: 0.68,
-    tags: ["unknown"],
-    matchReasons: ["命中Codex锚点词: codex"],
+    confidence: 0,
+    tags: [],
+    matchReasons: ["命中标题排除词: 额度补充包"],
   },
 );
 assert.equal(
-  classifyProduct("Codex 点数额度充值 (Free账号勿下)", "", rules).subtype,
-  "unknown",
+  classifyProduct("Codex 点数额度充值 (Free账号勿下)", "", rules).category,
+  "other",
 );
 
 // Grok 规避词变体测试
@@ -1016,5 +1016,28 @@ assert.equal(
   "other",
 );
 
-
-
+// 杂项、安装包、纯邮箱母号排除测试
+assert.equal(
+  classifyProduct("G注册专用谷歌Gmai邮箱母号api可裂变!", "只能注册GPT!", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("Codex 桌面版 Windows 便携一键安装包", "便携解压即用", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("🟨【21-26年老号】谷歌邮箱成品老号·Gmail带2fa链接·包登录🟡自动发货", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("codex破甲", "提示词教程", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("codex邀请好友", "赠送额度", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("【正规实付】Cursor ultra月卡成品号", "", rules).category,
+  "other",
+);

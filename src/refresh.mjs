@@ -537,17 +537,27 @@ export function reclassifyProductItems(items = [], rules = null) {
 export async function applyAiClassifierToUnknowns(items = []) {
   const result = [];
   for (const item of items) {
-    if (item.subtype === "unknown") {
+    if (item.subtype === "unknown" || item.category === "other") {
       const aiRes = await queryLocalClassifier(item.title, item.descriptionText);
       if (aiRes && aiRes.category && aiRes.subtype) {
+        // 如果 AI 判定为 other 排除项，则直接丢弃不入库
+        if (aiRes.category === "other" || aiRes.subtype === "other") {
+          continue;
+        }
+
+        let targetSubtype = aiRes.subtype;
+        if (aiRes.category === "grok" && targetSubtype === "m12") {
+          targetSubtype = "m1";
+        }
+
         result.push({
           ...item,
           brand: aiRes.category === "grok" ? "grok" : "codex",
           category: aiRes.category,
-          subtype: aiRes.subtype,
+          subtype: targetSubtype,
           confidence: 0.95,
-          tags: [...new Set([aiRes.category, aiRes.subtype, ...(item.tags || [])])],
-          matchReasons: [...(item.matchReasons || []), `[AI端侧识别]: ${aiRes.category}/${aiRes.subtype}`],
+          tags: [...new Set([aiRes.category, targetSubtype, ...(item.tags || [])])],
+          matchReasons: [...(item.matchReasons || []), `[AI端侧识别]: ${aiRes.category}/${targetSubtype}`],
         });
         continue;
       }
