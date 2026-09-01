@@ -372,19 +372,19 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Super Grok 7天会员号---带SSO--质保订阅，最长可用15天，稳定供货", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("supergrok尝鲜版（7-10天有效期特惠价）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Grok Super正规直充卡密（两个月）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("SuperGrok 一个月成品号", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Grok Super直充卡密（3个月）", "", rules).subtype,
@@ -392,7 +392,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Supergrok Heavy月卡(可直充可成品，质保3天订阅）", "质保3天订阅！！！不质保封号", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Super gro heavy 速刷号成品（质保30分钟内首登，大概率活3天！介意不要下单）", "", rules).category,
@@ -400,7 +400,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Super gro heavy 速刷号成品（质保30分钟内首登，大概率活3天！介意不要下单）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Super gro heavy 速刷号成品（质保30分钟内首登，大概率活3天！介意不要下单）", "", rules).durationLabel,
@@ -412,7 +412,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("【质保30分钟首登)】Gro Heavy成品号 活2-3天", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Supergro Heavy 成品！(成品质保订阅24h，不质保封号)", "", rules).category,
@@ -420,7 +420,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Supergro Heavy 成品！(成品质保订阅24h，不质保封号)", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Supergro Heavy 成品！(成品质保订阅24h，不质保封号)", "", rules).durationLabel,
@@ -428,15 +428,15 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Super G r o k Heavy 特殊渠道月卡成品号2（质保首登，首登成功后账号问题不会有任何售后和补偿，现货）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Supergr0k Heavy月卡(质保2h内首登）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("gro-Heavy 1 个月成品 已稳11天｜质保发货10分钟内首登（不接受不要买）散户不建议买！", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Super gro heavy一年（质保首登，直充质保会员到账）", "Super gro heavy一年官方价值3000美刀/年", rules).subtype,
@@ -456,7 +456,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("【IOS美区】gro Supergro Heavy 官方充值（月卡） (ID直充)", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Super gr0k heavy成品（质保一周订阅）", "supergr0k heavy谷歌内购成品 质保1周", rules).category,
@@ -464,7 +464,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Super gr0k heavy成品（质保一周订阅）", "supergr0k heavy谷歌内购成品 质保1周", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Super gr0k heavy成品（质保一周订阅）", "supergr0k heavy谷歌内购成品 质保1周", rules).durationLabel,
@@ -476,7 +476,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("X-Twitter Premium+自助卡密（赠送Super Grok）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("X-Twitter Premium+自助卡密（赠送Super Grok）", "", rules).durationLabel,
@@ -947,15 +947,15 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("gro Super heavy速刷成品号|无质保 一个月(源头)【安卓IOS通用】无bot", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Super gro heavy成品30天订阅质保，不质保封号", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Supergro Heavy月卡谷歌内购成品号，质保订阅24小时，可开发票", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("【直充】X-Premium+Super gro一个月自助直充卡密【质保一个月】", "", rules).category,
@@ -963,15 +963,15 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("【直充】X-Premium+Super gro一个月自助直充卡密【质保一个月】", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Super G r o k Heavy 特殊渠道月卡成品号2（质保首登，首登成功后账号问题不会有任何售后和补偿，现货）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("Supergr0k Heavy月卡(质保2h内首登）", "", rules).subtype,
-  "m12",
+  "m1",
 );
 assert.equal(
   classifyProduct("gro普号（新号）", "", rules).subtype,

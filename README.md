@@ -188,7 +188,7 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 
 - `anchorTerms`：识别 Codex / ChatGPT / GPT 相关商品的锚点词。
 - `grokAnchorTerms`：识别 Grok / xAI 相关商品的锚点词。
-- `grokDurationTerms`：识别 Grok Free / `m12`（1M）/ `m3` / `y1`（1Y）的关键词。
+- `grokDurationTerms`：识别 Grok Free / `m1`（1M）/ `m3` / `y1`（1Y）的关键词。
 - `grokExclusionTerms`：排除 X Premium、GPT 混充等非 Grok 商品。
 - `smsServiceTerms`：识别接码服务的关键词。
 - `accountStateTerms`：识别账号状态的关键词，例如“已接码”“接过码”。

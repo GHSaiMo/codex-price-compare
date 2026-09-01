@@ -5,6 +5,7 @@ data/refresh-cooldown.json
 data/stock-watch.json
 data/price-history.json
 data/ldxp-scheduler.json
+data/ai-audit-log.json
 data/backups/
 .playwright-ldxp-profile/
 .playwright-ldxp-worker-profile/

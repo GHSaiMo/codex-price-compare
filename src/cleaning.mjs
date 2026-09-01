@@ -304,8 +304,8 @@ function stripGrokWarrantyNoiseText(text) {
 }
 
 function durationMeta(subtype, matches = []) {
-  if (subtype === "m12") {
-    return { subtype, durationDays: 30, durationLabel: "1M", matches };
+  if (subtype === "m1" || subtype === "m12") {
+    return { subtype: "m1", durationDays: 30, durationLabel: "1M", matches };
   }
   if (subtype === "m3") {
     return { subtype, durationDays: 90, durationLabel: "3M", matches };
@@ -320,9 +320,9 @@ function matchGrokDuration(text, durationTerms = {}) {
   const ordered = [
     ["y1", durationTerms.y1 || []],
     ["m3", durationTerms.m3 || []],
-    ["m12", durationTerms.m12 || []],
+    ["m1", durationTerms.m1 || durationTerms.m12 || []],
     // 兼容旧规则字段，避免历史 rules 缓存失效。
-    ["m12", [...(durationTerms.m1 || []), ...(durationTerms.m2 || [])]],
+    ["m1", [...(durationTerms.m1 || []), ...(durationTerms.m2 || []), ...(durationTerms.m12 || [])]],
   ];
 
   for (const [subtype, terms] of ordered) {
@@ -342,7 +342,7 @@ function matchGrokDuration(text, durationTerms = {}) {
     const months = Number(monthMatch[1]);
     if (months === 12) return durationMeta("y1", [monthMatch[0]]);
     if (months === 3) return durationMeta("m3", [monthMatch[0]]);
-    if (months === 1 || months === 2) return durationMeta("m12", [monthMatch[0]]);
+    if (months === 1 || months === 2) return durationMeta("m1", [monthMatch[0]]);
     // 4-11 个月并入 3M 档；超过 12 个月并入 1Y。
     if (Number.isFinite(months) && months > 12) return durationMeta("y1", [monthMatch[0]]);
     if (Number.isFinite(months) && months > 3) return durationMeta("m3", [monthMatch[0]]);
@@ -355,7 +355,7 @@ function matchGrokDuration(text, durationTerms = {}) {
     if (days === 90 || (Number.isFinite(days) && days > 90 && days < 360)) {
       return durationMeta("m3", [dayMatch[0]]);
     }
-    if (days === 30 || days === 60) return durationMeta("m12", [dayMatch[0]]);
+    if (days === 30 || days === 60) return durationMeta("m1", [dayMatch[0]]);
     if (Number.isFinite(days) && days > 0) {
       return { subtype: "others", durationDays: days, durationLabel: days + "D", matches: [dayMatch[0]] };
     }
@@ -399,16 +399,16 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
   const titleDuration = matchGrokDuration(cleanedTitleForNoise, rules.grokDurationTerms || {});
   const combinedDuration = matchGrokDuration(cleanedCombinedForNoise, rules.grokDurationTerms || {});
 
-  const explicitDuration = ["m12", "m3", "y1"].includes(titleDuration.subtype)
+  const explicitDuration = ["m1", "m3", "y1"].includes(titleDuration.subtype)
     ? titleDuration
-    : (["m12", "m3", "y1"].includes(combinedDuration.subtype) ? combinedDuration : null);
+    : (["m1", "m3", "y1"].includes(combinedDuration.subtype) ? combinedDuration : null);
 
-  // 1. 如果是明确的付费 Grok（命中 heavy / supergrok 等付费词），或者具有付费时长 (y1, m3, m12) 且无明确普号词
+  // 1. 如果是明确的付费 Grok（命中 heavy / supergrok 等付费词），或者具有付费时长 (y1, m3, m1) 且无明确普号词
   const isPaidGrok = paidMatches.length > 0 || (explicitDuration !== null && freeMatches.length === 0);
   if (isPaidGrok) {
     // 若无明确时长，付费 Grok 默认按 1M 处理
     const finalDuration = explicitDuration || {
-      subtype: "m12",
+      subtype: "m1",
       durationDays: 30,
       durationLabel: "1M",
       matches: paidMatches.length > 0 ? [`默认1M(${paidMatches[0]})`] : ["默认1M"],

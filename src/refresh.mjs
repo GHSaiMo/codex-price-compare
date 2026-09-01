@@ -867,7 +867,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Grok",
         subtypes: [
           { id: "free", label: "Free" },
-          { id: "m12", label: "1M" },
+          { id: "m1", label: "1M" },
           { id: "m3", label: "3M" },
           { id: "y1", label: "1Y" },
         ],
@@ -876,7 +876,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     categories: [
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
-      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m12", "m3", "y1"] },
+      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m3", "y1"] },
     ],
     items: sortedItems,
   };
