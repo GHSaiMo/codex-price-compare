@@ -119,6 +119,7 @@ let currentQuery = "";
 let currentShopId = "";
 let shareToastFrame = 0;
 let shareToastTimer = 0;
+const expandedGroupKeys = new Set();
 
 function clearElement(element) {
   while (element.firstChild) {
@@ -327,9 +328,30 @@ function syncShopFilter() {
   }
 }
 
-function createProductCard(item) {
+function groupProducts(sortedItems) {
+  const groups = [];
+  const map = new Map();
+
+  for (const item of sortedItems) {
+    const key = `${displayProductTitle(item.title)}|||${item.price}`;
+    let group = map.get(key);
+    if (!group) {
+      group = {
+        key,
+        primary: item,
+        items: [],
+      };
+      map.set(key, group);
+      groups.push(group);
+    }
+    group.items.push(item);
+  }
+  return groups;
+}
+
+function createProductCard(item, { isChild = false } = {}) {
   const card = document.createElement("article");
-  card.className = `product-card ${item.stockStatus === "out_of_stock" ? "is-out" : ""}`;
+  card.className = `product-card ${item.stockStatus === "out_of_stock" ? "is-out" : ""}${isChild ? " product-card-child" : ""}`;
 
   const title = document.createElement("h2");
 
@@ -354,6 +376,102 @@ function createProductCard(item) {
   title.append(link);
   card.append(title, source, stock, price);
   return card;
+}
+
+function createGroupedProductElement(group) {
+  if (group.items.length === 1) {
+    return createProductCard(group.items[0]);
+  }
+
+  const groupContainer = document.createElement("div");
+  groupContainer.className = "product-group";
+
+  const isExpanded = expandedGroupKeys.has(group.key);
+  if (isExpanded) {
+    groupContainer.classList.add("is-expanded");
+  }
+
+  const primaryItem = group.primary;
+  const primaryCard = document.createElement("article");
+  primaryCard.className = `product-card product-card-parent is-expandable ${primaryItem.stockStatus === "out_of_stock" ? "is-out" : ""}`;
+
+  const title = document.createElement("h2");
+  const link = document.createElement("a");
+  link.href = primaryItem.url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = displayProductTitle(primaryItem.title);
+  title.append(link);
+
+  const price = document.createElement("strong");
+  price.className = "price";
+  price.textContent = formatPrice(primaryItem.price);
+
+  const sourceButton = document.createElement("button");
+  sourceButton.type = "button";
+  sourceButton.className = `source-pill source-pill-toggle ${isExpanded ? "is-expanded" : ""}`;
+  sourceButton.setAttribute("aria-expanded", String(isExpanded));
+  sourceButton.setAttribute("aria-label", isExpanded ? "收起其他商家" : `展开全部 ${group.items.length} 家商家`);
+  sourceButton.title = isExpanded ? "点击收起商家" : `点击展开查看 ${group.items.length} 家商家`;
+
+  const sourceNameSpan = document.createElement("span");
+  sourceNameSpan.className = "source-name";
+  sourceNameSpan.textContent = primaryItem.sourceName;
+
+  const countBadge = document.createElement("span");
+  countBadge.className = "source-badge";
+  countBadge.textContent = `共${group.items.length}家`;
+
+  const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  arrowSvg.setAttribute("class", "source-arrow");
+  arrowSvg.setAttribute("viewBox", "0 0 20 20");
+  arrowSvg.setAttribute("fill", "currentColor");
+  arrowSvg.setAttribute("aria-hidden", "true");
+  const arrowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  arrowPath.setAttribute("d", "M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z");
+  arrowSvg.appendChild(arrowPath);
+
+  sourceButton.append(sourceNameSpan, countBadge, arrowSvg);
+
+  const stock = document.createElement("span");
+  stock.className = `stock-pill stock-${primaryItem.stockStatus || "unknown"}`;
+  stock.textContent = stockLabel(primaryItem);
+
+  primaryCard.append(title, sourceButton, stock, price);
+
+  const childrenContainer = document.createElement("div");
+  childrenContainer.className = "product-group-children";
+  childrenContainer.hidden = !isExpanded;
+
+  for (let i = 1; i < group.items.length; i++) {
+    const childCard = createProductCard(group.items[i], { isChild: true });
+    childrenContainer.appendChild(childCard);
+  }
+
+  sourceButton.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const currentlyExpanded = expandedGroupKeys.has(group.key);
+    if (currentlyExpanded) {
+      expandedGroupKeys.delete(group.key);
+      groupContainer.classList.remove("is-expanded");
+      sourceButton.classList.remove("is-expanded");
+      sourceButton.setAttribute("aria-expanded", "false");
+      sourceButton.setAttribute("aria-label", `展开全部 ${group.items.length} 家商家`);
+      sourceButton.title = `点击展开查看 ${group.items.length} 家商家`;
+      childrenContainer.hidden = true;
+    } else {
+      expandedGroupKeys.add(group.key);
+      groupContainer.classList.add("is-expanded");
+      sourceButton.classList.add("is-expanded");
+      sourceButton.setAttribute("aria-expanded", "true");
+      sourceButton.setAttribute("aria-label", "收起其他商家");
+      sourceButton.title = "点击收起商家";
+      childrenContainer.hidden = false;
+    }
+  });
+
+  groupContainer.append(primaryCard, childrenContainer);
+  return groupContainer;
 }
 
 function triggerFilterAnimation() {
@@ -688,10 +806,15 @@ function render({ animate = false } = {}) {
 
   const inStock = items.filter((item) => item.stockStatus !== "out_of_stock").length;
   const outOfStock = items.length - inStock;
-  stats.textContent = `当前显示 ${items.length} 条，含有货 ${inStock} 条、缺货 ${outOfStock} 条`;
+  const groups = groupProducts(items);
+  if (groups.length < items.length) {
+    stats.textContent = `当前显示 ${items.length} 条（同款折叠为 ${groups.length} 款），含有货 ${inStock} 条、缺货 ${outOfStock} 条`;
+  } else {
+    stats.textContent = `当前显示 ${items.length} 条，含有货 ${inStock} 条、缺货 ${outOfStock} 条`;
+  }
 
-  for (const item of items) {
-    productList.appendChild(createProductCard(item));
+  for (const group of groups) {
+    productList.appendChild(createGroupedProductElement(group));
   }
 
   if (animate) triggerFilterAnimation();
