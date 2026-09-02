@@ -1,5 +1,6 @@
 import { copyFile, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
+import { writeJsonAtomic } from "./fs-atomic.mjs";
 
 import {
   classifyProduct,
@@ -156,14 +157,14 @@ async function readLdxpSchedulerState() {
 
 async function writeLdxpSchedulerState(state) {
   await mkdir(dataDir, { recursive: true });
-  await writeFile(ldxpSchedulerPath, `${JSON.stringify({
+  await writeJsonAtomic(ldxpSchedulerPath, {
     version: 1,
     cursorByHost: state.cursorByHost || {},
     cooldowns: state.cooldowns || {},
     lastFailures: state.lastFailures || {},
     lastSuccess: state.lastSuccess || {},
     lastDisabledProbes: state.lastDisabledProbes || {},
-  }, null, 2)}\n`);
+  });
 }
 
 async function writeCooldown(reason, date = new Date()) {
@@ -172,7 +173,7 @@ async function writeCooldown(reason, date = new Date()) {
     startedAt: date.toISOString(),
     until: new Date(date.getTime() + COOLDOWN_MS).toISOString(),
   };
-  await writeFile(cooldownPath, `${JSON.stringify(cooldown, null, 2)}\n`);
+  await writeJsonAtomic(cooldownPath, cooldown);
   return cooldown;
 }
 
@@ -736,7 +737,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
       lastErrors: previousMeta?.errors || [],
       errors: [],
     };
-    await writeFile(new URL(META_PATH, root), `${JSON.stringify(meta, null, 2)}\n`);
+    await writeJsonAtomic(new URL(META_PATH, root), meta);
     return meta;
   }
 
@@ -766,7 +767,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     sourcesConfig.sources = deadSources.sources;
   }
   if (probeResult.changed || deadSources.changed) {
-    await writeFile(new URL("data/sources.json", root), `${JSON.stringify(sourcesConfig, null, 2)}\n`);
+    await writeJsonAtomic(new URL("data/sources.json", root), sourcesConfig);
   }
   const enabledSources = sourcesConfig.sources.filter((source) => source.enabled !== false);
   const ldxpPlan = buildLdxpRefreshPlan({
@@ -948,7 +949,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
   } else {
     meta.protected = false;
     meta.backup = backup;
-    await writeFile(new URL("products.json", dataDir), `${JSON.stringify(products, null, 2)}\n`);
+    await writeJsonAtomic(new URL("products.json", dataDir), products);
     try {
       meta.stockWatch = await processStockWatchNotifications({
         watchPath: new URL(STOCK_WATCH_PATH, root),
@@ -981,7 +982,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
       };
     }
   }
-  await writeFile(new URL("meta.json", dataDir), `${JSON.stringify(meta, null, 2)}\n`);
+  await writeJsonAtomic(new URL("meta.json", dataDir), meta);
 
   return meta;
 }

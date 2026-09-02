@@ -1,4 +1,5 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
+import { writeJsonAtomic } from "./fs-atomic.mjs";
 
 const DEFAULT_HISTORY = { version: 1, items: {} };
 const HISTORY_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
@@ -84,7 +85,7 @@ export async function readPriceHistory(path) {
 }
 
 export async function writePriceHistory(path, history) {
-  await writeFile(path, `${JSON.stringify(normalizeHistory(history), null, 2)}\n`);
+  await writeJsonAtomic(path, normalizeHistory(history));
 }
 
 export async function updateWatchPriceHistory({

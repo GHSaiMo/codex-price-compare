@@ -1,5 +1,6 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 
+import { writeJsonAtomic } from "./fs-atomic.mjs";
 import { resolveWeChatBridgeConfig, sendWeChatBridgeText } from "./wechatbridge.mjs";
 
 const DEFAULT_WATCH_DATA = { version: 1, digestEnabled: false, lastDigestAt: null, items: [] };
@@ -63,7 +64,7 @@ export async function readStockWatch(path) {
 }
 
 export async function writeStockWatch(path, data) {
-  await writeFile(path, `${JSON.stringify(normalizeWatchData(data), null, 2)}\n`);
+  await writeJsonAtomic(path, normalizeWatchData(data));
 }
 
 export function upsertStockWatchEntry(watchData, entry) {

@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const gzipAsync = promisify(gzipCb);
 
 import { loadDotEnv } from "./src/env.mjs";
+import { writeJsonAtomic } from "./src/fs-atomic.mjs";
 import {
   isPublicStaticPath,
   toPublicMeta,
@@ -155,11 +156,22 @@ async function getPublicProducts() {
   const fileStat = await stat(productsPath).catch(() => null);
   const mtimeMs = fileStat ? fileStat.mtimeMs : 0;
   if (!publicProductsCache || publicProductsCache.mtimeMs !== mtimeMs) {
-    const raw = JSON.parse(await readFile(productsPath, "utf8"));
-    const payload = toPublicProductsDocument(raw);
-    const json = JSON.stringify(payload);
-    const hash = createHash("sha1").update(json).digest("hex");
-    publicProductsCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+    try {
+      const rawText = await readFile(productsPath, "utf8");
+      const raw = JSON.parse(rawText);
+      const payload = toPublicProductsDocument(raw);
+      const json = JSON.stringify(payload);
+      const hash = createHash("sha1").update(json).digest("hex");
+      publicProductsCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+    } catch (error) {
+      logWithTimestamp("error", `读取公共商品数据失败: ${error.message}`);
+      if (!publicProductsCache) {
+        const payload = toPublicProductsDocument({ items: [] });
+        const json = JSON.stringify(payload);
+        const hash = createHash("sha1").update(json).digest("hex");
+        publicProductsCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+      }
+    }
   }
   return publicProductsCache;
 }
@@ -168,11 +180,22 @@ async function getPublicMeta() {
   const fileStat = await stat(metaPath).catch(() => null);
   const mtimeMs = fileStat ? fileStat.mtimeMs : 0;
   if (!publicMetaCache || publicMetaCache.mtimeMs !== mtimeMs) {
-    const raw = JSON.parse(await readFile(metaPath, "utf8"));
-    const payload = toPublicMeta(raw);
-    const json = JSON.stringify(payload);
-    const hash = createHash("sha1").update(json).digest("hex");
-    publicMetaCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+    try {
+      const rawText = await readFile(metaPath, "utf8");
+      const raw = JSON.parse(rawText);
+      const payload = toPublicMeta(raw);
+      const json = JSON.stringify(payload);
+      const hash = createHash("sha1").update(json).digest("hex");
+      publicMetaCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+    } catch (error) {
+      logWithTimestamp("error", `读取公共元数据失败: ${error.message}`);
+      if (!publicMetaCache) {
+        const payload = toPublicMeta({});
+        const json = JSON.stringify(payload);
+        const hash = createHash("sha1").update(json).digest("hex");
+        publicMetaCache = { payload, json, etag: `W/"${hash}"`, mtimeMs };
+      }
+    }
   }
   return publicMetaCache;
 }
@@ -263,23 +286,29 @@ async function loadRefreshSettings() {
 }
 
 async function writeRefreshSettings() {
-  await writeFile(refreshSettingsPath, `${JSON.stringify({ intervalMs: refreshIntervalMs }, null, 2)}\n`);
+  await writeJsonAtomic(refreshSettingsPath, { intervalMs: refreshIntervalMs });
 }
 
 async function updateRefreshMeta(nextRefreshAt) {
   try {
-    const meta = JSON.parse(await readFile(metaPath, "utf8"));
+    const raw = await readFile(metaPath, "utf8").catch(() => null);
+    if (!raw) return;
+    const meta = JSON.parse(raw);
     meta.nextRefreshAt = nextRefreshAt;
-    await writeFile(metaPath, `${JSON.stringify(meta, null, 2)}\n`);
+    await writeJsonAtomic(metaPath, meta);
   } catch (error) {
     logWithTimestamp("error", `刷新状态写入失败：${error.message}`);
   }
 }
 
-function scheduleNextRefresh(delayMs = refreshIntervalMs) {
+function scheduleNextRefresh(delayMs = refreshIntervalMs, { syncMeta = true } = {}) {
   if (refreshTimer) clearTimeout(refreshTimer);
   const nextRefreshAt = new Date(Date.now() + delayMs).toISOString();
-  void updateRefreshMeta(nextRefreshAt);
+  if (syncMeta) {
+    updateRefreshMeta(nextRefreshAt).catch((error) => {
+      logWithTimestamp("error", `刷新状态写入失败：${error.message}`);
+    });
+  }
   refreshTimer = setTimeout(runScheduledRefresh, delayMs);
   return nextRefreshAt;
 }
@@ -298,14 +327,13 @@ async function runScheduledRefresh() {
     if (meta.protected) logWithTimestamp("log", `刷新保护生效：${meta.protectionReason || "冷却中，保留旧数据"}`);
     if (meta.errors.length > 0) logWithTimestamp("log", JSON.stringify(meta.errors, null, 2));
     invalidatePublicCaches();
-    void getPublicProducts();
-    void getPublicMeta();
+    await Promise.allSettled([getPublicProducts(), getPublicMeta()]);
   } catch (error) {
     logWithTimestamp("error", `自动刷新失败：${error.message}`);
     await updateRefreshMeta(nextRefreshAt);
   } finally {
     refreshInProgress = false;
-    scheduleNextRefresh(refreshIntervalMs);
+    scheduleNextRefresh(refreshIntervalMs, { syncMeta: false });
   }
 }
 
@@ -358,15 +386,14 @@ async function handleRefreshNow(response) {
     logWithTimestamp("log", `手动刷新完成：${meta.itemCount} 条商品，成功 ${meta.successCount}/${meta.sourceCount} 个信息源`);
     if (meta.protected) logWithTimestamp("log", `刷新保护生效：${meta.protectionReason || "冷却中，保留旧数据"}`);
     invalidatePublicCaches();
-    void getPublicProducts();
-    void getPublicMeta();
+    await Promise.allSettled([getPublicProducts(), getPublicMeta()]);
     refreshInProgress = false;
-    scheduleNextRefresh(refreshIntervalMs);
+    scheduleNextRefresh(refreshIntervalMs, { syncMeta: false });
     sendJson(response, 200, await refreshStatus());
   } catch (error) {
     await updateRefreshMeta(nextRefreshAt);
     refreshInProgress = false;
-    scheduleNextRefresh(refreshIntervalMs);
+    scheduleNextRefresh(refreshIntervalMs, { syncMeta: false });
     sendJson(response, 500, { message: error.message });
   } finally {
     refreshInProgress = false;
@@ -403,7 +430,7 @@ async function addSource(request, response) {
       ...(adapter === "dujiao" && url.hostname === "kelaode.vip" ? { apiBase: "https://api.kelaode.vip/" } : {}),
     };
     sourcesConfig.sources.push(source);
-    await writeFile(sourcesPath, `${JSON.stringify(sourcesConfig, null, 2)}\n`);
+    await writeJsonAtomic(sourcesPath, sourcesConfig);
     sendJson(response, 201, { source });
   } catch (error) {
     sendJson(response, 400, { message: error.message });
@@ -422,7 +449,7 @@ async function handleSourceUpdate(sourceId, request, response) {
     }
     if (source.adapter !== "ldxp") throw new Error("仅 ldxp 店铺支持设置核心店铺");
     source.core = body.core === true;
-    await writeFile(sourcesPath, `${JSON.stringify(sourcesConfig, null, 2)}\n`);
+    await writeJsonAtomic(sourcesPath, sourcesConfig);
     sendJson(response, 200, { source });
   } catch (error) {
     sendJson(response, errorStatusCode(error), { message: error.message });
@@ -656,9 +683,9 @@ async function syncClassifiedProductsOnStartup() {
       const reclassified = reclassifyProductItems(products.items, rules);
       const aiResolved = await applyAiClassifierToUnknowns(reclassified);
       products.items = sortProductsForDisplay(aiResolved);
-      await writeFile(productsPath, `${JSON.stringify(products, null, 2)}\n`);
+      await writeJsonAtomic(productsPath, products);
       invalidatePublicCaches();
-      void getPublicProducts();
+      await getPublicProducts().catch(() => {});
       logWithTimestamp("log", `启动重分类完成：${products.items.length} 条商品已同步最新规则（含 AI 伴生纠偏）`);
     }
   } catch (error) {
@@ -671,6 +698,14 @@ const adminServer = createStaticServer("admin.html", ADMIN_PORT, true);
 
 await loadDotEnv();
 await loadRefreshSettings();
+
+process.on("unhandledRejection", (reason) => {
+  logWithTimestamp("error", `未处理的 Promise Rejection: ${reason?.stack || reason}`);
+});
+
+process.on("uncaughtException", (error) => {
+  logWithTimestamp("error", `未捕获的全局异常: ${error?.stack || error}`);
+});
 
 process.on("SIGINT", () => {
   process.exit(0);
