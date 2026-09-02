@@ -622,7 +622,7 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     if (request.headers["if-none-match"] === etag) {
       response.writeHead(304, {
         etag: etag,
-        "cache-control": isHtml ? "no-cache" : "public, max-age=86400",
+        "cache-control": "no-cache",
       });
       response.end();
       return;
@@ -637,7 +637,7 @@ function createStaticServer(defaultFile, port, allowApi = false) {
       contentType,
       {
         etag: etag,
-        "cache-control": isHtml ? "no-cache" : "public, max-age=86400",
+        "cache-control": "no-cache",
       }
     );
   });
