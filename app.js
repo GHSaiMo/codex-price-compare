@@ -328,12 +328,32 @@ function syncShopFilter() {
   }
 }
 
+function compareGroupItems(a, b) {
+  const stockRank = { in_stock: 0, low_stock: 0, unknown: 1, out_of_stock: 2 };
+  const rankDiff = (stockRank[a.stockStatus] ?? 1) - (stockRank[b.stockStatus] ?? 1);
+  if (rankDiff !== 0) return rankDiff;
+  const sourceDiff = String(a.sourceId || a.sourceName || "").localeCompare(String(b.sourceId || b.sourceName || ""), "zh-CN");
+  if (sourceDiff !== 0) return sourceDiff;
+  return String(a.url || "").localeCompare(String(b.url || ""));
+}
+
+function normalizeGroupKey(title, price) {
+  const normTitle = displayProductTitle(title)
+    .replace(/[【\[]/g, "[")
+    .replace(/[】\]]/g, "]")
+    .replace(/[（(]/g, "(")
+    .replace(/[）)]/g, ")")
+    .replace(/\s+/g, " ")
+    .trim();
+  return `${normTitle}|||${price}`;
+}
+
 function groupProducts(sortedItems) {
   const groups = [];
   const map = new Map();
 
   for (const item of sortedItems) {
-    const key = `${displayProductTitle(item.title)}|||${item.price}`;
+    const key = normalizeGroupKey(item.title, item.price);
     let group = map.get(key);
     if (!group) {
       group = {
@@ -346,6 +366,12 @@ function groupProducts(sortedItems) {
     }
     group.items.push(item);
   }
+
+  for (const group of groups) {
+    group.items.sort(compareGroupItems);
+    group.primary = group.items[0];
+  }
+
   return groups;
 }
 
@@ -407,12 +433,30 @@ function createGroupedProductElement(group) {
   price.className = "price";
   price.textContent = formatPrice(primaryItem.price);
 
+  const uniqueShops = new Set(group.items.map((i) => i.sourceId || i.sourceName).filter(Boolean));
+  const isMultiShop = uniqueShops.size > 1;
+  const countLabel = isMultiShop ? `共${uniqueShops.size}家` : `共${group.items.length}条`;
+
+  const getAriaLabel = (expanded) => {
+    if (isMultiShop) {
+      return expanded ? "收起其他商家" : `展开全部 ${uniqueShops.size} 家商家`;
+    }
+    return expanded ? "收起其他规格" : `展开全部 ${group.items.length} 条规格`;
+  };
+
+  const getTitleTip = (expanded) => {
+    if (isMultiShop) {
+      return expanded ? "点击收起商家" : `点击展开查看 ${uniqueShops.size} 家商家`;
+    }
+    return expanded ? "点击收起规格" : `点击展开查看 ${group.items.length} 条规格`;
+  };
+
   const sourceButton = document.createElement("button");
   sourceButton.type = "button";
   sourceButton.className = `source-pill source-pill-toggle ${isExpanded ? "is-expanded" : ""}`;
   sourceButton.setAttribute("aria-expanded", String(isExpanded));
-  sourceButton.setAttribute("aria-label", isExpanded ? "收起其他商家" : `展开全部 ${group.items.length} 家商家`);
-  sourceButton.title = isExpanded ? "点击收起商家" : `点击展开查看 ${group.items.length} 家商家`;
+  sourceButton.setAttribute("aria-label", getAriaLabel(isExpanded));
+  sourceButton.title = getTitleTip(isExpanded);
 
   const sourceNameSpan = document.createElement("span");
   sourceNameSpan.className = "source-name";
@@ -420,7 +464,7 @@ function createGroupedProductElement(group) {
 
   const countBadge = document.createElement("span");
   countBadge.className = "source-badge";
-  countBadge.textContent = `共${group.items.length}家`;
+  countBadge.textContent = countLabel;
 
   const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   arrowSvg.setAttribute("class", "source-arrow");
@@ -456,16 +500,16 @@ function createGroupedProductElement(group) {
       groupContainer.classList.remove("is-expanded");
       sourceButton.classList.remove("is-expanded");
       sourceButton.setAttribute("aria-expanded", "false");
-      sourceButton.setAttribute("aria-label", `展开全部 ${group.items.length} 家商家`);
-      sourceButton.title = `点击展开查看 ${group.items.length} 家商家`;
+      sourceButton.setAttribute("aria-label", getAriaLabel(false));
+      sourceButton.title = getTitleTip(false);
       childrenContainer.hidden = true;
     } else {
       expandedGroupKeys.add(group.key);
       groupContainer.classList.add("is-expanded");
       sourceButton.classList.add("is-expanded");
       sourceButton.setAttribute("aria-expanded", "true");
-      sourceButton.setAttribute("aria-label", "收起其他商家");
-      sourceButton.title = "点击收起商家";
+      sourceButton.setAttribute("aria-label", getAriaLabel(true));
+      sourceButton.title = getTitleTip(true);
       childrenContainer.hidden = false;
     }
   });

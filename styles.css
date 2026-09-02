@@ -628,36 +628,47 @@ input {
 
 .source-pill,
 .stock-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
   max-width: 130px;
   overflow: hidden;
-  padding: 4px 8px;
+  padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-muted);
   color: var(--muted);
   font-size: 0.78rem;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .source-pill-toggle {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  height: 26px;
   max-width: 175px;
-  padding: 3px 8px;
+  padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-muted);
   color: var(--text);
   font: inherit;
   font-size: 0.78rem;
-  line-height: inherit;
+  line-height: 1;
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
   user-select: none;
   -webkit-user-select: none;
+  appearance: none;
+  -webkit-appearance: none;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .source-pill-toggle:hover,
@@ -678,12 +689,15 @@ input {
 .source-pill-toggle .source-badge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 5px;
+  justify-content: center;
+  height: 16px;
+  padding: 0 5px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -1333,6 +1347,11 @@ input {
     flex-basis: 34px;
   }
 
+  .product-card {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
   .product-group-children {
     padding-left: 10px;
   }
@@ -1341,9 +1360,17 @@ input {
     left: 4px;
   }
 
+  .source-pill,
+  .stock-pill {
+    height: 24px;
+    padding: 0 6px;
+    font-size: 0.74rem;
+  }
+
   .source-pill-toggle {
+    height: 24px;
     max-width: 140px;
-    padding: 2px 6px;
+    padding: 0 6px;
     font-size: 0.74rem;
   }
 
