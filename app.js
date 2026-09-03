@@ -163,14 +163,7 @@ function currentSubtypeLabel() {
 }
 
 function sortProducts(items) {
-  const stockRank = { in_stock: 0, low_stock: 0, unknown: 1, out_of_stock: 2 };
-  const price = (item) => (typeof item.price === "number" ? item.price : Number.POSITIVE_INFINITY);
-
-  return [...items].sort((a, b) => {
-    const priceDiff = currentSort === "price-desc" ? price(b) - price(a) : price(a) - price(b);
-    if (priceDiff !== 0) return priceDiff;
-    return (stockRank[a.stockStatus] ?? 1) - (stockRank[b.stockStatus] ?? 1);
-  });
+  return [...items].sort(compareGroupItems);
 }
 
 function matchesSearch(item, query = currentQuery) {
@@ -330,14 +323,20 @@ function syncShopFilter() {
 
 function compareGroupItems(a, b) {
   const stockRank = { in_stock: 0, low_stock: 0, unknown: 1, out_of_stock: 2 };
-  const rankDiff = (stockRank[a.stockStatus] ?? 1) - (stockRank[b.stockStatus] ?? 1);
+  const price = (item) => {
+    if (typeof item?.price === "number") return item.price;
+    return currentSort === "price-desc" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
+  };
+  const priceDiff = currentSort === "price-desc" ? price(b) - price(a) : price(a) - price(b);
+  if (priceDiff !== 0) return priceDiff;
+  const rankDiff = (stockRank[a?.stockStatus] ?? 1) - (stockRank[b?.stockStatus] ?? 1);
   if (rankDiff !== 0) return rankDiff;
-  const sourceDiff = String(a.sourceId || a.sourceName || "").localeCompare(String(b.sourceId || b.sourceName || ""), "zh-CN");
+  const sourceDiff = String(a?.sourceId || a?.sourceName || "").localeCompare(String(b?.sourceId || b?.sourceName || ""), "zh-CN");
   if (sourceDiff !== 0) return sourceDiff;
-  return String(a.url || "").localeCompare(String(b.url || ""));
+  return String(a?.url || "").localeCompare(String(b?.url || ""));
 }
 
-function normalizeGroupKey(title, price) {
+function normalizeGroupKey(title) {
   const normTitle = displayProductTitle(title)
     .replace(/[【\[]/g, "[")
     .replace(/[】\]]/g, "]")
@@ -345,7 +344,7 @@ function normalizeGroupKey(title, price) {
     .replace(/[）)]/g, ")")
     .replace(/\s+/g, " ")
     .trim();
-  return `${normTitle}|||${price}`;
+  return normTitle;
 }
 
 function groupProducts(sortedItems) {
@@ -353,7 +352,7 @@ function groupProducts(sortedItems) {
   const map = new Map();
 
   for (const item of sortedItems) {
-    const key = normalizeGroupKey(item.title, item.price);
+    const key = normalizeGroupKey(item.title);
     let group = map.get(key);
     if (!group) {
       group = {
@@ -371,6 +370,8 @@ function groupProducts(sortedItems) {
     group.items.sort(compareGroupItems);
     group.primary = group.items[0];
   }
+
+  groups.sort((a, b) => compareGroupItems(a.primary, b.primary));
 
   return groups;
 }

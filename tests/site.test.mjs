@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const html = await readFile(new URL("index.html", root), "utf8");
@@ -149,6 +150,70 @@ assert.match(app, /uniqueShops/);
 assert.match(app, /expandedGroupKeys/);
 assert.match(app, /source-pill-toggle/);
 assert.match(app, /product-group-children/);
+{
+  const createElem = () => ({
+    dataset: {},
+    classList: { add() {}, remove() {}, toggle() {} },
+    appendChild() {},
+    append() {},
+    setAttribute() {},
+    removeAttribute() {},
+    addEventListener() {},
+    querySelectorAll: () => [],
+  });
+  const sandbox = {
+    document: {
+      querySelector: () => createElem(),
+      querySelectorAll: () => [],
+      createElement: () => createElem(),
+      createElementNS: () => createElem(),
+      body: { dataset: {}, classList: { add() {}, remove() {} } },
+    },
+    window: { addEventListener() {}, location: { search: "", href: "http://localhost/" }, history: { replaceState() {} } },
+    URL,
+    URLSearchParams,
+    fetch: () => Promise.resolve(),
+    setInterval: () => {},
+    clearTimeout: () => {},
+    cancelAnimationFrame: () => {},
+    requestAnimationFrame: () => {},
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(app, sandbox);
+
+  assert.equal(sandbox.normalizeGroupKey("【请看店铺公告】ChatGPT Plus 20x"), "ChatGPT Plus 20x");
+  assert.equal(sandbox.normalizeGroupKey("ChatGPT Plus 20x"), "ChatGPT Plus 20x");
+
+  const mockItems = [
+    { title: "ChatGPT Plus", price: 150, sourceName: "Shop B", stockStatus: "in_stock" },
+    { title: "ChatGPT Plus", price: 120, sourceName: "Shop A", stockStatus: "in_stock" },
+    { title: "ChatGPT Plus", price: 180, sourceName: "Shop C", stockStatus: "in_stock" },
+    { title: "Grok 2.0", price: 40, sourceName: "Shop D", stockStatus: "in_stock" },
+    { title: "Grok 2.0", price: 30, sourceName: "Shop E", stockStatus: "in_stock" },
+  ];
+
+  // 升序测试：同款折叠为一组，最便宜的作为母商品，展开后升序排列
+  vm.runInContext('currentSort = "price-asc"', sandbox);
+  const groupsAsc = sandbox.groupProducts(sandbox.sortProducts(mockItems));
+  assert.equal(groupsAsc.length, 2);
+  assert.equal(groupsAsc[0].primary.title, "Grok 2.0");
+  assert.equal(groupsAsc[0].primary.price, 30);
+  assert.deepEqual(JSON.parse(JSON.stringify(groupsAsc[0].items.map((i) => i.price))), [30, 40]);
+  assert.equal(groupsAsc[1].primary.title, "ChatGPT Plus");
+  assert.equal(groupsAsc[1].primary.price, 120);
+  assert.deepEqual(JSON.parse(JSON.stringify(groupsAsc[1].items.map((i) => i.price))), [120, 150, 180]);
+
+  // 降序测试：同款折叠为一组，最贵的作为母商品，展开后降序排列
+  vm.runInContext('currentSort = "price-desc"', sandbox);
+  const groupsDesc = sandbox.groupProducts(sandbox.sortProducts(mockItems));
+  assert.equal(groupsDesc.length, 2);
+  assert.equal(groupsDesc[0].primary.title, "ChatGPT Plus");
+  assert.equal(groupsDesc[0].primary.price, 180);
+  assert.deepEqual(JSON.parse(JSON.stringify(groupsDesc[0].items.map((i) => i.price))), [180, 150, 120]);
+  assert.equal(groupsDesc[1].primary.title, "Grok 2.0");
+  assert.equal(groupsDesc[1].primary.price, 40);
+  assert.deepEqual(JSON.parse(JSON.stringify(groupsDesc[1].items.map((i) => i.price))), [40, 30]);
+}
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);
 assert.match(app, /defaultSubtype: "plus"/);
