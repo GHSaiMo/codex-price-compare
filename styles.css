@@ -505,6 +505,8 @@ input {
 }
 
 .product-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 68px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 12px;
@@ -714,6 +716,8 @@ input {
 }
 
 .product-group {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 68px;
   display: grid;
   gap: 6px;
 }

@@ -1108,3 +1108,96 @@ for (const [title, desc] of quotaTitles) {
   );
 }
 
+// ==========================================
+// Gemini 分类测试用例
+// ==========================================
+
+// 1. Gemini 18M 测试
+const g18m = classifyProduct("Gemini 18个月链接（无需绑卡，登陆即可领取）", "", rules);
+assert.equal(g18m.category, "gemini");
+assert.equal(g18m.subtype, "m18");
+assert.equal(g18m.durationDays, 540);
+assert.equal(g18m.durationLabel, "18M");
+assert.deepEqual(g18m.tags, ["gemini", "m18"]);
+
+const g18mJio = classifyProduct("JIO渠道 Gemini Pro 18个月 激活链接", "", rules);
+assert.equal(g18mJio.category, "gemini");
+assert.equal(g18mJio.subtype, "m18");
+
+const g18mAntigravity = classifyProduct("包反重力首登|随机|gemini pro 18个月|（ 带JS格式 带RT）主页备用卡网", "", rules);
+assert.equal(g18mAntigravity.category, "gemini");
+assert.equal(g18mAntigravity.subtype, "m18");
+
+const g18mMix = classifyProduct("美区|gemini pro一年或者18个月混装|老邮箱|（（ 谷歌云没封 ）主页备用卡网", "", rules);
+assert.equal(g18mMix.category, "gemini");
+assert.equal(g18mMix.subtype, "m18");
+
+const g18m31 = classifyProduct("Gemini 3.1pro 18个月成品号 (22-25年账号)", "", rules);
+assert.equal(g18m31.category, "gemini");
+assert.equal(g18m31.subtype, "m18");
+
+// 2. Gemini 1Y 测试
+const g1y = classifyProduct("Gemini Pro 12个月成品【质保首登丨官方订阅】20-25年高权重老邮箱账号", "", rules);
+assert.equal(g1y.category, "gemini");
+assert.equal(g1y.subtype, "y1");
+assert.equal(g1y.durationDays, 365);
+assert.equal(g1y.durationLabel, "1Y");
+assert.deepEqual(g1y.tags, ["gemini", "y1"]);
+
+const g1yPixel = classifyProduct("gemini pro pixel 一年认证号，2009–2017老邮箱（质保首登）", "", rules);
+assert.equal(g1yPixel.category, "gemini");
+assert.equal(g1yPixel.subtype, "y1");
+
+const g1yGcp = classifyProduct("【包GCP】Gemini Pro 1年订阅成品号【官方订阅｜美区20-24老邮箱号】", "", rules);
+assert.equal(g1yGcp.category, "gemini");
+assert.equal(g1yGcp.subtype, "y1");
+
+const g1yRenji = classifyProduct("人机验证号Gemini pro一年 登陆被封号申诉无售后 闲鱼客户 事多得 不要拍不是给你准备得", "", rules);
+assert.equal(g1yRenji.category, "gemini");
+assert.equal(g1yRenji.subtype, "y1");
+
+// 3. Gemini 其它规格测试（非 1Y/18M 归入 others）
+const g3m = classifyProduct("gemini 3个月激活链接", "", rules);
+assert.equal(g3m.category, "gemini");
+assert.equal(g3m.subtype, "others");
+assert.equal(g3m.durationLabel, "Others");
+assert.deepEqual(g3m.tags, ["gemini", "others"]);
+
+// 4. Gemini Ultra / 1M 测试（归入 others）
+const gUltra = classifyProduct("Google AI Ultra 20x【质保订阅】支持Antigravity反重力｜家庭组邀请版", "", rules);
+assert.equal(gUltra.category, "gemini");
+assert.equal(gUltra.subtype, "others");
+assert.equal(gUltra.durationLabel, "Others");
+
+const g1m = classifyProduct("Gemini Pro 1个月官方订阅独享账号", "", rules);
+assert.equal(g1m.category, "gemini");
+assert.equal(g1m.subtype, "others");
+
+// 5. Gemini Free 测试（归入 others）
+const gFree = classifyProduct("Gemini 普号体验号（无会员）", "", rules);
+assert.equal(gFree.category, "gemini");
+assert.equal(gFree.subtype, "others");
+
+// 6. 干扰项排除测试：不能误判入 Gemini
+assert.equal(
+  classifyProduct("【包GCP】Google邮箱2020-2024|混合地区|带2fa", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("精品稳定老号谷歌邮箱 gmail号 随机地区 21-22年居多", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("美区 2-4 年谷歌邮箱（包gcp）", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("Leonardo 8500分成品号 (不支持sd和H3，有gpt image2，gemini2图片模型)", "", rules).category,
+  "other",
+);
+assert.equal(
+  classifyProduct("【福利价】G Plus（直卡渠道）| 美区长效接马 | 谷歌账号家宽IP注册", "", rules).category,
+  "codex",
+);
+
+

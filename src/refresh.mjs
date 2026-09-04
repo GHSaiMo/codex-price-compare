@@ -511,13 +511,29 @@ export function buildSourceHealth({
   });
 }
 
-export function reclassifyProductItem(item, rules) {
+export function reclassifyProductItem(item, rules, sources = null) {
   if (!item || !rules) return item;
   const classification = classifyProduct(item.title, item.descriptionText, rules);
   if (!classification || classification.category === "other") return null;
+
+  let url = item.url;
+  let sourceUrl = item.sourceUrl;
+
+  if (sources && item.sourceId) {
+    const source = Array.isArray(sources) ? sources.find((s) => s.id === item.sourceId) : null;
+    if (source) {
+      if (!sourceUrl || /^https?:\/\/[^\/]+\/?$/i.test(sourceUrl)) {
+        sourceUrl = source.url;
+      }
+      if (!url || /^https?:\/\/[^\/]+\/?$/i.test(url)) {
+        url = source.url;
+      }
+    }
+  }
+
   return {
     ...item,
-    brand: classification.brand || (classification.category === "grok" ? "grok" : "codex"),
+    brand: classification.brand || (classification.category === "grok" ? "grok" : (classification.category === "gemini" ? "gemini" : "codex")),
     category: classification.category,
     subtype: classification.subtype,
     confidence: classification.confidence,
@@ -525,13 +541,15 @@ export function reclassifyProductItem(item, rules) {
     matchReasons: classification.matchReasons,
     durationDays: classification.durationDays ?? null,
     durationLabel: classification.durationLabel || null,
+    url: url || item.url,
+    sourceUrl: sourceUrl ?? item.sourceUrl,
   };
 }
 
-export function reclassifyProductItems(items = [], rules = null) {
+export function reclassifyProductItems(items = [], rules = null, sources = null) {
   if (!rules) return items;
   return items
-    .map((item) => reclassifyProductItem(item, rules))
+    .map((item) => reclassifyProductItem(item, rules, sources))
     .filter(Boolean);
 }
 
@@ -553,7 +571,7 @@ export async function applyAiClassifierToUnknowns(items = []) {
 
         result.push({
           ...item,
-          brand: aiRes.category === "grok" ? "grok" : "codex",
+          brand: aiRes.category === "grok" ? "grok" : (aiRes.category === "gemini" ? "gemini" : "codex"),
           category: aiRes.category,
           subtype: targetSubtype,
           confidence: 0.95,
@@ -854,8 +872,8 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     failedSourceIds: staleSourceIds,
     rules,
   });
-  // 规则更新后统一重算，避免 skipped/stale 以外的旧 subtype 残留（如 Grok 普号误进付费时长档）。
-  const reclassifiedItems = reclassifyProductItems(mergedItems, rules);
+  // 规则更新后统一重算，避免 skipped/stale 以外的旧 subtype 残留，并对齐商品链接
+  const reclassifiedItems = reclassifyProductItems(mergedItems, rules, sourcesConfig.sources);
   // 当规则判定依然为 unknown 时，按需通过本地 AI 伴生小模型兜底识别
   const aiResolvedItems = await applyAiClassifierToUnknowns(reclassifiedItems);
   const sortedItems = sortProductsForDisplay(aiResolvedItems);
@@ -883,11 +901,21 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
           { id: "y1", label: "1Y" },
         ],
       },
+      {
+        id: "gemini",
+        name: "Gemini",
+        subtypes: [
+          { id: "y1", label: "1Y" },
+          { id: "m18", label: "18M" },
+          { id: "others", label: "Others" },
+        ],
+      },
     ],
     categories: [
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
       { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m3", "y1"] },
+      { id: "gemini", name: "Gemini", subtypes: rules.geminiSubtypes || ["y1", "m18", "others"] },
     ],
     items: sortedItems,
   };

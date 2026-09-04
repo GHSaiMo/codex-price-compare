@@ -234,7 +234,7 @@ function normalizeStockStatus(stockCount, explicitStatus, isSoldOut = false) {
 
 function buildResult(category, subtype, confidence, tags, matchReasons, extra = {}) {
   return {
-    brand: category === "grok" ? "grok" : "codex",
+    brand: category === "grok" ? "grok" : (category === "gemini" ? "gemini" : "codex"),
     category,
     subtype,
     confidence,
@@ -516,6 +516,146 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
   );
 }
 
+function stripGeminiWarrantyNoiseText(text) {
+  let output = text;
+  output = output.replace(/(?:大概率|大概|只能|只|能|可|保)?\s*活\s*\d+(?:\s*[-~～至到]\s*\d+)?\s*天/gi, " ");
+  output = output.replace(/已稳定?\s*\d+\s*天/gi, " ");
+  output = output.replace(/(?:成品质保|质保|保)?\s*订阅\s*\d+\s*(?:h|小时|天|周)/gi, " ");
+  output = output.replace(/质保\s*(?:订阅)?\s*(?:一|1|两|2)\s*周(?:订阅)?/gi, " ");
+  output = output.replace(/(?:成品)?质保\s*\d+\s*(?:h|小时|天)(?:订阅)?/gi, " ");
+  output = output.replace(/\d+\s*(?:分钟|小时|h|m|天|周)\s*(?:质保|保|售后)/gi, " ");
+  output = output.replace(/质保\s*(?:发货\s*)?\d+\s*(?:分钟|小时|h|m|天)(?:内)?(?:首登|激活)?/gi, " ");
+  output = output.replace(/保\s*\d+\s*(?:分钟|小时|h|m|天)(?:内)?(?:首登|激活)/gi, " ");
+  output = output.replace(/\d+\s*小时内包首登/gi, " ");
+  output = output.replace(/包首登/gi, " ");
+  return output.replace(/\s+/g, " ").trim();
+}
+
+function durationMetaGemini(subtype, matches = []) {
+  if (subtype === "m18") {
+    return { subtype: "m18", durationDays: 540, durationLabel: "18M", matches };
+  }
+  if (subtype === "y1") {
+    return { subtype: "y1", durationDays: 365, durationLabel: "1Y", matches };
+  }
+  return { subtype: "others", durationDays: null, durationLabel: "Others", matches };
+}
+
+function matchGeminiDuration(text, durationTerms = {}) {
+  const ordered = [
+    ["m18", durationTerms.m18 || []],
+    ["y1", durationTerms.y1 || []],
+  ];
+
+  for (const [subtype, terms] of ordered) {
+    const matches = matchedTerms(text, terms);
+    if (matches.length > 0) {
+      return durationMetaGemini(subtype, matches);
+    }
+  }
+
+  const yearMatch = text.match(/(?:^|[^a-z0-9])(?:(\d+(?:\.\d+)?)\s*年|一年半|1\.5\s*年|年卡|(\d+)\s*year|one\s*year)(?=$|[^a-z0-9])/i);
+  if (yearMatch) {
+    if (/一年半|1\.5/i.test(yearMatch[0])) {
+      return durationMetaGemini("m18", [yearMatch[0].trim()]);
+    }
+    return durationMetaGemini("y1", [yearMatch[0].trim()]);
+  }
+
+  const monthMatch = text.match(/(\d+|一|两|二|三|四|五|六|七|八|九|十|十二|十八|半)\s*(?:个\s*)?月/);
+  if (monthMatch) {
+    const numMap = { "半": 0.5, "一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10, "十二": 12, "十八": 18 };
+    const months = numMap[monthMatch[1]] ?? Number(monthMatch[1]);
+    if (Number.isFinite(months)) {
+      if (months > 12) return durationMetaGemini("m18", [monthMatch[0]]);
+      if (months > 3 && months <= 12) return durationMetaGemini("y1", [monthMatch[0]]);
+      return durationMetaGemini("others", [monthMatch[0]]);
+    }
+  }
+
+  const dayMatch = text.match(/(\d+)\s*天/);
+  if (dayMatch) {
+    const days = Number(dayMatch[1]);
+    if (Number.isFinite(days)) {
+      if (days > 365) return durationMetaGemini("m18", [dayMatch[0]]);
+      if (days > 90 && days <= 365) return durationMetaGemini("y1", [dayMatch[0]]);
+      return durationMetaGemini("others", [dayMatch[0]]);
+    }
+  }
+
+  return { subtype: "others", durationDays: null, durationLabel: "Others", matches: [] };
+}
+
+function classifyGeminiProduct(titleText, descriptionText, rules) {
+  const titleOnly = titleText.toLowerCase();
+  const combined = `${titleText} ${descriptionText}`.toLowerCase();
+
+  const anchorMatches = matchedTerms(titleOnly, rules.geminiAnchorTerms || []);
+  if (anchorMatches.length === 0) {
+    return buildResult("other", "unknown", 0, [], []);
+  }
+
+  const exclusionMatches = matchedTerms(combined, rules.geminiExclusionTerms || [])
+    .filter((term) => {
+      return matchedTerms(titleOnly, [term]).length > 0;
+    });
+  if (exclusionMatches.length > 0) {
+    return buildResult(
+      "other",
+      "unknown",
+      0,
+      [],
+      exclusionMatches.slice(0, 2).map((term) => `命中Gemini排除词: ${term}`),
+    );
+  }
+
+  // Leonardo / 绘图聚合模型排除
+  if (/leonardo|绘图|图片模型/i.test(titleOnly) && !/gemini\s*(?:pro|ultra|1\.5|2|3|advanced)/i.test(titleOnly)) {
+    return buildResult("other", "unknown", 0, [], ["命中第三方模型聚合商品排除规则"]);
+  }
+
+  const cleanedTitleForNoise = stripGeminiWarrantyNoiseText(stripNoiseDurationText(titleOnly, rules.geminiNoiseDurationTerms || []));
+  const cleanedCombinedForNoise = stripGeminiWarrantyNoiseText(stripNoiseDurationText(combined, rules.geminiNoiseDurationTerms || []));
+
+  const freeMatches = matchedTerms(cleanedTitleForNoise, rules.geminiFreeTerms || []);
+  const titleDuration = matchGeminiDuration(cleanedTitleForNoise, rules.geminiDurationTerms || {});
+  const combinedDuration = matchGeminiDuration(cleanedCombinedForNoise, rules.geminiDurationTerms || {});
+
+  const explicitDuration = ["m18", "y1"].includes(titleDuration.subtype)
+    ? titleDuration
+    : (["m18", "y1"].includes(combinedDuration.subtype) ? combinedDuration : null);
+
+  let finalDuration = explicitDuration;
+  if (!finalDuration) {
+    // 不是 1Y 和 18M 的都放到 Others 分类
+    finalDuration = {
+      subtype: "others",
+      durationDays: null,
+      durationLabel: "Others",
+      matches: freeMatches.length > 0 ? freeMatches : (titleDuration.matches.length > 0 ? titleDuration.matches : ["其他规格"]),
+    };
+  }
+
+  const reasons = [
+    ...anchorMatches.slice(0, 2).map((term) => `命中Gemini锚点词: ${term}`),
+  ];
+  if (finalDuration.matches?.length > 0) {
+    reasons.push(...finalDuration.matches.slice(0, 2).map((term) => `命中时长/套餐: ${term}`));
+  }
+
+  return buildResult(
+    "gemini",
+    finalDuration.subtype,
+    0.9,
+    ["gemini", finalDuration.subtype],
+    reasons,
+    {
+      durationDays: finalDuration.durationDays,
+      durationLabel: finalDuration.durationLabel,
+    },
+  );
+}
+
 function classifyCodexProduct(titleText, descriptionText, rules) {
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   const titleOnly = titleText.toLowerCase();
@@ -636,14 +776,21 @@ export function classifyProduct(title, description = "", rules) {
   }
 
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
-  // Grok 只看标题锚点，防止描述链接/域名把无关商品拉进 Grok。
+  // Grok / Gemini 只看标题锚点，防止描述链接/域名把无关商品拉进分类。
   const grokAnchorMatches = matchedTerms(titleOnly, rules.grokAnchorTerms || []);
+  const geminiAnchorMatches = matchedTerms(titleOnly, rules.geminiAnchorTerms || []);
   const codexAnchorMatches = matchedTerms(combined, rules.anchorTerms || []);
 
   if (grokAnchorMatches.length > 0) {
     const grokResult = classifyGrokProduct(titleText, descriptionText, rules);
     if (grokResult.category !== "other") return grokResult;
-    if (codexAnchorMatches.length === 0) return grokResult;
+    if (codexAnchorMatches.length === 0 && geminiAnchorMatches.length === 0) return grokResult;
+  }
+
+  if (geminiAnchorMatches.length > 0) {
+    const geminiResult = classifyGeminiProduct(titleText, descriptionText, rules);
+    if (geminiResult.category !== "other") return geminiResult;
+    if (codexAnchorMatches.length === 0) return geminiResult;
   }
 
   return finalizeCodexPlanResult(
@@ -659,9 +806,12 @@ function withCommonFields(raw, source, rules, fields) {
   const price = normalizePrice(fields.price);
   if (isBlockedPrice(price)) return null;
 
+  const isBareMotherSite = !fields.url || /^https?:\/\/[^\/]+\/?$/i.test(fields.url);
+  const url = isBareMotherSite ? (source.url || fields.url) : fields.url;
+
   return {
     id: `${source.id || source.name}:${fields.sourceProductId}`,
-    brand: classification.brand || (classification.category === "grok" ? "grok" : "codex"),
+    brand: classification.brand || (classification.category === "grok" ? "grok" : (classification.category === "gemini" ? "gemini" : "codex")),
     category: classification.category,
     subtype: classification.subtype,
     confidence: classification.confidence,
@@ -674,7 +824,7 @@ function withCommonFields(raw, source, rules, fields) {
     currency: "CNY",
     stockStatus: normalizeStockStatus(fields.stockCount, fields.stockStatus, fields.isSoldOut),
     stockCount: typeof fields.stockCount === "number" ? fields.stockCount : null,
-    url: fields.url,
+    url,
     sourceId: source.id || null,
     sourceName: source.name,
     sourceUrl: source.url,
@@ -687,16 +837,17 @@ function withCommonFields(raw, source, rules, fields) {
 
 export function normalizeLdxpProduct(raw, source, rules) {
   const base = new URL(source.url);
-  const link = raw.link || `/item/${raw.goods_key}`;
+  const link = raw.link || (raw.goods_key ? `/item/${raw.goods_key}` : "");
   const stockCount = Number(raw.extend?.stock_count);
+  const url = link ? new URL(link, base).href : source.url;
 
   return withCommonFields(raw, source, rules, {
-    sourceProductId: raw.goods_key || raw.id || raw.link,
+    sourceProductId: raw.goods_key || raw.id || raw.link || raw.name,
     title: raw.name,
     descriptionText: raw.description,
     price: raw.price,
     stockCount: Number.isFinite(stockCount) ? stockCount : null,
-    url: new URL(link, base).href,
+    url,
     sourceCategory: raw.category?.name,
     raw: {
       goodsType: raw.goods_type,

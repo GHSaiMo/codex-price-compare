@@ -19,6 +19,7 @@ const PUBLIC_PRODUCT_KEYS = [
   "brand",
   "category",
   "subtype",
+  "tags",
   "durationDays",
   "durationLabel",
   "title",

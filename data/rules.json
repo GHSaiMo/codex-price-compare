@@ -3,7 +3,13 @@
   "categories": [
     "codex",
     "sms",
-    "grok"
+    "grok",
+    "gemini"
+  ],
+  "geminiSubtypes": [
+    "y1",
+    "m18",
+    "others"
   ],
   "codexSubtypes": [
     "free",
@@ -423,6 +429,7 @@
     "cursor ultra",
     "cursor pro",
     "cursor",
+    "leonardo",
     "代理请重新对接"
   ],
   "titleSubtypeTerms": {
@@ -479,5 +486,71 @@
     "福利号",
     "福利",
     "体验号"
+  ],
+  "geminiAnchorTerms": [
+    "gemini",
+    "双子座",
+    "google ai",
+    "google one ai",
+    "google ai pro",
+    "google ai ultra",
+    "google advanced",
+    "gemini advanced"
+  ],
+  "geminiExclusionTerms": [
+    "leonardo",
+    "midjourney",
+    "chatgpt",
+    "codex",
+    "claude",
+    "grok"
+  ],
+  "geminiDurationTerms": {
+    "m18": [
+      "18个月",
+      "18 个月",
+      "十八个月",
+      "18 month",
+      "18month",
+      "18m",
+      "一年半",
+      "1.5年",
+      "1.5 年",
+      "540天",
+      "540 天"
+    ],
+    "y1": [
+      "一年",
+      "1年",
+      "1 年",
+      "年卡",
+      "12个月",
+      "12 个月",
+      "十二个月",
+      "1 year",
+      "1year",
+      "one year",
+      "365天",
+      "365 天"
+    ]
+  },
+  "geminiNoiseDurationTerms": [
+    "卡密永久有效",
+    "未使用卡密永久有效",
+    "cdk永久有效",
+    "无到期时间",
+    "永久有效，不会过期",
+    "永久有效不会过期"
+  ],
+  "geminiFreeTerms": [
+    "普号",
+    "普通号",
+    "白号",
+    "free",
+    "无会员",
+    "体验号",
+    "体验",
+    "福利号",
+    "福利"
   ]
 }

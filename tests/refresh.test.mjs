@@ -293,6 +293,27 @@ assert.deepEqual(
   }],
 );
 assert.deepEqual(
+  reclassifyProductItems([
+    {
+      id: "ldxp-ak:gemini-18m",
+      sourceId: "ldxp-ak",
+      title: "Gemini 18个月链接（无需绑卡，登陆即可领取）",
+      descriptionText: "",
+    },
+  ], rules).map((item) => ({
+    id: item.id,
+    brand: item.brand,
+    category: item.category,
+    subtype: item.subtype,
+  })),
+  [{
+    id: "ldxp-ak:gemini-18m",
+    brand: "gemini",
+    category: "gemini",
+    subtype: "m18",
+  }],
+);
+assert.deepEqual(
   mergeProductsWithStaleSourceItems({
     previousItems: [
       {

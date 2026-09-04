@@ -1,6 +1,6 @@
 # Codex 比价
 
-一个轻量的 Codex / ChatGPT 与 Grok 相关商品信息聚合与比价页面，用于汇总多个卡网店铺的公开商品信息。首页支持 Codex / Grok 双模式切换：Codex 按 Free、Plus、5x、20x、SMS 分类，Grok 按 Free、1M、3M、1Y 分类，展示价格、库存和店铺来源。
+一个轻量的 Codex / ChatGPT、Grok 与 Gemini 相关商品信息聚合与比价页面，用于汇总多个卡网店铺的公开商品信息。首页支持 Codex / Grok / Gemini 三模式切换：Codex 按 Free、Plus、5x、20x、SMS 分类，Grok 按 Free、1M、3M、1Y 分类，Gemini 按 1Y、18M、Others 分类，展示价格、库存和店铺来源。
 
 > 本站仅汇总公开商品信息供参考，不代表对任何店铺或商品质量作出背书。
 
@@ -12,14 +12,14 @@
 
 ![Grok 比价主页面截图](assets/grok-price-compare-home.png)
 
-主页面支持 Codex / Grok 模式切换。Codex 模式默认聚焦 Plus 商品，并提供 Free、Plus、5x、20x、SMS 分类；Grok 模式默认聚焦 1M，并提供 Free、1M、3M、1Y 分类。同一列表展示商品标题、来源店铺、库存状态和价格，也可搜索标题、按店铺筛选，或开启“包含缺货”对比完整供给。
+主页面支持 Codex / Grok / Gemini 模式切换。Codex 模式默认聚焦 Plus 商品，并提供 Free、Plus、5x、20x、SMS 分类；Grok 模式默认聚焦 1M，并提供 Free、1M、3M、1Y 分类；Gemini 模式默认聚焦 18M，并提供 1Y、18M、Others 分类。同一列表展示商品标题、来源店铺、库存状态和价格，也可搜索标题、按店铺筛选，或开启“包含缺货”对比完整供给。
 
 ## 项目特性
 
 - 汇总多个卡网店铺的公开商品数据，统一展示商品标题、价格、库存和来源店铺。
-- 首页支持 Codex / Grok 双模式切换，店铺列表与商品采集链路共享。
-- Codex 按 Free、Plus、5x、20x、SMS 分类筛选；Grok 按 Free、1M、3M、1Y 分类筛选。
-- Codex 默认聚焦 Plus（含缺货），Grok 默认聚焦 1M。
+- 首页支持 Codex / Grok / Gemini 三模式切换，店铺列表与商品采集链路共享。
+- Codex 按 Free、Plus、5x、20x、SMS 分类筛选；Grok 按 Free、1M、3M、1Y 分类筛选；Gemini 按 1Y、18M、Others 分类筛选。
+- Codex 默认聚焦 Plus（含缺货），Grok 默认聚焦 1M，Gemini 默认聚焦 18M。
 - 支持标题搜索、店铺筛选、价格升序 / 降序排序，并可选择是否包含缺货商品。
 - 商品列表采用紧凑单行布局，便于快速比较不同店铺的库存与价格。
 - 点击筛选、排序或显示设置时，商品列表提供轻量动态反馈。
@@ -43,9 +43,10 @@ http://127.0.0.1:49173/
 
 主页面展示商品列表，包含：
 
-- 模式切换：`Codex` / `Grok`
+- 模式切换：`Codex` / `Grok` / `Gemini`
 - Codex 分类：`Free`、`Plus`、`5x`、`20x`、`SMS`
 - Grok 分类：`Free`、`1M`、`3M`、`1Y`
+- Gemini 分类：`1Y`、`18M`（默认）、`Others`
 - 搜索标题或店铺，并按店铺筛选
 - 排序：价格从低到高 / 价格从高到低
 - 包含缺货开关
@@ -190,12 +191,15 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 - `grokAnchorTerms`：识别 Grok / xAI 相关商品的锚点词。
 - `grokDurationTerms`：识别 Grok Free / `m1`（1M）/ `m3` / `y1`（1Y）的关键词。
 - `grokExclusionTerms`：排除 X Premium、GPT 混充等非 Grok 商品。
+- `geminiAnchorTerms`：识别 Gemini / Google AI / 双子座相关商品的锚点词。
+- `geminiDurationTerms`：识别 Gemini `y1`（1Y）/ `m18`（18M）的关键词。
+- `geminiExclusionTerms`：排除 Leonardo 绘图等非 Gemini 商品。
 - `smsServiceTerms`：识别接码服务的关键词。
 - `accountStateTerms`：识别账号状态的关键词，例如“已接码”“接过码”。
 - `subtypeTerms`：识别 Codex 的 `free`、`plus`、`pro`、`api` 等二级分类关键词。
 - `titleExclusionTerms` / `exclusionTerms`：排除 kiro、中转 API、官方中转、镜像站、邀请额度/邀请资格、Gmail/谷歌接码邮箱等明显无关或第三方商品。
 
-分类逻辑会先判断是否命中 Grok 锚点；命中后归入 Free / 1M / 3M / 1Y；普号与短体验进 Free，1-2个月进 1M，3个月进 3M，一年进 1Y。Codex 路径会优先根据商品标题识别明确的 `free`、`plus`、`pro` 套餐词；若标题同时出现“长效接码 / 质保不来码 / PLUS接码”等接码服务强信号，则仍归入 SMS，避免把接码服务误判成套餐账号。邀请额度、邀请资格这类商品会直接排除。
+分类逻辑会优先根据标题锚点判断品牌归属（Grok / Gemini / Codex）。命中 Grok 后归入 Free / 1M / 3M / 1Y；命中 Gemini 后根据时长归入 1Y / 18M，其他非 1Y/18M 规格（如 3M、1M、体验号等）归入 Others。Codex 路径会优先根据商品标题识别明确的 `free`、`plus`、`pro` 套餐词；若标题同时出现“长效接码 / 质保不来码 / PLUS接码”等接码服务强信号，则仍归入 SMS，避免把接码服务误判成套餐账号。邀请额度、邀请资格这类商品会直接排除。
 
 ### `data/products.json`
 

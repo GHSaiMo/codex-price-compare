@@ -64,6 +64,17 @@ const modeConfigs = {
       { id: "y1", label: "1Y" },
     ],
   },
+  gemini: {
+    id: "gemini",
+    label: "Gemini",
+    title: "Gemini 比价",
+    defaultSubtype: "m18",
+    subtypes: [
+      { id: "y1", label: "1Y" },
+      { id: "m18", label: "18M" },
+      { id: "others", label: "Others" },
+    ],
+  },
 };
 const subtypeValuesFromUrl = new Map([
   ["free", "free"],
@@ -94,6 +105,13 @@ const subtypeValuesFromUrl = new Map([
   ["y1", "y1"],
   ["1y", "y1"],
   ["year", "y1"],
+  ["m18", "m18"],
+  ["18m", "m18"],
+  ["18", "m18"],
+  ["1.5y", "m18"],
+  ["18-month", "m18"],
+  ["others", "others"],
+  ["other", "others"],
 ]);
 const subtypeToUrlValue = new Map([
   ["codex_sms", "sms"],
@@ -101,6 +119,8 @@ const subtypeToUrlValue = new Map([
   ["m12", "m1"],
   ["pro_5x", "5x"],
   ["pro_20x", "20x"],
+  ["m18", "18m"],
+  ["others", "others"],
 ]);
 const urlStateKeys = {
   mode: "mode",
@@ -146,6 +166,7 @@ function stockLabel(item) {
 }
 
 function productBrand(item) {
+  if (item.brand === "gemini" || item.category === "gemini") return "gemini";
   if (item.brand === "grok" || item.category === "grok") return "grok";
   return "codex";
 }
@@ -376,6 +397,15 @@ function groupProducts(sortedItems) {
   return groups;
 }
 
+function resolveProductUrl(item) {
+  const url = String(item?.url || "").trim();
+  const sourceUrl = String(item?.sourceUrl || "").trim();
+  if (/^https?:\/\/[^\/]+\/?$/i.test(url) && sourceUrl) {
+    return sourceUrl;
+  }
+  return url || sourceUrl || "#";
+}
+
 function createProductCard(item, { isChild = false } = {}) {
   const card = document.createElement("article");
   card.className = `product-card ${item.stockStatus === "out_of_stock" ? "is-out" : ""}${isChild ? " product-card-child" : ""}`;
@@ -395,7 +425,7 @@ function createProductCard(item, { isChild = false } = {}) {
   stock.textContent = stockLabel(item);
 
   const link = document.createElement("a");
-  link.href = item.url;
+  link.href = resolveProductUrl(item);
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.textContent = displayProductTitle(item.title);
@@ -424,7 +454,7 @@ function createGroupedProductElement(group) {
 
   const title = document.createElement("h2");
   const link = document.createElement("a");
-  link.href = primaryItem.url;
+  link.href = resolveProductUrl(primaryItem);
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.textContent = displayProductTitle(primaryItem.title);
@@ -521,8 +551,9 @@ function createGroupedProductElement(group) {
 
 function triggerFilterAnimation() {
   productList.classList.remove("is-filtering");
-  void productList.offsetWidth;
-  productList.classList.add("is-filtering");
+  requestAnimationFrame(() => {
+    productList.classList.add("is-filtering");
+  });
 }
 
 function loadImage(src) {
@@ -548,13 +579,16 @@ function readStateFromUrl() {
   const isIndexDomain = /(?:^|\.)index(?:\.|$)/.test(host);
   const isCodexDomain = /(?:^|\.)codex(?:\.|$)/.test(host);
   const isGrokDomain = /(?:^|\.)grok(?:\.|$)/.test(host);
+  const isGeminiDomain = /(?:^|\.)gemini(?:\.|$)/.test(host);
 
-  if (mode === "codex" || mode === "grok") {
+  if (mode === "codex" || mode === "grok" || mode === "gemini") {
     currentMode = mode;
   } else if (isIndexDomain || isCodexDomain) {
     currentMode = "codex";
   } else if (isGrokDomain) {
     currentMode = "grok";
+  } else if (isGeminiDomain) {
+    currentMode = "gemini";
   } else {
     currentMode = "codex";
   }
@@ -858,11 +892,60 @@ function render({ animate = false } = {}) {
     stats.textContent = `当前显示 ${items.length} 条，含有货 ${inStock} 条、缺货 ${outOfStock} 条`;
   }
 
+  const fragment = document.createDocumentFragment();
   for (const group of groups) {
-    productList.appendChild(createGroupedProductElement(group));
+    fragment.appendChild(createGroupedProductElement(group));
   }
+  productList.appendChild(fragment);
 
   if (animate) triggerFilterAnimation();
+}
+
+const PRODUCTS_CACHE_KEY = "codex_price_products_cache";
+const META_CACHE_KEY = "codex_price_meta_cache";
+
+function restoreLocalCache() {
+  try {
+    const cachedProductsRaw = localStorage.getItem(PRODUCTS_CACHE_KEY);
+    const cachedMetaRaw = localStorage.getItem(META_CACHE_KEY);
+
+    if (cachedProductsRaw) {
+      const parsed = JSON.parse(cachedProductsRaw);
+      if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
+        allProducts = parsed.items;
+        if (parsed.etag) productsEtag = parsed.etag;
+      }
+    }
+    if (cachedMetaRaw) {
+      const parsed = JSON.parse(cachedMetaRaw);
+      if (parsed?.etag) metaEtag = parsed.etag;
+      if (parsed?.time) lastRefreshLabel = parsed.time;
+    }
+
+    if (allProducts.length > 0) {
+      syncShopFilter();
+      updateSummary(lastRefreshLabel);
+      render();
+    }
+  } catch {
+    // Ignore storage parse failure
+  }
+}
+
+function saveLocalProductsCache(items, etag) {
+  try {
+    localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ items, etag }));
+  } catch {
+    // Ignore storage quota error
+  }
+}
+
+function saveLocalMetaCache(meta, etag, time) {
+  try {
+    localStorage.setItem(META_CACHE_KEY, JSON.stringify({ meta, etag, time }));
+  } catch {
+    // Ignore storage quota error
+  }
 }
 
 let productsEtag = null;
@@ -890,6 +973,7 @@ async function loadData() {
       if (newProductsEtag) productsEtag = newProductsEtag;
       const products = await productsResponse.json();
       allProducts = Array.isArray(products.items) ? products.items : [];
+      saveLocalProductsCache(allProducts, productsEtag);
       hasUpdate = true;
     } else if (productsResponse.status !== 304) {
       throw new Error(`products HTTP ${productsResponse.status}`);
@@ -901,6 +985,8 @@ async function loadData() {
       if (newMetaEtag) metaEtag = newMetaEtag;
       const meta = await metaResponse.json();
       time = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("zh-CN") : "尚未刷新";
+      lastRefreshLabel = time;
+      saveLocalMetaCache(meta, metaEtag, time);
       hasUpdate = true;
     } else if (metaResponse.status !== 304) {
       throw new Error(`meta HTTP ${metaResponse.status}`);
@@ -957,10 +1043,14 @@ includeOutOfStock.addEventListener("change", () => {
   render({ animate: true });
 });
 
+let searchDebounceTimer = null;
 searchInput?.addEventListener("input", () => {
-  currentQuery = searchInput.value.trim();
-  writeStateToUrl();
-  render({ animate: true });
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    currentQuery = searchInput.value.trim();
+    writeStateToUrl();
+    render({ animate: true });
+  }, 150);
 });
 
 shopFilter?.addEventListener("change", () => {
@@ -1004,5 +1094,6 @@ renderSubtypeButtons();
 syncSortButton();
 syncBackToTop();
 writeStateToUrl();
+restoreLocalCache();
 loadData();
 setInterval(loadData, DATA_RELOAD_INTERVAL_MS);

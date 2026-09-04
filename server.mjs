@@ -205,6 +205,8 @@ function invalidatePublicCaches() {
   publicMetaCache = null;
 }
 
+const PUBLIC_DATA_CACHE_CONTROL = "public, max-age=30, s-maxage=120, stale-while-revalidate=300";
+
 async function sendPublicJson(response, method, filePath, transform, request = null) {
   try {
     let cached;
@@ -222,7 +224,7 @@ async function sendPublicJson(response, method, filePath, transform, request = n
     if (request?.headers?.["if-none-match"] === cached.etag) {
       response.writeHead(304, {
         etag: cached.etag,
-        "cache-control": "no-cache",
+        "cache-control": PUBLIC_DATA_CACHE_CONTROL,
       });
       response.end();
       return;
@@ -236,7 +238,7 @@ async function sendPublicJson(response, method, filePath, transform, request = n
       "application/json; charset=utf-8",
       {
         etag: cached.etag,
-        "cache-control": "no-cache",
+        "cache-control": PUBLIC_DATA_CACHE_CONTROL,
       }
     );
   } catch {
@@ -646,10 +648,39 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     }
 
     const etag = `W/"${fileStat.size}-${Math.floor(fileStat.mtimeMs)}"`;
+    if (allowApi) {
+      if (request.headers["if-none-match"] === etag) {
+        response.writeHead(304, {
+          etag: etag,
+          "cache-control": "no-cache",
+        });
+        response.end();
+        return;
+      }
+
+      const fileContent = await readFile(filePath);
+      await sendCompressed(
+        request,
+        response,
+        200,
+        fileContent,
+        contentType,
+        {
+          etag: etag,
+          "cache-control": "no-cache",
+        }
+      );
+      return;
+    }
+
+    const cacheControl = isHtml
+      ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+      : "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400";
+
     if (request.headers["if-none-match"] === etag) {
       response.writeHead(304, {
         etag: etag,
-        "cache-control": "no-cache",
+        "cache-control": cacheControl,
       });
       response.end();
       return;
@@ -664,7 +695,7 @@ function createStaticServer(defaultFile, port, allowApi = false) {
       contentType,
       {
         etag: etag,
-        "cache-control": "no-cache",
+        "cache-control": cacheControl,
       }
     );
   });

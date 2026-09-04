@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title id="documentTitle">Codex 比价</title>
     <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css?v=20260902-1">
+    <link rel="stylesheet" href="styles.css?v=20260904-1">
   </head>
   <body
     data-products-url="data/products.json"
@@ -21,6 +21,7 @@
                 <fieldset class="mode-group" aria-label="品牌模式">
                   <button class="mode-button is-active" type="button" data-mode="codex" aria-pressed="true">Codex</button>
                   <button class="mode-button" type="button" data-mode="grok" aria-pressed="false">Grok</button>
+                  <button class="mode-button" type="button" data-mode="gemini" aria-pressed="false">Gemini</button>
                 </fieldset>
                 <p class="eyebrow" id="brandEyebrow" hidden>Codex</p>
               </div>
@@ -124,8 +125,8 @@
     </div>
     <div class="share-toast" id="shareToast" role="status" aria-live="polite" hidden>正在生成分享图片</div>
 
-    <script src="theme.js?v=20260902-1"></script>
-    <script src="assets/qrcode-generator.js?v=20260902-1"></script>
-    <script src="app.js?v=20260902-1"></script>
+    <script src="theme.js?v=20260904-1"></script>
+    <script src="assets/qrcode-generator.js?v=20260904-1" defer></script>
+    <script src="app.js?v=20260904-1"></script>
   </body>
 </html>

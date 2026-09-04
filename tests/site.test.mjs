@@ -63,6 +63,7 @@ assert.match(html, /id="sortButton"/);
 assert.match(html, /价格升序/);
 assert.match(html, /data-mode="codex" aria-pressed="true">Codex/);
 assert.match(html, /data-mode="grok" aria-pressed="false">Grok/);
+assert.match(html, /data-mode="gemini" aria-pressed="false">Gemini/);
 assert.match(html, /id="subtypeGroup"/);
 assert.match(html, /data-subtype="free" aria-pressed="false">Free/);
 assert.doesNotMatch(html, /data-subtype="go"/);
@@ -105,8 +106,10 @@ assert.match(app, /m1/);
 assert.match(app, /m3/);
 assert.match(app, /y1/);
 assert.match(app, /1M/);
-assert.match(app, /1Y/);
 assert.match(app, /defaultSubtype: "m1"/);
+assert.match(app, /defaultSubtype: "m18"/);
+assert.match(app, /id: "gemini"/);
+assert.match(app, /Others/);
 assert.match(app, /切换品牌时回到该模式默认标签/);
 assert.match(app, /\["sms", "codex_sms"\]/);
 assert.match(app, /function subtypeForUrl/);
@@ -213,6 +216,20 @@ assert.match(app, /product-group-children/);
   assert.equal(groupsDesc[1].primary.title, "Grok 2.0");
   assert.equal(groupsDesc[1].primary.price, 40);
   assert.deepEqual(JSON.parse(JSON.stringify(groupsDesc[1].items.map((i) => i.price))), [40, 30]);
+
+  // 链接回退测试：母站根域名自动回退到店铺链接
+  assert.equal(
+    sandbox.resolveProductUrl({ url: "https://pay.ldxp.cn", sourceUrl: "https://pay.ldxp.cn/shop/test" }),
+    "https://pay.ldxp.cn/shop/test",
+  );
+  assert.equal(
+    sandbox.resolveProductUrl({ url: "https://pay.ldxp.cn/", sourceUrl: "https://pay.ldxp.cn/shop/test" }),
+    "https://pay.ldxp.cn/shop/test",
+  );
+  assert.equal(
+    sandbox.resolveProductUrl({ url: "https://pay.ldxp.cn/item/abc", sourceUrl: "https://pay.ldxp.cn/shop/test" }),
+    "https://pay.ldxp.cn/item/abc",
+  );
 }
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);
