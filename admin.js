@@ -378,11 +378,17 @@ async function loadAdminData() {
     meta = metaData && typeof metaData === "object" ? metaData : {};
     stockWatchItems = Array.isArray(stockWatchData.items) ? stockWatchData.items : [];
     if (stockWatchDigest) stockWatchDigest.checked = stockWatchData.digestEnabled === true;
+    if (stockWatchStatus && stockWatchStatus.textContent === "正在读取观察列表...") {
+      stockWatchStatus.textContent = "";
+    }
     renderRefreshStatus(refreshData);
     renderStockWatch();
     renderSources();
   } catch (error) {
     adminSummary.textContent = `读取后台数据失败：${error.message}`;
+    if (stockWatchStatus && stockWatchStatus.textContent === "正在读取观察列表...") {
+      stockWatchStatus.textContent = "读取观察列表失败。";
+    }
     console.error(error);
   }
 }
