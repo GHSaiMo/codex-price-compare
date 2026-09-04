@@ -32,10 +32,43 @@ const STOCK_WATCH_PATH = "data/stock-watch.json";
 const PRICE_HISTORY_PATH = "data/price-history.json";
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
 const BACKUP_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
-const LDXP_MAX_SOURCES_PER_RUN = 15;
-const LDXP_DELAY_MIN_MS = 8 * 1000;
+const LDXP_MAX_SOURCES_PER_RUN = 5;
+const LDXP_DELAY_MIN_MS = 12 * 1000;
 const LDXP_DELAY_MAX_MS = 25 * 1000;
 const DEAD_SOURCE_STALE_MS = 14 * 24 * 60 * 60 * 1000;
+
+export const DEFAULT_BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
+
+export function isDomesticWafHost(hostname) {
+  const host = String(hostname || "").toLowerCase();
+  return host === "wzyp.cn" || host.endsWith(".wzyp.cn") || host === "pay.ldxp.cn";
+}
+
+export async function prewarmLdxpSession(source, options = {}) {
+  try {
+    const response = await fetch(source.url, {
+      method: "GET",
+      headers: {
+        "user-agent": DEFAULT_BROWSER_UA,
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(options.timeoutMs || 10000),
+    });
+    const rawCookies = typeof response.headers.getSetCookie === "function"
+      ? response.headers.getSetCookie()
+      : [response.headers.get("set-cookie")].filter(Boolean);
+    const cookieHeader = rawCookies
+      .map((c) => String(c).split(";")[0].trim())
+      .filter(Boolean)
+      .join("; ");
+    return { cookie: cookieHeader };
+  } catch {
+    return { cookie: "" };
+  }
+}
+
 const PERMANENT_SOURCE_FAILURE_PATTERNS = [
   /商家已被关闭/,
   /关闭交易/,
@@ -352,10 +385,19 @@ export function disableDeadSources(sources = [], {
 
 export async function probeSource(source, { fallbackProxy = null } = {}) {
   if (source.adapter === "ldxp") {
+    const session = await prewarmLdxpSession(source);
+    const base = new URL(source.url);
     const info = await postJson(
-      new URL("/shopApi/Shop/info", source.url),
+      new URL("/shopApi/Shop/info", base),
       { token: source.token },
-      { fallbackProxy },
+      {
+        fallbackProxy,
+        headers: {
+          ...(session.cookie ? { cookie: session.cookie } : {}),
+          referer: source.url,
+          origin: base.origin,
+        },
+      },
     );
     if (info.code !== 1) {
       throw new Error(info.msg || "店铺信息异常");
@@ -610,10 +652,17 @@ function randomLdxpDelayMs(env = process.env) {
   return Math.round(config.delayMinMs + Math.random() * (config.delayMaxMs - config.delayMinMs));
 }
 
-export async function requestJson(url, { method = "GET", body = null, fallbackProxy = null, maxRedirects = 5 } = {}) {
+export async function requestJson(url, {
+  method = "GET",
+  body = null,
+  headers: extraHeaders = {},
+  fallbackProxy = null,
+  maxRedirects = 5,
+} = {}) {
   const headers = {
+    "user-agent": DEFAULT_BROWSER_UA,
     ...(body !== null ? { "content-type": "application/json" } : {}),
-    "user-agent": "Mozilla/5.0 codex-price-compare",
+    ...extraHeaders,
   };
 
   let currentUrl = url;
@@ -649,7 +698,7 @@ export async function requestJson(url, { method = "GET", body = null, fallbackPr
       }
     }
   } catch (error) {
-    if (fallbackProxy?.enabled && shouldUseFallbackForError(error)) {
+    if (fallbackProxy?.enabled && !isDomesticWafHost(new URL(currentUrl).hostname) && shouldUseFallbackForError(error)) {
       return fallbackProxy.fetchJson(currentUrl, {
         method,
         headers,
@@ -691,9 +740,23 @@ async function fetchLdxp(source, rules, options = {}) {
 
   try {
     const base = new URL(source.url);
+    const session = await prewarmLdxpSession(source, options);
+    const ldxpRequestHeaders = {
+      ...(session.cookie ? { cookie: session.cookie } : {}),
+      referer: source.url,
+      origin: base.origin,
+    };
+    const requestOptions = {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        ...ldxpRequestHeaders,
+      },
+    };
+
     const info = await postJson(new URL("/shopApi/Shop/info", base), {
       token: source.token,
-    }, options);
+    }, requestOptions);
     if (info.code !== 1) throw new Error(info.msg || "店铺信息读取失败");
 
     const shop = info.data;
@@ -703,6 +766,9 @@ async function fetchLdxp(source, rules, options = {}) {
     for (const goodsType of goodsTypes) {
       let current = 1;
       while (current <= 20) {
+        if (current > 1) {
+          await sleep(1500);
+        }
         const data = await postJson(new URL("/shopApi/Shop/goodsList", base), {
           token: source.token,
           keywords: "",
@@ -710,7 +776,7 @@ async function fetchLdxp(source, rules, options = {}) {
           goods_type: goodsType,
           current,
           pageSize: 50,
-        }, options);
+        }, requestOptions);
         if (data.code !== 1) throw new Error(data.msg || "商品列表读取失败");
         const list = data.data?.list || [];
         for (const raw of list) {

@@ -20,8 +20,10 @@ import {
   buildLdxpRefreshPlan,
   buildSourceHealth,
   disableDeadSources,
+  isDomesticWafHost,
   mergeProductsWithStaleSourceItems,
   parseBackupFilenameDate,
+  prewarmLdxpSession,
   probeAndRecoverDisabledSources,
   pruneExpiredBackups,
   pruneUnknownSourceFailures,
@@ -182,8 +184,8 @@ assert.equal(resolveLdxpFetchMode({ LDXP_PLAYWRIGHT_DISABLED: "1" }), "fetch");
 assert.throws(() => resolveLdxpFetchMode({ LDXP_FETCH_MODE: "curl" }), /LDXP_FETCH_MODE/);
 assert.deepEqual(resolveLdxpSchedulerConfig({}), {
   domainCooldownMs: 21600000,
-  maxSourcesPerRun: 15,
-  delayMinMs: 8000,
+  maxSourcesPerRun: 5,
+  delayMinMs: 12000,
   delayMaxMs: 25000,
 });
 assert.deepEqual(
@@ -866,3 +868,52 @@ try {
     server.close();
   }
 }
+
+{
+  assert.equal(isDomesticWafHost("wzyp.cn"), true);
+  assert.equal(isDomesticWafHost("SUB.WZYP.CN"), true);
+  assert.equal(isDomesticWafHost("pay.ldxp.cn"), true);
+  assert.equal(isDomesticWafHost("spark-zone.org"), false);
+  assert.equal(isDomesticWafHost("catfk.com"), false);
+}
+
+{
+  const server = createServer((req, res) => {
+    res.writeHead(200, {
+      "set-cookie": [
+        "acw_tc=test_tc_token; path=/; HttpOnly",
+        "PHPSESSID=test_session_id; path=/",
+      ],
+    });
+    res.end("<html><body>Shop Page</body></html>");
+  });
+
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  try {
+    const session = await prewarmLdxpSession({ url: `http://127.0.0.1:${port}/shop/test` });
+    assert.ok(session.cookie.includes("acw_tc=test_tc_token"));
+    assert.ok(session.cookie.includes("PHPSESSID=test_session_id"));
+  } finally {
+    server.close();
+  }
+}
+
+{
+  let fallbackInvoked = false;
+  const dummyFallback = {
+    enabled: true,
+    fetchJson: async () => {
+      fallbackInvoked = true;
+      return { ok: true };
+    },
+  };
+
+  // wzyp.cn should bypass fallbackProxy
+  await assert.rejects(
+    () => requestJson("https://wzyp.cn/non-existent-fail-test", { fallbackProxy: dummyFallback }),
+    /HTTP 404|fetch failed|非 JSON/,
+  );
+  assert.equal(fallbackInvoked, false);
+}
+

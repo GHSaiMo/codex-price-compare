@@ -65,6 +65,17 @@ const context = await chromium.launchPersistentContext(payload.userDataDir, {
   headless: payload.headless,
   viewport: { width: 1280, height: 900 },
   locale: "zh-CN",
+  args: [
+    "--disable-blink-features=AutomationControlled",
+  ],
+  ignoreDefaultArgs: ["--enable-automation"],
+});
+
+await context.addInitScript(() => {
+  try {
+    delete Object.getPrototypeOf(navigator).webdriver;
+    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+  } catch {}
 });
 
 try {
