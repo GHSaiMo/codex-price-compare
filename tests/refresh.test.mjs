@@ -234,6 +234,100 @@ assert.deepEqual(
   }).skipped.map((entry) => entry.source.id),
   ["core-1", "normal-1"],
 );
+
+// Test 4 core sources: alternating 2 each round, non-core filling remaining quota up to 10
+const fourCoreSources = [
+  { id: "c1", adapter: "ldxp", core: true, url: "https://host1.com/1" },
+  { id: "c2", adapter: "ldxp", core: true, url: "https://host1.com/2" },
+  { id: "c3", adapter: "ldxp", core: true, url: "https://host1.com/3" },
+  { id: "c4", adapter: "ldxp", core: true, url: "https://host1.com/4" },
+  ...Array.from({ length: 12 }, (_, i) => ({
+    id: `n${i + 1}`,
+    adapter: "ldxp",
+    url: `https://host2.com/${i + 1}`,
+  })),
+];
+
+const round0Plan4 = buildLdxpRefreshPlan({
+  sources: fourCoreSources,
+  state: { coreRound: 0 },
+  maxSourcesPerRun: 10,
+});
+assert.deepEqual(round0Plan4.sources.map((s) => s.id), ["c1", "c2", "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"]);
+assert.equal(round0Plan4.nextState.coreRound, 1);
+assert.deepEqual(
+  round0Plan4.skipped.filter((s) => s.reason === "核心店铺隔轮轮休，保留旧数据").map((s) => s.source.id),
+  ["c3", "c4"],
+);
+
+const round1Plan4 = buildLdxpRefreshPlan({
+  sources: fourCoreSources,
+  state: round0Plan4.nextState,
+  maxSourcesPerRun: 10,
+});
+assert.deepEqual(round1Plan4.sources.map((s) => s.id), ["c3", "c4", "n9", "n10", "n11", "n12", "n1", "n2", "n3", "n4"]);
+assert.equal(round1Plan4.nextState.coreRound, 0);
+assert.deepEqual(
+  round1Plan4.skipped.filter((s) => s.reason === "核心店铺隔轮轮休，保留旧数据").map((s) => s.source.id),
+  ["c1", "c2"],
+);
+
+// Test 5 core sources: round 0 picks 3, round 1 picks 2
+const fiveCoreSources = [
+  { id: "c1", adapter: "ldxp", core: true, url: "https://host1.com/1" },
+  { id: "c2", adapter: "ldxp", core: true, url: "https://host1.com/2" },
+  { id: "c3", adapter: "ldxp", core: true, url: "https://host1.com/3" },
+  { id: "c4", adapter: "ldxp", core: true, url: "https://host1.com/4" },
+  { id: "c5", adapter: "ldxp", core: true, url: "https://host1.com/5" },
+  ...Array.from({ length: 12 }, (_, i) => ({
+    id: `n${i + 1}`,
+    adapter: "ldxp",
+    url: `https://host2.com/${i + 1}`,
+  })),
+];
+
+const round0Plan5 = buildLdxpRefreshPlan({
+  sources: fiveCoreSources,
+  state: { coreRound: 0 },
+  maxSourcesPerRun: 10,
+});
+assert.deepEqual(round0Plan5.sources.map((s) => s.id), ["c1", "c2", "c3", "n1", "n2", "n3", "n4", "n5", "n6", "n7"]);
+assert.equal(round0Plan5.nextState.coreRound, 1);
+assert.deepEqual(
+  round0Plan5.skipped.filter((s) => s.reason === "核心店铺隔轮轮休，保留旧数据").map((s) => s.source.id),
+  ["c4", "c5"],
+);
+
+const round1Plan5 = buildLdxpRefreshPlan({
+  sources: fiveCoreSources,
+  state: round0Plan5.nextState,
+  maxSourcesPerRun: 10,
+});
+assert.deepEqual(round1Plan5.sources.map((s) => s.id), ["c4", "c5", "n8", "n9", "n10", "n11", "n12", "n1", "n2", "n3"]);
+assert.equal(round1Plan5.nextState.coreRound, 0);
+assert.deepEqual(
+  round1Plan5.skipped.filter((s) => s.reason === "核心店铺隔轮轮休，保留旧数据").map((s) => s.source.id),
+  ["c1", "c2", "c3"],
+);
+
+// Test cooldown on active core shop: cooldown frees quota for non-core shops
+const cooldownCorePlan = buildLdxpRefreshPlan({
+  sources: fourCoreSources,
+  state: {
+    coreRound: 0,
+    cooldowns: {
+      "host1.com": { until: "2026-05-30T06:00:00.000Z", reason: "WAF" },
+    },
+  },
+  now: new Date("2026-05-30T00:00:00.000Z"),
+  maxSourcesPerRun: 10,
+});
+// Both c1 and c2 are in host1.com which is cooled down, c3 and c4 are resting, so non-core gets all 10 slots
+assert.deepEqual(
+  cooldownCorePlan.sources.map((s) => s.id),
+  ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9", "n10"],
+);
+
 assert.deepEqual(
   buildSourceHealth({
     sources: [

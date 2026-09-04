@@ -177,6 +177,7 @@ async function readLdxpSchedulerState() {
     const state = JSON.parse(await readFile(ldxpSchedulerPath, "utf8"));
     return {
       version: 1,
+      coreRound: Number.isInteger(state?.coreRound) ? state.coreRound : 0,
       cursorByHost: state?.cursorByHost && typeof state.cursorByHost === "object" ? state.cursorByHost : {},
       cooldowns: state?.cooldowns && typeof state.cooldowns === "object" ? state.cooldowns : {},
       lastFailures: state?.lastFailures && typeof state.lastFailures === "object" ? state.lastFailures : {},
@@ -184,7 +185,7 @@ async function readLdxpSchedulerState() {
       lastDisabledProbes: state?.lastDisabledProbes && typeof state.lastDisabledProbes === "object" ? state.lastDisabledProbes : {},
     };
   } catch {
-    return { version: 1, cursorByHost: {}, cooldowns: {}, lastFailures: {}, lastSuccess: {}, lastDisabledProbes: {} };
+    return { version: 1, coreRound: 0, cursorByHost: {}, cooldowns: {}, lastFailures: {}, lastSuccess: {}, lastDisabledProbes: {} };
   }
 }
 
@@ -192,6 +193,7 @@ async function writeLdxpSchedulerState(state) {
   await mkdir(dataDir, { recursive: true });
   await writeJsonAtomic(ldxpSchedulerPath, {
     version: 1,
+    coreRound: state.coreRound ?? 0,
     cursorByHost: state.cursorByHost || {},
     cooldowns: state.cooldowns || {},
     lastFailures: state.lastFailures || {},
@@ -268,29 +270,69 @@ export function buildLdxpRefreshPlan({
   maxSourcesPerRun = LDXP_MAX_SOURCES_PER_RUN,
 } = {}) {
   const ldxpSources = sources.filter((source) => source.adapter === "ldxp");
+  const coreSources = ldxpSources.filter((source) => source.core === true);
+  const nonCoreSources = ldxpSources.filter((source) => source.core !== true);
+
   const skipped = [];
-  const eligible = [];
-  for (const source of ldxpSources) {
+  const selected = [];
+  const selectedIds = new Set();
+
+  let nextCoreRound = 0;
+  if (coreSources.length > 1) {
+    const coreRound = Number(state.coreRound) || 0;
+    const firstBatchSize = Math.ceil(coreSources.length / 2);
+    const targetCoreSources = coreRound % 2 === 0
+      ? coreSources.slice(0, firstBatchSize)
+      : coreSources.slice(firstBatchSize);
+    const restingCoreSources = coreRound % 2 === 0
+      ? coreSources.slice(firstBatchSize)
+      : coreSources.slice(0, firstBatchSize);
+
+    for (const source of restingCoreSources) {
+      skipped.push({ source, reason: "核心店铺隔轮轮休，保留旧数据" });
+    }
+
+    for (const source of targetCoreSources) {
+      const host = sourceHost(source);
+      const cooldown = activeCooldownForHost(state, host, now);
+      if (cooldown) {
+        skipped.push({ source, reason: `ldxp 域名 ${host} 冷却中，保留旧数据`, cooldown });
+      } else if (selected.length < maxSourcesPerRun) {
+        selected.push(source);
+        selectedIds.add(source.id);
+      } else {
+        skipped.push({ source, reason: "ldxp 本轮未排到，保留旧数据" });
+      }
+    }
+    nextCoreRound = (coreRound + 1) % 2;
+  } else if (coreSources.length === 1) {
+    const source = coreSources[0];
+    const host = sourceHost(source);
+    const cooldown = activeCooldownForHost(state, host, now);
+    if (cooldown) {
+      skipped.push({ source, reason: `ldxp 域名 ${host} 冷却中，保留旧数据`, cooldown });
+    } else if (selected.length < maxSourcesPerRun) {
+      selected.push(source);
+      selectedIds.add(source.id);
+    } else {
+      skipped.push({ source, reason: "ldxp 本轮未排到，保留旧数据" });
+    }
+    nextCoreRound = 0;
+  }
+
+  const eligibleNonCore = [];
+  for (const source of nonCoreSources) {
     const host = sourceHost(source);
     const cooldown = activeCooldownForHost(state, host, now);
     if (cooldown) {
       skipped.push({ source, reason: `ldxp 域名 ${host} 冷却中，保留旧数据`, cooldown });
     } else {
-      eligible.push(source);
+      eligibleNonCore.push(source);
     }
   }
 
-  const selected = [];
-  const selectedIds = new Set();
-  for (const source of eligible.filter((entry) => entry.core === true)) {
-    if (selected.length >= maxSourcesPerRun) break;
-    selected.push(source);
-    selectedIds.add(source.id);
-  }
-
   const nonCoreByHost = new Map();
-  for (const source of eligible) {
-    if (source.core === true || selectedIds.has(source.id)) continue;
+  for (const source of eligibleNonCore) {
     const host = sourceHost(source);
     const entries = nonCoreByHost.get(host) || [];
     entries.push(source);
@@ -312,7 +354,7 @@ export function buildLdxpRefreshPlan({
     }
   }
 
-  for (const source of eligible) {
+  for (const source of eligibleNonCore) {
     if (!selectedIds.has(source.id)) {
       skipped.push({ source, reason: "ldxp 本轮未排到，保留旧数据" });
     }
@@ -324,6 +366,7 @@ export function buildLdxpRefreshPlan({
     nextState: {
       ...state,
       version: 1,
+      coreRound: nextCoreRound,
       cursorByHost,
       cooldowns: state.cooldowns || {},
       lastFailures: state.lastFailures || {},

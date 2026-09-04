@@ -179,7 +179,7 @@ LDXP_PLAYWRIGHT_HEADLESS=0 LDXP_PLAYWRIGHT_MANUAL_WAIT_MS=120000 npm run refresh
 - `LDXP_PLAYWRIGHT_REMOTE_CWD=/root/codex-price-compare`：VPS 上的项目目录。
 - `LDXP_WINDOWS_TAILSCALE_IP=100.127.136.64`：最后探测 Windows 节点是否在线。
 
-后台管理页会在 ldxp 店铺右侧显示“核心”勾选。勾选后会在 `data/sources.json` 中写入 `core: true`，下次刷新时这些店铺优先进入每轮 15 家名单。
+后台管理页会在 ldxp 店铺右侧显示“核心”勾选。勾选后会在 `data/sources.json` 中写入 `core: true`。核心店铺采用隔轮轮休机制（如 4 个核心每轮抓 2 个，5 个核心交替抓 3 个与 2 个），每两轮完整覆盖一次，避免同一域名密集请求触发风控；非核心店铺动态分配当轮剩余名额（总配额减去当轮核心数），按游标轮转抓取。
 
 刷新前会自动备份 `data/products.json` 和 `data/meta.json` 到 `data/backups/`。全局检测到 WAF、HTTP 5xx/403/429、大面积失败或商品数量骤降时，会保留旧 `products.json`，只更新 `meta.json` 并写入 `data/refresh-cooldown.json` 进入全局冷却；ldxp 域名级冷却状态单独保存在 `data/ldxp-scheduler.json`。
 
