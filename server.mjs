@@ -29,6 +29,16 @@ import {
   writeStockWatch,
 } from "./src/stock-watch.mjs";
 import { sendWeChatBridgeText } from "./src/wechatbridge.mjs";
+import {
+  addRecommendation,
+  checkRateLimit,
+  deleteRecommendation,
+  fetchPageMetadata,
+  readRecommendations,
+  recordSubmission,
+  updateRecommendationStatus,
+  validatePublicUrl,
+} from "./src/recommendations.mjs";
 
 const PORT = 49173;
 const ADMIN_PORT = 49174;
@@ -40,6 +50,7 @@ const productsPath = join(ROOT, "data/products.json");
 const refreshSettingsPath = join(ROOT, "data/refresh-settings.json");
 const stockWatchPath = join(ROOT, "data/stock-watch.json");
 const priceHistoryPath = join(ROOT, "data/price-history.json");
+const recommendationsPath = join(ROOT, "data/recommendations.json");
 const knownAdapters = new Set(["ldxp", "acg", "dujiao"]);
 let refreshTimer = null;
 let refreshInProgress = false;
@@ -561,6 +572,110 @@ function errorStatusCode(error) {
   return Number.isInteger(statusCode) && statusCode >= 400 && statusCode <= 599 ? statusCode : 500;
 }
 
+function getClientIp(request) {
+  const forwarded = request.headers["x-forwarded-for"];
+  if (forwarded) {
+    const first = String(forwarded).split(",")[0].trim();
+    if (first) return first;
+  }
+  const realIp = request.headers["x-real-ip"];
+  if (realIp) {
+    return String(realIp).trim();
+  }
+  return request.socket?.remoteAddress || "127.0.0.1";
+}
+
+async function handlePublicRecommendationSubmit(request, response) {
+  try {
+    const clientIp = getClientIp(request);
+    const userAgent = request.headers["user-agent"] || "";
+
+    const body = await readRequestJson(request);
+
+    // 1. Honeypot check: if bot filled hidden field, return 200 silently
+    if (body._hp && String(body._hp).trim()) {
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    // 2. Client render timestamp check (< 1500ms means automated submission)
+    const renderTime = Number(body._t);
+    if (!renderTime || Date.now() - renderTime < 1500) {
+      sendJson(response, 400, { message: "提交过快，请稍后重试" });
+      return;
+    }
+
+    // 3. IP Rate limit check
+    const rateCheck = checkRateLimit(clientIp);
+    if (!rateCheck.allowed) {
+      sendJson(response, 429, { message: rateCheck.reason || "请求过于频繁" });
+      return;
+    }
+
+    // 4. URL format & SSRF validation
+    const rawUrl = String(body.url || "").trim();
+    const validatedUrl = await validatePublicUrl(rawUrl);
+
+    // Record submission for rate limiting
+    recordSubmission(clientIp);
+
+    // 5. Probe page metadata
+    let meta = { title: "", description: "" };
+    try {
+      meta = await fetchPageMetadata(validatedUrl.href);
+    } catch {
+      // Continue even if metadata probing fails
+    }
+
+    // 6. Save recommendation
+    const newEntry = await addRecommendation(recommendationsPath, {
+      url: validatedUrl.href,
+      clientIp,
+      userAgent,
+      title: meta.title || "",
+      description: meta.description || "",
+    });
+
+    logWithTimestamp(
+      "log",
+      `用户推荐新增: ${validatedUrl.href} (IP: ${clientIp}, 标题: ${meta.title || "无"})`
+    );
+
+    sendJson(response, 200, { ok: true, id: newEntry.id });
+  } catch (error) {
+    sendJson(response, errorStatusCode(error), { message: error.message || "提交失败" });
+  }
+}
+
+async function handleAdminRecommendationsList(request, response) {
+  try {
+    const data = await readRecommendations(recommendationsPath);
+    sendJson(response, 200, data);
+  } catch (error) {
+    sendJson(response, errorStatusCode(error), { message: error.message });
+  }
+}
+
+async function handleAdminRecommendationStatus(id, request, response) {
+  try {
+    const body = await readRequestJson(request);
+    const status = String(body.status || "").trim();
+    const updated = await updateRecommendationStatus(recommendationsPath, id, status);
+    sendJson(response, 200, { item: updated });
+  } catch (error) {
+    sendJson(response, errorStatusCode(error), { message: error.message });
+  }
+}
+
+async function handleAdminRecommendationDelete(id, response) {
+  try {
+    const removed = await deleteRecommendation(recommendationsPath, id);
+    sendJson(response, 200, { removed });
+  } catch (error) {
+    sendJson(response, errorStatusCode(error), { message: error.message });
+  }
+}
+
 function createStaticServer(defaultFile, port, allowApi = false) {
   return createServer(async (request, response) => {
     if (!request.url) {
@@ -570,6 +685,13 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     }
 
     const { pathname } = new URL(request.url, `http://127.0.0.1:${port}`);
+
+    // Public & Admin: submit recommendation
+    if (request.method === "POST" && pathname === "/api/recommendations") {
+      await handlePublicRecommendationSubmit(request, response);
+      return;
+    }
+
     if (allowApi && request.method === "GET" && pathname === "/api/refresh") {
       await handleRefreshStatus(response);
       return;
@@ -607,6 +729,20 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     const stockWatchDeleteMatch = pathname.match(/^\/api\/stock-watch\/([^/]+)$/);
     if (allowApi && request.method === "DELETE" && stockWatchDeleteMatch) {
       await handleStockWatchDelete(decodeURIComponent(stockWatchDeleteMatch[1]), response);
+      return;
+    }
+
+    if (allowApi && request.method === "GET" && pathname === "/api/recommendations") {
+      await handleAdminRecommendationsList(request, response);
+      return;
+    }
+    const recMatch = pathname.match(/^\/api\/recommendations\/([^/]+)$/);
+    if (allowApi && request.method === "PATCH" && recMatch) {
+      await handleAdminRecommendationStatus(decodeURIComponent(recMatch[1]), request, response);
+      return;
+    }
+    if (allowApi && request.method === "DELETE" && recMatch) {
+      await handleAdminRecommendationDelete(decodeURIComponent(recMatch[1]), response);
       return;
     }
 

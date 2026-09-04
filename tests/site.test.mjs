@@ -432,3 +432,10 @@ assert.match(styles, /\.stock-watch-row/);
 assert.match(styles, /\.source-card-empty/);
 assert.match(styles, /\.match-reasons/);
 assert.match(styles, /\.source-list[\s\S]*?repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+assert.match(html, /src="recommend\.js/);
+assert.match(adminHtml, /id="recommendationsPanel"/);
+assert.match(adminApp, /loadRecommendations/);
+assert.match(server, /\/api\/recommendations/);
+assert.match(styles, /\.recommend-widget/);
+assert.match(styles, /\.recommendations-panel/);
+

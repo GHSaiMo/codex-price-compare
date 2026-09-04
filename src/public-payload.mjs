@@ -9,6 +9,7 @@ export const PUBLIC_STATIC_PATHS = new Set([
   "/source-sort.js",
   "/assets/logo.svg",
   "/assets/qrcode-generator.js",
+  "/recommend.js",
   "/data/products.json",
   "/data/meta.json",
   "/data/sources.json",

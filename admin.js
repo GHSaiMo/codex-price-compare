@@ -524,8 +524,214 @@ stockWatchDigest?.addEventListener("change", async () => {
   }
 });
 
+const recSummary = document.querySelector("#recSummary");
+const recFilterGroup = document.querySelector("#recFilterGroup");
+const recList = document.querySelector("#recList");
+const recommendationsApiUrl = "/api/recommendations";
+
+let recommendations = [];
+let activeRecFilter = "all";
+
+async function loadRecommendations() {
+  if (!recList) return;
+  try {
+    const res = await fetch(recommendationsApiUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    recommendations = Array.isArray(data.items) ? data.items : [];
+    renderRecommendations();
+  } catch (err) {
+    if (recSummary) recSummary.textContent = `读取推荐失败: ${err.message}`;
+  }
+}
+
+function formatRecTime(isoString) {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    return new Intl.DateTimeFormat("zh-CN", {
+      timeZone: "Asia/Shanghai",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  } catch {
+    return isoString;
+  }
+}
+
+function renderRecommendations() {
+  if (!recList) return;
+  clearElement(recList);
+
+  const pendingCount = recommendations.filter((r) => r.status === "pending").length;
+  if (recSummary) {
+    recSummary.textContent = `共 ${recommendations.length} 条推荐（${pendingCount} 条待处理）`;
+  }
+
+  const filtered = recommendations.filter((r) => {
+    if (activeRecFilter === "all") return true;
+    return r.status === activeRecFilter;
+  });
+
+  if (filtered.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "rec-empty";
+    empty.textContent =
+      activeRecFilter === "all" ? "暂无用户推荐记录" : `暂无【${activeRecFilter}】状态的推荐`;
+    recList.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach((rec) => {
+    const card = document.createElement("article");
+    card.className = "rec-item";
+    card.dataset.id = rec.id;
+
+    const top = document.createElement("div");
+    top.className = "rec-item-top";
+
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "rec-item-meta";
+
+    const timeSpan = document.createElement("span");
+    timeSpan.textContent = formatRecTime(rec.createdAt);
+    metaDiv.appendChild(timeSpan);
+
+    const statusPill = document.createElement("span");
+    statusPill.className = `rec-status-pill rec-status-${rec.status}`;
+    statusPill.textContent =
+      rec.status === "pending" ? "待处理" : rec.status === "accepted" ? "已采纳" : "已忽略";
+    metaDiv.appendChild(statusPill);
+
+    if (rec.clientIp) {
+      const ipSpan = document.createElement("span");
+      ipSpan.textContent = `IP: ${rec.clientIp}`;
+      metaDiv.appendChild(ipSpan);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "rec-item-actions";
+
+    if (rec.status !== "accepted") {
+      const acceptBtn = document.createElement("button");
+      acceptBtn.className = "rec-btn-action";
+      acceptBtn.type = "button";
+      acceptBtn.textContent = "采纳";
+      acceptBtn.addEventListener("click", () => updateRecStatus(rec.id, "accepted"));
+      actions.appendChild(acceptBtn);
+    }
+
+    if (rec.status !== "ignored") {
+      const ignoreBtn = document.createElement("button");
+      ignoreBtn.className = "rec-btn-action";
+      ignoreBtn.type = "button";
+      ignoreBtn.textContent = "忽略";
+      ignoreBtn.addEventListener("click", () => updateRecStatus(rec.id, "ignored"));
+      actions.appendChild(ignoreBtn);
+    }
+
+    if (rec.status !== "pending") {
+      const resetBtn = document.createElement("button");
+      resetBtn.className = "rec-btn-action";
+      resetBtn.type = "button";
+      resetBtn.textContent = "设为待处理";
+      resetBtn.addEventListener("click", () => updateRecStatus(rec.id, "pending"));
+      actions.appendChild(resetBtn);
+    }
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "rec-btn-action rec-btn-delete";
+    deleteBtn.type = "button";
+    deleteBtn.textContent = "删除";
+    deleteBtn.addEventListener("click", () => deleteRec(rec.id));
+    actions.appendChild(deleteBtn);
+
+    top.appendChild(metaDiv);
+    top.appendChild(actions);
+    card.appendChild(top);
+
+    const bodyDiv = document.createElement("div");
+    bodyDiv.className = "rec-item-body";
+
+    if (rec.title) {
+      const titleEl = document.createElement("h4");
+      titleEl.className = "rec-item-title";
+      titleEl.textContent = rec.title;
+      bodyDiv.appendChild(titleEl);
+    }
+
+    const linkEl = document.createElement("a");
+    linkEl.className = "rec-item-url";
+    linkEl.href = rec.url;
+    linkEl.target = "_blank";
+    linkEl.rel = "noopener noreferrer";
+    linkEl.textContent = `🔗 ${rec.url}`;
+    bodyDiv.appendChild(linkEl);
+
+    if (rec.description) {
+      const descEl = document.createElement("p");
+      descEl.className = "rec-item-desc";
+      descEl.textContent = rec.description;
+      bodyDiv.appendChild(descEl);
+    }
+
+    card.appendChild(bodyDiv);
+    recList.appendChild(card);
+  });
+}
+
+async function updateRecStatus(id, newStatus) {
+  try {
+    const res = await fetch(`${recommendationsApiUrl}/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || `HTTP ${res.status}`);
+    const idx = recommendations.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      recommendations[idx] = result.item;
+      renderRecommendations();
+    }
+  } catch (err) {
+    alert(`更新状态失败: ${err.message}`);
+  }
+}
+
+async function deleteRec(id) {
+  if (!confirm("确定删除这条推荐记录吗？")) return;
+  try {
+    const res = await fetch(`${recommendationsApiUrl}/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || `HTTP ${res.status}`);
+    recommendations = recommendations.filter((r) => r.id !== id);
+    renderRecommendations();
+  } catch (err) {
+    alert(`删除失败: ${err.message}`);
+  }
+}
+
+if (recFilterGroup) {
+  recFilterGroup.addEventListener("click", (e) => {
+    const btn = e.target.closest(".rec-filter-btn");
+    if (!btn) return;
+    recFilterGroup.querySelectorAll(".rec-filter-btn").forEach((b) => b.classList.remove("is-active"));
+    btn.classList.add("is-active");
+    activeRecFilter = btn.dataset.status || "all";
+    renderRecommendations();
+  });
+}
+
 loadAdminData();
 loadRefreshStatus().catch((error) => {
   refreshStatus.textContent = `读取刷新状态失败：${error.message}`;
 });
+loadRecommendations();
 setInterval(loadAdminData, DATA_RELOAD_INTERVAL_MS);
+setInterval(loadRecommendations, DATA_RELOAD_INTERVAL_MS);
+
