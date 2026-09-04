@@ -106,10 +106,6 @@ const subtypeValuesFromUrl = new Map([
   ["1y", "y1"],
   ["year", "y1"],
   ["m18", "m18"],
-  ["18m", "m18"],
-  ["18", "m18"],
-  ["1.5y", "m18"],
-  ["18-month", "m18"],
   ["others", "others"],
   ["other", "others"],
 ]);
@@ -119,7 +115,7 @@ const subtypeToUrlValue = new Map([
   ["m12", "m1"],
   ["pro_5x", "5x"],
   ["pro_20x", "20x"],
-  ["m18", "18m"],
+  ["m18", "m18"],
   ["others", "others"],
 ]);
 const urlStateKeys = {
@@ -419,6 +415,7 @@ function createProductCard(item, { isChild = false } = {}) {
   const source = document.createElement("span");
   source.className = "source-pill";
   source.textContent = item.sourceName;
+  source.title = item.sourceName;
 
   const stock = document.createElement("span");
   stock.className = `stock-pill stock-${item.stockStatus || "unknown"}`;
@@ -492,6 +489,7 @@ function createGroupedProductElement(group) {
   const sourceNameSpan = document.createElement("span");
   sourceNameSpan.className = "source-name";
   sourceNameSpan.textContent = primaryItem.sourceName;
+  sourceNameSpan.title = primaryItem.sourceName;
 
   const countBadge = document.createElement("span");
   countBadge.className = "source-badge";
@@ -725,8 +723,9 @@ function hideShareToast() {
 
 async function createShareSnapshotImage() {
   const items = sortProducts(filterProducts());
-  const visibleItems = items.slice(0, SHARE_VISIBLE_ITEMS);
-  const imageHeight = getShareImageHeight(visibleItems.length);
+  const groups = groupProducts(items);
+  const visibleGroups = groups.slice(0, SHARE_VISIBLE_ITEMS);
+  const imageHeight = getShareImageHeight(visibleGroups.length);
   const modeConfig = currentModeConfig();
   const subtypeText = currentSubtypeLabel();
   const qr = await createQrImage(createShareUrl());
@@ -766,7 +765,8 @@ async function createShareSnapshotImage() {
 
   ctx.textAlign = "left";
   let y = SHARE_CARDS_TOP;
-  for (const item of visibleItems) {
+  for (const group of visibleGroups) {
+    const item = group.primary;
     fillRoundRect(
       ctx,
       SHARE_ROW_X,
@@ -782,10 +782,19 @@ async function createShareSnapshotImage() {
     ctx.font = "700 15px Inter, system-ui, sans-serif";
     ctx.fillText(truncateCanvasText(ctx, displayProductTitle(item.title), 220), SHARE_ROW_X + 16, y + 27);
 
+    const uniqueShops = new Set(group.items.map((i) => i.sourceId || i.sourceName).filter(Boolean));
+    const isMultiShop = uniqueShops.size > 1;
+    const countLabel = group.items.length > 1
+      ? (isMultiShop ? `共${uniqueShops.size}家` : `共${group.items.length}条`)
+      : "";
+    const subText = countLabel
+      ? `${item.sourceName} · ${countLabel} · ${stockLabel(item)}`
+      : `${item.sourceName} · ${stockLabel(item)}`;
+
     ctx.fillStyle = muted;
     ctx.font = "13px Inter, system-ui, sans-serif";
     ctx.fillText(
-      truncateCanvasText(ctx, `${item.sourceName} · ${stockLabel(item)}`, 220),
+      truncateCanvasText(ctx, subText, 220),
       SHARE_ROW_X + 16,
       y + 50,
     );
@@ -809,9 +818,11 @@ async function createShareSnapshotImage() {
   fillRoundRect(ctx, SHARE_ROW_X, moreRowY, SHARE_ROW_WIDTH, SHARE_MORE_ROW_HEIGHT, 8, panel, line);
   ctx.fillStyle = text;
   ctx.font = "700 15px Inter, system-ui, sans-serif";
-  if (items.length > SHARE_VISIBLE_ITEMS) {
-    ctx.fillText(`另有 ${items.length - SHARE_VISIBLE_ITEMS} 条商品可以查看`, SHARE_IMAGE_WIDTH / 2, moreTextY);
-  } else if (items.length === 0) {
+  if (groups.length > SHARE_VISIBLE_ITEMS) {
+    const remaining = groups.length - SHARE_VISIBLE_ITEMS;
+    const unit = groups.length < items.length ? "款" : "条";
+    ctx.fillText(`另有 ${remaining} ${unit}商品可以查看`, SHARE_IMAGE_WIDTH / 2, moreTextY);
+  } else if (groups.length === 0) {
     ctx.fillText("没有匹配的商品", SHARE_IMAGE_WIDTH / 2, moreTextY);
   } else {
     ctx.fillText("已显示全部匹配商品", SHARE_IMAGE_WIDTH / 2, moreTextY);
@@ -840,7 +851,7 @@ async function openShareOverlay() {
   shareButton.disabled = true;
   shareButton.setAttribute("aria-busy", "true");
   image.removeAttribute("src");
-  const previewItemCount = Math.min(sortProducts(filterProducts()).length, SHARE_VISIBLE_ITEMS);
+  const previewItemCount = Math.min(groupProducts(sortProducts(filterProducts())).length, SHARE_VISIBLE_ITEMS);
   lockShareImageSize(getShareImageHeight(previewItemCount));
   showShareToast();
 
@@ -887,9 +898,9 @@ function render({ animate = false } = {}) {
   const outOfStock = items.length - inStock;
   const groups = groupProducts(items);
   if (groups.length < items.length) {
-    stats.textContent = `当前显示 ${items.length} 条（同款折叠为 ${groups.length} 款），含有货 ${inStock} 条、缺货 ${outOfStock} 条`;
+    stats.textContent = `显示 ${groups.length} 款（共 ${items.length} 条）· 有货 ${inStock} · 缺货 ${outOfStock}`;
   } else {
-    stats.textContent = `当前显示 ${items.length} 条，含有货 ${inStock} 条、缺货 ${outOfStock} 条`;
+    stats.textContent = `显示 ${items.length} 条 · 有货 ${inStock} · 缺货 ${outOfStock}`;
   }
 
   const fragment = document.createDocumentFragment();

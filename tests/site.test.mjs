@@ -119,6 +119,9 @@ assert.match(app, /plus_topup/);
 assert.match(app, /pro_5x/);
 assert.match(app, /pro_20x/);
 assert.match(app, /\["m1", "m1"\]/);
+assert.match(app, /\["m18", "m18"\]/);
+assert.doesNotMatch(app, /\["m18", "18m"\]/);
+assert.doesNotMatch(app, /\["18m"/);
 assert.match(app, /function createQrImage/);
 assert.match(app, /qrcode/);
 assert.match(app, /createShareUrl\(\)/);
@@ -129,7 +132,8 @@ assert.doesNotMatch(app, /ctx\.drawImage\(logo/);
 assert.match(app, /const SHARE_VISIBLE_ITEMS = 5;/);
 assert.match(app, /function getShareImageHeight/);
 assert.match(app, /const SHARE_IMAGE_MAX_HEIGHT = 844;/);
-assert.match(app, /另有 \$\{items\.length - SHARE_VISIBLE_ITEMS\} 条商品可以查看/);
+assert.match(app, /const visibleGroups = groups\.slice\(0, SHARE_VISIBLE_ITEMS\);/);
+assert.match(app, /另有 \$\{remaining\} \$\{unit\}商品可以查看/);
 assert.match(app, /const SHARE_MORE_ROW_HEIGHT = 48;/);
 assert.match(app, /fillRoundRect\(ctx, SHARE_ROW_X, moreRowY, SHARE_ROW_WIDTH, SHARE_MORE_ROW_HEIGHT, 8, panel, line\)/);
 assert.match(app, /return \{ dataUrl: canvas\.toDataURL\("image\/png"\), height: imageHeight \};/);
@@ -139,6 +143,7 @@ assert.doesNotMatch(app, /qrserver\.com/);
 assert.match(app, /shareOverlay\.addEventListener\("click"/);
 assert.doesNotMatch(app, /image\.alt = "正在生成分享截图"/);
 assert.doesNotMatch(app, /stats\.textContent \|\| summary\.textContent/);
+assert.match(app, /stats\.textContent = `显示 \$\{groups\.length\} 款（共 \$\{items\.length\} 条）/);
 assert.match(app, /scrollTo/);
 assert.match(app, /DATA_RELOAD_INTERVAL_MS/);
 assert.match(app, /setInterval\(loadData/);
@@ -230,6 +235,11 @@ assert.match(app, /product-group-children/);
     sandbox.resolveProductUrl({ url: "https://pay.ldxp.cn/item/abc", sourceUrl: "https://pay.ldxp.cn/shop/test" }),
     "https://pay.ldxp.cn/item/abc",
   );
+
+  // URL subtype 格式测试：保持与 Grok 一致的 m18 规则
+  assert.equal(sandbox.subtypeForUrl("m18"), "m18");
+  assert.equal(sandbox.subtypeForUrl("m1"), "m1");
+  assert.equal(sandbox.subtypeForUrl("y1"), "y1");
 }
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);
@@ -288,6 +298,8 @@ assert.match(server, /price-history\.json/);
 assert.match(server, /"cache-control": "no-cache"/);
 assert.match(styles, /--content-width: 780px;/);
 assert.match(styles, /\.content-column/);
+assert.match(styles, /\.summary\s*\{[\s\S]*font-size:\s*0\.85rem/);
+assert.match(styles, /\.stats\s*\{[\s\S]*text-overflow:\s*ellipsis/);
 assert.match(styles, /\.filter-panel/);
 assert.match(styles, /\.filter-actions/);
 assert.match(styles, /\.page-shell/);
@@ -317,6 +329,7 @@ assert.match(styles, /\.product-list\.is-filtering \.product-card/);
 assert.match(styles, /@keyframes filter-card-in/);
 assert.match(styles, /\.product-list/);
 assert.match(styles, /\.source-pill-toggle/);
+assert.match(styles, /\.source-pill\s*\{[\s\S]*text-align:\s*left/);
 assert.match(styles, /\.product-group/);
 assert.match(styles, /\.product-group-children/);
 assert.match(styles, /\.product-card-child/);

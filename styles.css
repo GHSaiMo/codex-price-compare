@@ -161,7 +161,8 @@ h1 {
   max-width: 42rem;
   margin: 12px 0 0;
   color: var(--muted);
-  line-height: 1.6;
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 #adminSummary {
@@ -475,7 +476,8 @@ input {
 .stats,
 .empty-state {
   color: var(--muted);
-  line-height: 1.6;
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 .product-list {
@@ -628,7 +630,25 @@ input {
   color: var(--warn);
 }
 
-.source-pill,
+.source-pill {
+  display: inline-block;
+  vertical-align: middle;
+  height: 26px;
+  line-height: 24px;
+  max-width: 130px;
+  overflow: hidden;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-muted);
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
 .stock-pill {
   display: inline-flex;
   align-items: center;
@@ -643,6 +663,7 @@ input {
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
   box-sizing: border-box;
@@ -651,8 +672,10 @@ input {
 .source-pill-toggle {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 5px;
   height: 26px;
+  line-height: 1;
   max-width: 175px;
   padding: 0 8px;
   border: 1px solid var(--line);
@@ -661,9 +684,9 @@ input {
   color: var(--text);
   font: inherit;
   font-size: 0.78rem;
-  line-height: 1;
   cursor: pointer;
   white-space: nowrap;
+  text-align: left;
   transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
   user-select: none;
   -webkit-user-select: none;
@@ -686,6 +709,7 @@ input {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
 }
 
 .source-pill-toggle .source-badge {
@@ -1204,6 +1228,7 @@ input {
 
   .summary {
     margin-top: 14px;
+    font-size: 0.8rem;
   }
 
   .disclaimer {
@@ -1212,6 +1237,13 @@ input {
     font-size: 0.68rem;
     line-height: 1.35;
     white-space: nowrap;
+  }
+
+  .stats {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .toolbar {
@@ -1364,22 +1396,34 @@ input {
     left: 4px;
   }
 
-  .source-pill,
+  .source-pill {
+    height: 24px;
+    line-height: 22px;
+    padding: 0 6px;
+    font-size: 0.74rem;
+    text-align: left;
+  }
+
   .stock-pill {
     height: 24px;
     padding: 0 6px;
     font-size: 0.74rem;
+    text-align: center;
   }
 
   .source-pill-toggle {
     height: 24px;
+    line-height: 1;
     max-width: 140px;
     padding: 0 6px;
     font-size: 0.74rem;
+    justify-content: flex-start;
+    text-align: left;
   }
 
   .source-pill-toggle .source-name {
     max-width: 60px;
+    text-align: left;
   }
 
   .source-link-card {
