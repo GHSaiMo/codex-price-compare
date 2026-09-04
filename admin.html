@@ -68,16 +68,8 @@
             <span>商品链接</span>
             <input id="stockWatchUrl" name="url" type="url" placeholder="https://..." required>
           </label>
-          <label class="field field-target">
-            <span>到价阈值</span>
-            <input id="stockWatchTarget" name="targetPrice" type="number" min="0" step="0.01" placeholder="可选">
-          </label>
           <button class="toolbar-link" type="submit">查找并加入观察区</button>
         </form>
-        <label class="stock-watch-digest">
-          <input id="stockWatchDigest" type="checkbox">
-          <span>每日摘要</span>
-        </label>
         <p class="form-message" id="stockWatchStatus" role="status">正在读取观察列表...</p>
         <div class="stock-watch-list" id="stockWatchList"></div>
       </section>

@@ -167,13 +167,6 @@ function createProductRow(item) {
   return row;
 }
 
-function createEmptyRow() {
-  const empty = document.createElement("p");
-  empty.className = "source-card-empty";
-  empty.textContent = "暂无 unknown 商品。";
-  return empty;
-}
-
 function createCoreSourceToggle(source) {
   const label = document.createElement("label");
   label.className = "core-source-toggle";
@@ -237,24 +230,24 @@ function renderSources() {
       header.appendChild(createCoreSourceToggle(source));
     }
 
-    const productRows = document.createElement("div");
-    productRows.className = "source-products";
-    if (unknownProducts.length === 0) {
-      productRows.appendChild(createEmptyRow());
-    } else {
-      for (const item of unknownProducts) {
-        productRows.appendChild(createProductRow(item));
-      }
-    }
+    card.appendChild(header);
 
     if (health?.reason || source.disabledReason) {
       const reason = document.createElement("p");
       reason.className = "source-health";
       reason.textContent = source.disabledReason || health.reason;
-      card.append(header, reason, productRows);
-    } else {
-      card.append(header, productRows);
+      card.appendChild(reason);
     }
+
+    if (unknownProducts.length > 0) {
+      const productRows = document.createElement("div");
+      productRows.className = "source-products";
+      for (const item of unknownProducts) {
+        productRows.appendChild(createProductRow(item));
+      }
+      card.appendChild(productRows);
+    }
+
     sourceList.appendChild(card);
   }
 }
