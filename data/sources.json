@@ -15,7 +15,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://wzyp.cn/shop/kk1818",
-      "token": "kk1818"
+      "token": "kk1818",
+      "core": true
     },
     {
       "id": "ldxp-catfk-n379roc0",
@@ -104,7 +105,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://wzyp.cn/shop/Z7KRWFIR",
-      "token": "Z7KRWFIR"
+      "token": "Z7KRWFIR",
+      "core": true
     },
     {
       "id": "ldxp-akkkk",
@@ -155,7 +157,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/YQUOBIW1",
       "token": "YQUOBIW1",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-ljmzqqh3",
@@ -180,7 +182,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/GGBoy",
       "token": "GGBoy",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-gpt-chengpin",
@@ -221,7 +223,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://wzyp.cn/shop/DEQLOPDB",
-      "token": "DEQLOPDB"
+      "token": "DEQLOPDB",
+      "core": true
     },
     {
       "id": "ldxp-maomao-ai",
@@ -230,7 +233,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/9S9N5V82",
       "token": "9S9N5V82",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-f16k31u5",
@@ -255,7 +258,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/qihangai",
       "token": "qihangai",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-rick",
@@ -322,7 +325,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/RTDZ8P7I",
       "token": "RTDZ8P7I",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-yuanzhu-ai",
@@ -338,7 +341,8 @@
       "adapter": "ldxp",
       "enabled": true,
       "url": "https://wzyp.cn/shop/GV0HQ2C0",
-      "token": "GV0HQ2C0"
+      "token": "GV0HQ2C0",
+      "core": true
     },
     {
       "id": "ldxp-yoloo",
@@ -371,7 +375,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/ZXC",
       "token": "ZXC",
-      "core": true
+      "core": false
     },
     {
       "id": "acg-aisou",

@@ -184,7 +184,7 @@ assert.equal(resolveLdxpFetchMode({ LDXP_PLAYWRIGHT_DISABLED: "1" }), "fetch");
 assert.throws(() => resolveLdxpFetchMode({ LDXP_FETCH_MODE: "curl" }), /LDXP_FETCH_MODE/);
 assert.deepEqual(resolveLdxpSchedulerConfig({}), {
   domainCooldownMs: 21600000,
-  maxSourcesPerRun: 5,
+  maxSourcesPerRun: 10,
   delayMinMs: 12000,
   delayMaxMs: 25000,
 });
