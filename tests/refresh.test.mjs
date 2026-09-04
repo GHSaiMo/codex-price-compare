@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -25,6 +26,7 @@ import {
   pruneExpiredBackups,
   pruneUnknownSourceFailures,
   reclassifyProductItems,
+  requestJson,
   resolveDisabledSourceProbeIntervalMs,
   resolveLdxpFetchMode,
   resolveLdxpSchedulerConfig,
@@ -452,53 +454,53 @@ assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
 assert.ok(sources.sources.length >= 30);
 assert.ok(!sources.sources.some((source) => source.id === "acg-caowo" || source.url === "https://caowo.store/"));
 assert.ok(!sources.sources.some((source) => source.id === "ldxp-kaka" || source.url === "https://pay.ldxp.cn/shop/D92VW084"));
-assert.ok(sources.sources.some((source) => source.url === "https://pay.ldxp.cn/shop/catcoder"));
+assert.ok(sources.sources.some((source) => source.url === "https://wzyp.cn/shop/catcoder"));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-doghubx"
   && source.name === "doghubx"
-  && source.url === "https://pay.ldxp.cn/shop/JBJJWNA5"
+  && source.url === "https://wzyp.cn/shop/JBJJWNA5"
   && source.token === "JBJJWNA5"
 )));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-akkkk"
   && source.name === "Akkkk"
-  && source.url === "https://pay.ldxp.cn/shop/1PTC0Z1B"
+  && source.url === "https://wzyp.cn/shop/1PTC0Z1B"
   && source.token === "1PTC0Z1B"
 )));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-niuniushop"
   && source.name === "牛牛ai专卖店"
-  && source.url === "https://pay.ldxp.cn/shop/niuniushop"
+  && source.url === "https://wzyp.cn/shop/niuniushop"
   && source.token === "niuniushop"
 )));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-gpt-chengpin"
   && source.name === "gpt成品"
-  && source.url === "https://pay.ldxp.cn/shop/6YEJH8PE"
+  && source.url === "https://wzyp.cn/shop/6YEJH8PE"
   && source.token === "6YEJH8PE"
 )));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-longteng"
   && source.name === "龙腾专卖店"
-  && source.url === "https://pay.ldxp.cn/shop/DEQLOPDB"
+  && source.url === "https://wzyp.cn/shop/DEQLOPDB"
   && source.token === "DEQLOPDB"
 )));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-z7krwfir"
   && source.name === "AI最严厉的父亲"
-  && source.url === "https://pay.ldxp.cn/shop/Z7KRWFIR"
+  && source.url === "https://wzyp.cn/shop/Z7KRWFIR"
   && source.token === "Z7KRWFIR"
 )));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-haoai"
   && source.name === "Ai小店"
-  && source.url === "https://pay.ldxp.cn/shop/haoai"
+  && source.url === "https://wzyp.cn/shop/haoai"
   && source.token === "haoai"
 )));
 assert.ok(sources.sources.some((source) => (
   source.id === "ldxp-niceai"
   && source.name === "91ai小店"
-  && source.url === "https://pay.ldxp.cn/shop/niceai"
+  && source.url === "https://wzyp.cn/shop/niceai"
   && source.token === "niceai"
 )));
 assert.ok(
@@ -828,4 +830,39 @@ try {
   assert.equal(filled.items["sku-1"].points[1].s, "out_of_stock");
 } finally {
   await rm(historyDir, { recursive: true, force: true });
+}
+
+{
+  const server = createServer(async (req, res) => {
+    if (req.url === "/redirect") {
+      res.writeHead(301, { location: "/target" });
+      res.end();
+      return;
+    }
+    if (req.url === "/target") {
+      let body = "";
+      for await (const chunk of req) {
+        body += chunk;
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ method: req.method, data: JSON.parse(body) }));
+      return;
+    }
+    res.writeHead(404).end();
+  });
+
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  try {
+    const result = await requestJson(`http://127.0.0.1:${port}/redirect`, {
+      method: "POST",
+      body: { token: "redirect-token" },
+    });
+    assert.deepEqual(result, {
+      method: "POST",
+      data: { token: "redirect-token" },
+    });
+  } finally {
+    server.close();
+  }
 }

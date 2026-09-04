@@ -610,31 +610,47 @@ function randomLdxpDelayMs(env = process.env) {
   return Math.round(config.delayMinMs + Math.random() * (config.delayMaxMs - config.delayMinMs));
 }
 
-async function requestJson(url, { method = "GET", body = null, fallbackProxy = null } = {}) {
+export async function requestJson(url, { method = "GET", body = null, fallbackProxy = null, maxRedirects = 5 } = {}) {
   const headers = {
     ...(body !== null ? { "content-type": "application/json" } : {}),
     "user-agent": "Mozilla/5.0 codex-price-compare",
   };
 
+  let currentUrl = url;
+  let redirectsRemaining = maxRedirects;
+
   try {
-    if (await systemLookupLooksPoisoned(new URL(url).hostname)) {
-      throw new Error(`DNS 解析结果不可用: ${new URL(url).hostname}`);
-    }
-    const response = await fetch(url, {
-      method,
-      headers,
-      ...(body !== null ? { body: JSON.stringify(body) } : {}),
-    });
-    if (!response.ok) throw createHttpError(response.status, url);
-    const raw = await response.text();
-    try {
-      return JSON.parse(raw);
-    } catch {
-      throw new Error(`fetch 返回非 JSON: ${String(url)} ${raw.replace(/\s+/g, " ").slice(0, 120)}`);
+    while (true) {
+      if (await systemLookupLooksPoisoned(new URL(currentUrl).hostname)) {
+        throw new Error(`DNS 解析结果不可用: ${new URL(currentUrl).hostname}`);
+      }
+      const response = await fetch(currentUrl, {
+        method,
+        headers,
+        ...(body !== null ? { body: JSON.stringify(body) } : {}),
+        redirect: "manual",
+      });
+
+      if ([301, 302, 307, 308].includes(response.status) && response.headers.get("location")) {
+        if (redirectsRemaining <= 0) {
+          throw new Error(`重定向次数过多: ${currentUrl}`);
+        }
+        redirectsRemaining -= 1;
+        currentUrl = new URL(response.headers.get("location"), currentUrl).href;
+        continue;
+      }
+
+      if (!response.ok) throw createHttpError(response.status, currentUrl);
+      const raw = await response.text();
+      try {
+        return JSON.parse(raw);
+      } catch {
+        throw new Error(`fetch 返回非 JSON: ${String(currentUrl)} ${raw.replace(/\s+/g, " ").slice(0, 120)}`);
+      }
     }
   } catch (error) {
     if (fallbackProxy?.enabled && shouldUseFallbackForError(error)) {
-      return fallbackProxy.fetchJson(url, {
+      return fallbackProxy.fetchJson(currentUrl, {
         method,
         headers,
         body: body !== null ? JSON.stringify(body) : null,

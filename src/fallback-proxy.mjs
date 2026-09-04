@@ -110,6 +110,9 @@ export function shouldRetryWithPinnedAddress(error) {
 }
 
 export async function systemLookupLooksPoisoned(hostname) {
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+    return false;
+  }
   try {
     const records = await dns.lookup(hostname, { all: true, verbatim: true });
     return records.some((record) => isUnusableAddress(record.address));
