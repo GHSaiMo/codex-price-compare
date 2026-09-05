@@ -145,6 +145,8 @@ function hasStrongSmsServiceSignal(text) {
     || /(?:实卡|实体卡).{0,12}接[码马]/.test(text)
     || /(?:自动化|自动)?codex绑定|绑定codex/.test(text)
     || /【(?:单次|短效|长效)?接[码马]】|t-mobile/.test(text)
+    || /(?:美国|美区|us|实体|虚拟)?实卡.{0,20}(?:可绑|[一二两三四\d]绑|绑号|有效期|可注册)/i.test(text)
+    || /(?:可绑\s*\d+(?:-\d+)?个?号|[一二两三四\d]绑)/.test(text)
   );
 }
 

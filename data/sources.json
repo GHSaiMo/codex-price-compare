@@ -16,7 +16,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/kk1818",
       "token": "kk1818",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-catfk-n379roc0",
@@ -106,7 +106,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/Z7KRWFIR",
       "token": "Z7KRWFIR",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-akkkk",
@@ -342,7 +342,7 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/GV0HQ2C0",
       "token": "GV0HQ2C0",
-      "core": true
+      "core": false
     },
     {
       "id": "ldxp-yoloo",

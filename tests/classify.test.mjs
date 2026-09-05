@@ -599,6 +599,30 @@ assert.equal(
   "sms",
 );
 assert.equal(
+  classifyProduct("codex美国实卡大部分5天有效期 一般可绑2-3个号 可注册G", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("codex美国实卡大部分5天有效期 一般可绑2-3个号 可注册G", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("美国实卡大部分5天有效期 一般可绑2-3个号 可注册G", "gpt接码，美国实卡（一般可绑2-3个号）", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("美国实卡大部分5天有效期 一般可绑2-3个号 可注册G", "gpt接码，美国实卡（一般可绑2-3个号）", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("codex美国实卡 （渠道3 有效期5-15天，一般可绑3个号，会用的拍）", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("codex美国实卡 （渠道3 有效期5-15天，一般可绑3个号，会用的拍）", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
   classifyProduct("【接码】gpt plus/free短效接码专用| 美区卡 | 99%接码成功率，质保接码成功", "", rules).category,
   "sms",
 );
