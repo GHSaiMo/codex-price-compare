@@ -328,6 +328,51 @@ assert.deepEqual(
   ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9", "n10"],
 );
 
+// Test multi-host non-core sources: fair round-robin interleaving avoids domain starvation
+const multiHostSources = [
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `a${i + 1}`,
+    adapter: "ldxp",
+    url: `https://host-a.com/${i + 1}`,
+  })),
+  { id: "b1", adapter: "ldxp", url: "https://host-b.com/1" },
+  { id: "b2", adapter: "ldxp", url: "https://host-b.com/2" },
+];
+
+const multiHostRound0 = buildLdxpRefreshPlan({
+  sources: multiHostSources,
+  state: {
+    hostCursor: 0,
+    cursorByHost: {
+      "host-a.com": 0,
+      "host-b.com": 0,
+      "obsolete-host.com": 99,
+    },
+  },
+  maxSourcesPerRun: 4,
+});
+// Round 0: starts with host-a.com (a1), then host-b.com (b1), then a2, then b2
+assert.deepEqual(multiHostRound0.sources.map((s) => s.id), ["a1", "b1", "a2", "b2"]);
+assert.equal(multiHostRound0.nextState.hostCursor, 1);
+assert.deepEqual(multiHostRound0.nextState.cursorByHost, {
+  "host-a.com": 2,
+  "host-b.com": 0,
+});
+assert.equal(multiHostRound0.nextState.cursorByHost["obsolete-host.com"], undefined);
+
+const multiHostRound1 = buildLdxpRefreshPlan({
+  sources: multiHostSources,
+  state: multiHostRound0.nextState,
+  maxSourcesPerRun: 4,
+});
+// Round 1: hostCursor=1 starts with host-b.com (b1), then host-a.com (a3), then b2, then a4
+assert.deepEqual(multiHostRound1.sources.map((s) => s.id), ["b1", "a3", "b2", "a4"]);
+assert.equal(multiHostRound1.nextState.hostCursor, 0);
+assert.deepEqual(multiHostRound1.nextState.cursorByHost, {
+  "host-a.com": 4,
+  "host-b.com": 0,
+});
+
 assert.deepEqual(
   buildSourceHealth({
     sources: [

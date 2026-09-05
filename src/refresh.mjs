@@ -178,6 +178,7 @@ async function readLdxpSchedulerState() {
     return {
       version: 1,
       coreRound: Number.isInteger(state?.coreRound) ? state.coreRound : 0,
+      hostCursor: Number.isInteger(state?.hostCursor) ? state.hostCursor : 0,
       cursorByHost: state?.cursorByHost && typeof state.cursorByHost === "object" ? state.cursorByHost : {},
       cooldowns: state?.cooldowns && typeof state.cooldowns === "object" ? state.cooldowns : {},
       lastFailures: state?.lastFailures && typeof state.lastFailures === "object" ? state.lastFailures : {},
@@ -185,7 +186,7 @@ async function readLdxpSchedulerState() {
       lastDisabledProbes: state?.lastDisabledProbes && typeof state.lastDisabledProbes === "object" ? state.lastDisabledProbes : {},
     };
   } catch {
-    return { version: 1, coreRound: 0, cursorByHost: {}, cooldowns: {}, lastFailures: {}, lastSuccess: {}, lastDisabledProbes: {} };
+    return { version: 1, coreRound: 0, hostCursor: 0, cursorByHost: {}, cooldowns: {}, lastFailures: {}, lastSuccess: {}, lastDisabledProbes: {} };
   }
 }
 
@@ -194,6 +195,7 @@ async function writeLdxpSchedulerState(state) {
   await writeJsonAtomic(ldxpSchedulerPath, {
     version: 1,
     coreRound: state.coreRound ?? 0,
+    hostCursor: state.hostCursor ?? 0,
     cursorByHost: state.cursorByHost || {},
     cooldowns: state.cooldowns || {},
     lastFailures: state.lastFailures || {},
@@ -339,18 +341,50 @@ export function buildLdxpRefreshPlan({
     nonCoreByHost.set(host, entries);
   }
 
-  const cursorByHost = { ...(state.cursorByHost || {}) };
-  for (const [host, entries] of nonCoreByHost) {
-    const rotated = rotateSources(entries, cursorByHost[host]);
-    let used = 0;
-    for (const source of rotated) {
-      if (selected.length >= maxSourcesPerRun) break;
-      selected.push(source);
-      selectedIds.add(source.id);
-      used += 1;
+  const knownHosts = new Set(ldxpSources.map((source) => sourceHost(source)));
+  const cursorByHost = {};
+  for (const [host, cursor] of Object.entries(state.cursorByHost || {})) {
+    if (knownHosts.has(host)) {
+      cursorByHost[host] = cursor;
     }
-    if (used > 0) {
-      cursorByHost[host] = ((Number(cursorByHost[host]) || 0) + used) % entries.length;
+  }
+
+  const hostKeys = Array.from(nonCoreByHost.keys());
+  const hostCursor = Number.isInteger(state.hostCursor) ? state.hostCursor : 0;
+  const orderedHosts = rotateSources(hostKeys, hostCursor);
+
+  const hostQueues = [];
+  for (const host of orderedHosts) {
+    const entries = nonCoreByHost.get(host) || [];
+    hostQueues.push({
+      host,
+      entries,
+      rotated: rotateSources(entries, cursorByHost[host]),
+      index: 0,
+      used: 0,
+    });
+  }
+
+  let nonCorePicked = 0;
+  while (selected.length < maxSourcesPerRun) {
+    let pickedAny = false;
+    for (const queue of hostQueues) {
+      if (selected.length >= maxSourcesPerRun) break;
+      if (queue.index < queue.rotated.length) {
+        const source = queue.rotated[queue.index++];
+        selected.push(source);
+        selectedIds.add(source.id);
+        queue.used += 1;
+        nonCorePicked += 1;
+        pickedAny = true;
+      }
+    }
+    if (!pickedAny) break;
+  }
+
+  for (const queue of hostQueues) {
+    if (queue.used > 0) {
+      cursorByHost[queue.host] = ((Number(cursorByHost[queue.host]) || 0) + queue.used) % queue.entries.length;
     }
   }
 
@@ -360,6 +394,10 @@ export function buildLdxpRefreshPlan({
     }
   }
 
+  const nextHostCursor = (nonCorePicked > 0 && hostKeys.length > 0)
+    ? (hostCursor + 1) % hostKeys.length
+    : hostCursor;
+
   return {
     sources: selected,
     skipped,
@@ -367,6 +405,7 @@ export function buildLdxpRefreshPlan({
       ...state,
       version: 1,
       coreRound: nextCoreRound,
+      hostCursor: nextHostCursor,
       cursorByHost,
       cooldowns: state.cooldowns || {},
       lastFailures: state.lastFailures || {},
