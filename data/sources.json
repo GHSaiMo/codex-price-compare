@@ -319,14 +319,12 @@
       "token": "google23"
     },
     {
-      "id": "ldxp-rtdz8p7i",
+      "id": "ldxp-ai1xiaomao",
       "name": "小猫AI低价源头",
       "adapter": "ldxp",
-      "enabled": false,
-      "disabledAt": "2026-09-07T01:20:00.000Z",
-      "disabledReason": "店铺链接不存在",
-      "url": "https://wzyp.cn/shop/RTDZ8P7I",
-      "token": "RTDZ8P7I",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/AI1xiaomao",
+      "token": "AI1xiaomao",
       "core": false
     },
     {
