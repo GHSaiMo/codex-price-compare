@@ -679,6 +679,26 @@ assert.equal(
   "free",
 );
 assert.equal(
+  classifyProduct("【Gmail+2FA稳定版✅】OpenAI普通账号｜高权重家宽注册｜独享号｜已注册两月", "", rules).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct("【Gmail+2FA稳定版✅】OpenAI普通账号｜高权重家宽注册｜独享号｜已注册两月", "", rules).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct(
+    "【Gmail+2FA稳定版✅】OpenAI普通账号｜高权重家宽注册｜独享号｜已注册两月",
+    "购买说明：（codex登陆要接马！！！！网页版和手机APP直接登录） 只能登录openai，不能登录Google！看清再拍 给你一个全新的 OpenAI账号 可直接登录网页端以及手机APP使用。 发货格式： 【gmail----密码---2FA】",
+    rules,
+  ).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct("OpenAI普通账号｜验证码直登｜白号｜免费账号｜长效微软邮箱交付｜高权重家宽｜独享号｜", "", rules).subtype,
+  "free",
+);
+assert.equal(
   classifyProduct("gpt free（90％可开plus）", "", rules).subtype,
   "free",
 );

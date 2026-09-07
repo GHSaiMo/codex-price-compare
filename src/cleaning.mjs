@@ -62,7 +62,7 @@ function titleReasonTermsForSubtype(rules, subtype) {
 function explicitPlanSubtype(haystack, subtypeTerms = {}, rules = {}) {
   // 标题里的 free/plus/pro/go 明确套餐词优先。如果包含 team 则优先归为 free。
   // 这里只认核心套餐词，不直接复用 subtypeTerms 全量词表。
-  if (matchedTerms(haystack, ["team", "free", "fre", "free号", "普号"]).length > 0) {
+  if (matchedTerms(haystack, ["team", "free", "fre", "free号", "普号", "普通号", "普通账号", "普通帐号"]).length > 0) {
     return "free";
   }
   const hasPlus = matchedTerms(haystack, ["plus", "puls"]).length > 0;
