@@ -11,6 +11,10 @@ const shareButton = document.querySelector("#shareButton");
 const shareOverlay = document.querySelector("#shareOverlay");
 const shareImage = document.querySelector("#shareImage");
 const shareToast = document.querySelector("#shareToast");
+const geminiTipWidget = document.querySelector("#geminiTipWidget");
+const geminiTipTrigger = document.querySelector("#geminiTipTrigger");
+const geminiTipCard = document.querySelector("#geminiTipCard");
+const geminiTipClose = document.querySelector("#geminiTipClose");
 const subtypeGroup = document.querySelector("#subtypeGroup");
 const modeButtons = [...document.querySelectorAll("[data-mode]")];
 const pageTitle = document.querySelector("#pageTitle");
@@ -264,12 +268,27 @@ function syncSubtypeButtons() {
   }
 }
 
+function setGeminiTipOpen(open) {
+  if (!geminiTipTrigger || !geminiTipCard) return;
+  geminiTipTrigger.setAttribute("aria-expanded", String(open));
+  geminiTipCard.hidden = !open;
+  geminiTipWidget?.classList?.toggle("is-open", open);
+}
+
+function toggleGeminiTip() {
+  const isOpen = geminiTipTrigger?.getAttribute?.("aria-expanded") === "true";
+  setGeminiTipOpen(!isOpen);
+}
+
 function syncModeChrome() {
   const config = currentModeConfig();
   if (pageTitle) pageTitle.textContent = config.title;
   if (brandEyebrow) brandEyebrow.textContent = config.label;
   if (documentTitle) documentTitle.textContent = config.title;
   document.body.dataset.mode = currentMode;
+  if (currentMode !== "gemini") {
+    setGeminiTipOpen(false);
+  }
   try {
     window.localStorage?.setItem(MODE_STORAGE_KEY, currentMode);
   } catch {}
@@ -1085,7 +1104,30 @@ shareOverlay.addEventListener("click", (event) => {
 });
 
 window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && shareOverlay.classList.contains("is-visible")) closeShareOverlay();
+  if (event.key === "Escape") {
+    if (shareOverlay.classList.contains("is-visible")) closeShareOverlay();
+    if (geminiTipTrigger?.getAttribute?.("aria-expanded") === "true") setGeminiTipOpen(false);
+  }
+});
+
+geminiTipTrigger?.addEventListener("click", (event) => {
+  event?.stopPropagation?.();
+  toggleGeminiTip();
+});
+
+geminiTipClose?.addEventListener("click", (event) => {
+  event?.stopPropagation?.();
+  setGeminiTipOpen(false);
+});
+
+window.addEventListener("click", (event) => {
+  if (
+    geminiTipWidget &&
+    !geminiTipWidget.contains?.(event.target) &&
+    geminiTipTrigger?.getAttribute?.("aria-expanded") === "true"
+  ) {
+    setGeminiTipOpen(false);
+  }
 });
 
 window.addEventListener("scroll", syncBackToTop, { passive: true });

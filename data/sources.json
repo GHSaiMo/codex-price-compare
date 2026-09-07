@@ -322,7 +322,9 @@
       "id": "ldxp-rtdz8p7i",
       "name": "小猫AI低价源头",
       "adapter": "ldxp",
-      "enabled": true,
+      "enabled": false,
+      "disabledAt": "2026-09-07T01:20:00.000Z",
+      "disabledReason": "店铺链接不存在",
       "url": "https://wzyp.cn/shop/RTDZ8P7I",
       "token": "RTDZ8P7I",
       "core": false

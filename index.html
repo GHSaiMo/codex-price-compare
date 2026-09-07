@@ -112,6 +112,82 @@
       </footer>
     </main>
 
+    <aside class="gemini-tip-widget" id="geminiTipWidget" aria-label="Antigravity 登录排查小贴士">
+      <button class="gemini-tip-trigger" id="geminiTipTrigger" type="button" aria-expanded="false" aria-controls="geminiTipCard" aria-label="登录不了Antigravity？试着检查一下" title="登录不了Antigravity？试着检查一下">
+        <span class="gemini-tip-ping" aria-hidden="true"></span>
+        <svg class="gemini-tip-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="17" r="1" fill="currentColor"/>
+        </svg>
+      </button>
+      <div class="gemini-tip-card" id="geminiTipCard" role="region" aria-labelledby="geminiTipTitle" hidden>
+        <div class="gemini-tip-header">
+          <div class="gemini-tip-title-wrap">
+            <svg class="gemini-tip-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="12" cy="17" r="1" fill="currentColor"/>
+            </svg>
+            <h3 class="gemini-tip-title" id="geminiTipTitle">登录不了Antigravity？试着检查一下</h3>
+          </div>
+          <button class="gemini-tip-close" id="geminiTipClose" type="button" aria-label="关闭排查小贴士" title="关闭">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <ol class="gemini-tip-list">
+          <li class="gemini-tip-item">
+            <span class="gemini-tip-step">01</span>
+            <div class="gemini-tip-desc">
+              <div class="gemini-tip-link-line">
+                <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">policies.google.com/terms</a>
+              </div>
+              <span class="gemini-tip-note">看账号国家是否在支持区域</span>
+            </div>
+          </li>
+          <li class="gemini-tip-item">
+            <span class="gemini-tip-step">02</span>
+            <div class="gemini-tip-desc">
+              <div class="gemini-tip-link-line">
+                <a href="https://payments.google.com/" target="_blank" rel="noopener noreferrer">payments.google.com</a>
+              </div>
+              <span class="gemini-tip-note">看付款资料国家是否同一支持区</span>
+            </div>
+          </li>
+          <li class="gemini-tip-item">
+            <span class="gemini-tip-step">03</span>
+            <div class="gemini-tip-desc">
+              <span class="gemini-tip-main">是不是个人 Gmail、年龄是否已验证</span>
+              <span class="gemini-tip-note">需个人账号（非机构托管号）且通过 18 岁成年验证</span>
+            </div>
+          </li>
+          <li class="gemini-tip-item">
+            <span class="gemini-tip-step">04</span>
+            <div class="gemini-tip-desc">
+              <span class="gemini-tip-main">是否测试了不同的节点（建议日本、美国）</span>
+              <span class="gemini-tip-note">优先选用纯净的原生 IP 节点排查</span>
+            </div>
+          </li>
+          <li class="gemini-tip-item">
+            <span class="gemini-tip-step">05</span>
+            <div class="gemini-tip-desc">
+              <span class="gemini-tip-main">代理是否 TUN、默认浏览器是否只登一个号</span>
+              <span class="gemini-tip-note">开启 TUN 虚拟网卡全局模式，单账号防 Cookie 干扰</span>
+            </div>
+          </li>
+          <li class="gemini-tip-item">
+            <span class="gemini-tip-step">06</span>
+            <div class="gemini-tip-desc">
+              <span class="gemini-tip-main">能进 Free 的号，打开 <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer">Gemini 网页</a> 看有没有 Pro/Ultra</span>
+              <span class="gemini-tip-note">确认高级订阅权益是否已就绪生效</span>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </aside>
+
     <button class="back-to-top" id="backToTop" type="button" aria-label="返回顶部">
       <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
         <path d="M12 5 5.5 11.5l1.4 1.4 4.1-4.1V20h2V8.8l4.1 4.1 1.4-1.4L12 5Z"></path>

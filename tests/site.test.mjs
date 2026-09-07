@@ -75,7 +75,23 @@ assert.match(html, /data-subtype="codex_sms" aria-pressed="false">SMS/);
 assert.doesNotMatch(html, /value="unknown"/);
 assert.doesNotMatch(html, /命中/);
 assert.match(html, /<p class="empty-state content-column" id="emptyState" hidden>没有匹配的商品。<\/p>/);
+assert.match(html, /id="geminiTipWidget"/);
+assert.match(html, /id="geminiTipTrigger"/);
+assert.match(html, /id="geminiTipCard"/);
+assert.match(html, /登录不了Antigravity？试着检查一下/);
+assert.match(html, /policies\.google\.com\/terms/);
+assert.match(html, /payments\.google\.com/);
 assert.match(html, /id="backToTop"/);
+assert.match(app, /geminiTipWidget/);
+assert.match(app, /geminiTipTrigger/);
+assert.match(app, /geminiTipCard/);
+assert.match(app, /function setGeminiTipOpen/);
+assert.match(app, /function toggleGeminiTip/);
+assert.match(styles, /\.gemini-tip-widget/);
+assert.match(styles, /\.gemini-tip-trigger/);
+assert.match(styles, /\.gemini-tip-card/);
+assert.match(styles, /gemini-tip-float/);
+assert.match(styles, /gemini-tip-ping/);
 assert.match(app, /sortProducts/);
 assert.match(app, /backToTop/);
 assert.match(app, /shareButton/);
@@ -176,6 +192,7 @@ assert.match(app, /product-group-children/);
       createElement: () => createElem(),
       createElementNS: () => createElem(),
       body: { dataset: {}, classList: { add() {}, remove() {} } },
+      addEventListener() {},
     },
     window: { addEventListener() {}, location: { search: "", href: "http://localhost/" }, history: { replaceState() {} } },
     URL,

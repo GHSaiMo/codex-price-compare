@@ -758,6 +758,11 @@ assert.equal(shouldDisableFailedSource({
   now: deadNow,
 }), true);
 assert.equal(shouldDisableFailedSource({
+  message: "店铺链接不存在",
+  failedAt: deadNow.toISOString(),
+  now: deadNow,
+}), true);
+assert.equal(shouldDisableFailedSource({
   message: "WAF challenge",
   failedAt: "2026-07-01T00:00:00.000Z",
   now: deadNow,

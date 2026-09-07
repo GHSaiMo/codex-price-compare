@@ -72,7 +72,7 @@ export async function prewarmLdxpSession(source, options = {}) {
 const PERMANENT_SOURCE_FAILURE_PATTERNS = [
   /商家已被关闭/,
   /关闭交易/,
-  /店铺不存在/,
+  /店铺.*不存在/,
   /商家不存在/,
   /店铺已关闭/,
 ];

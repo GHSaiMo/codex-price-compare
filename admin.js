@@ -213,6 +213,10 @@ function renderSources() {
     count.textContent = `unknown: ${unknownProducts.length}`;
 
     const health = sourceHealth(source.id);
+    const hasRecentFailure = Boolean(
+      health?.lastError
+      && (!health.lastSuccessAt || (health.lastFailureAt && new Date(health.lastFailureAt).getTime() >= new Date(health.lastSuccessAt).getTime()))
+    );
     if (source.enabled === false) {
       const status = document.createElement("span");
       status.className = "status-pill status-failed";
@@ -220,8 +224,12 @@ function renderSources() {
       header.append(name, adapter, count, status);
     } else if (health) {
       const status = document.createElement("span");
-      status.className = `status-pill status-${health.status || "skipped"}`;
-      status.textContent = `${healthStatusLabel(health.status)} · ${formatAgeHours(health.ageHours)}`;
+      const statusClass = hasRecentFailure && health.status === "skipped" ? "status-failed" : `status-${health.status || "skipped"}`;
+      status.className = `status-pill ${statusClass}`;
+      const statusPrefix = hasRecentFailure && health.status === "skipped"
+        ? `${healthStatusLabel(health.status)}（上次失败）`
+        : healthStatusLabel(health.status);
+      status.textContent = `${statusPrefix} · ${formatAgeHours(health.ageHours)}`;
       header.append(name, adapter, count, status);
     } else {
       header.append(name, adapter, count);
@@ -232,10 +240,14 @@ function renderSources() {
 
     card.appendChild(header);
 
-    if (health?.reason || source.disabledReason) {
+    if (health?.reason || source.disabledReason || (hasRecentFailure && health?.lastError)) {
       const reason = document.createElement("p");
       reason.className = "source-health";
-      reason.textContent = source.disabledReason || health.reason;
+      let text = source.disabledReason || health?.reason || "";
+      if (hasRecentFailure && health?.lastError && !text.includes(health.lastError)) {
+        text = text ? `${text}（上次失败：${health.lastError}）` : `上次失败：${health.lastError}`;
+      }
+      reason.textContent = text;
       card.appendChild(reason);
     }
 

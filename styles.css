@@ -1491,7 +1491,10 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .product-list.is-filtering .product-card {
+  .product-list.is-filtering .product-card,
+  .gemini-tip-trigger,
+  .gemini-tip-ping,
+  .gemini-tip-card {
     animation: none;
   }
 }
@@ -1907,3 +1910,267 @@ input {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+/* Gemini Antigravity Troubleshooting Tip Widget */
+.gemini-tip-widget {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  body[data-mode="gemini"] .gemini-tip-widget {
+    display: block;
+    position: fixed;
+    right: max(20px, calc((100vw - 1180px) / 2 + 16px));
+    top: 136px;
+    z-index: 25;
+  }
+}
+
+.gemini-tip-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  animation: gemini-tip-float 3.2s ease-in-out infinite;
+}
+
+.gemini-tip-trigger:hover {
+  background: var(--accent-soft);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(15, 118, 110, 0.25);
+  animation-play-state: paused;
+}
+
+.gemini-tip-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.gemini-tip-widget.is-open .gemini-tip-trigger {
+  animation: none;
+  background: var(--accent);
+  color: var(--panel);
+}
+
+.gemini-tip-icon {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  transition: transform 0.2s ease;
+}
+
+.gemini-tip-ping {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0.65;
+  pointer-events: none;
+  animation: gemini-tip-ping 2.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.gemini-tip-widget.is-open .gemini-tip-ping {
+  display: none;
+}
+
+@keyframes gemini-tip-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes gemini-tip-ping {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.75;
+  }
+  50%, 100% {
+    transform: scale(1.36);
+    opacity: 0;
+  }
+}
+
+.gemini-tip-card {
+  position: absolute;
+  top: 54px;
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding: 16px 18px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(0, 0, 0, 0.04);
+  animation: gemini-tip-card-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 30;
+}
+
+[data-theme="dark"] .gemini-tip-card {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes gemini-tip-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.gemini-tip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.gemini-tip-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gemini-tip-title-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.gemini-tip-title {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.gemini-tip-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.gemini-tip-close:hover {
+  background: var(--panel-muted);
+  color: var(--text);
+}
+
+.gemini-tip-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gemini-tip-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gemini-tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel-muted);
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.gemini-tip-item:hover {
+  border-color: var(--line);
+}
+
+.gemini-tip-step {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.gemini-tip-desc {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.gemini-tip-link-line a,
+.gemini-tip-desc a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.gemini-tip-link-line a:hover,
+.gemini-tip-desc a:hover {
+  opacity: 0.82;
+}
+
+.gemini-tip-main {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.gemini-tip-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
