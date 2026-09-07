@@ -1224,4 +1224,44 @@ assert.equal(
   "codex",
 );
 
+// 7. 谷歌邮箱/Gmail 注册类商品排除测试（丢弃入 other）
+for (const title of [
+  "谷歌邮箱【注册G专用】",
+  "06-19年GMAIL邮箱/2FA/随机地区",
+  "谷歌Gmail邮箱【注册G专用】无账户密码 邮箱登陆",
+  "谷歌邮箱【注册gpt专用】",
+  "20-24GMAIL邮箱/2FA/随机地区(看教程还不会使用的别拍)",
+  "随机2022-2025年左右注册GMAIL邮箱/2FA/",
+  "🟨【个人谷歌邮箱Gmail】时间23-24年左右注册GMAIL邮箱/辅助邮箱/2FA/随机地区 质保首登🟡自动发货",
+  "🟨【21-26年老号】谷歌邮箱成品老号·Gmail带2fa链接·包登录🟡自动发货",
+]) {
+  assert.equal(classifyProduct(title, "注册gpt专用或提供登录说明", rules).category, "other");
+  assert.equal(
+    normalizeLdxpProduct({
+      goods_key: "gmail-reg-test",
+      name: title,
+      description: "时间20-24年左右注册GMAIL邮箱/2FA/美区 登录地址 accounts.google.com",
+      price: "12.00",
+      extend: { stock_count: "10" },
+      link: "/item/gmail-reg-test",
+    }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+    null,
+  );
+}
+
+// 确保合法的使用谷歌邮箱/Gmail的 Plus 成品号不被误杀
+assert.equal(
+  classifyProduct("【已接马】爆款Plus成品 谷歌邮箱家宽IP注册", "支持Codex开发环境与网页登录", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("【质保3天】谷歌邮箱plus会员月卡质保3天越南momo渠道", "codex绑定手机卡即可使用", rules).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct("G Plus 成品号|未接马|gmail邮箱|越南直卡渠道", "", rules).subtype,
+  "plus",
+);
+
+
 
