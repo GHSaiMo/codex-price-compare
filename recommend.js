@@ -29,7 +29,7 @@
     }
 
     // 1. Actively clicked 'x': permanent block
-    if (localStorage.getItem(STORAGE_KEY_BLOCKED) === "permanent") {
+    if (localStorage.getItem(STORAGE_KEY_BLOCKED) === "permanent" && !isDebug()) {
       return false;
     }
 
@@ -121,6 +121,11 @@
     container.id = "recommendWidget";
     container.className = "recommend-widget";
 
+    document.body.appendChild(container);
+    renderBubble(container);
+  }
+
+  function renderBubble(container) {
     container.innerHTML = `
       <div class="recommend-bubble" id="recommendBubble" role="region" aria-label="推荐店铺气泡">
         <button class="recommend-bubble-btn" id="recommendOpenBtn" type="button">
@@ -135,8 +140,6 @@
         </button>
       </div>
     `;
-
-    document.body.appendChild(container);
 
     const openBtn = document.getElementById("recommendOpenBtn");
     const blockBtn = document.getElementById("recommendBlockBtn");
@@ -204,12 +207,14 @@
 
     setTimeout(() => urlInput?.focus(), 80);
 
-    const handleClose = () => {
+    closeBtn.addEventListener("click", () => {
+      localStorage.setItem(STORAGE_KEY_BLOCKED, "permanent");
       dismissWidget();
-    };
+    });
 
-    closeBtn.addEventListener("click", handleClose);
-    cancelBtn.addEventListener("click", handleClose);
+    cancelBtn.addEventListener("click", () => {
+      renderBubble(container);
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();

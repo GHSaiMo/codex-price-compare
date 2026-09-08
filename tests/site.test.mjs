@@ -14,6 +14,7 @@ const sourceSortApp = await readFile(new URL("source-sort.js", root), "utf8");
 const packageJson = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 const server = await readFile(new URL("server.mjs", root), "utf8");
 const styles = await readFile(new URL("styles.css", root), "utf8");
+const recApp = await readFile(new URL("recommend.js", root), "utf8");
 
 assert.match(html, /data-products-url="data\/products\.json"/);
 assert.match(html, /包含缺货/);
@@ -457,4 +458,7 @@ assert.match(adminApp, /loadRecommendations/);
 assert.match(server, /\/api\/recommendations/);
 assert.match(styles, /\.recommend-widget/);
 assert.match(styles, /\.recommendations-panel/);
+assert.match(recApp, /function renderBubble/);
+assert.match(recApp, /cancelBtn\.addEventListener\("click", \(\) => \{\s*renderBubble\(container\);?\s*\}\)/);
+assert.match(recApp, /closeBtn\.addEventListener\("click", \(\) => \{[\s\S]*dismissWidget\(\);?\s*\}\)/);
 
