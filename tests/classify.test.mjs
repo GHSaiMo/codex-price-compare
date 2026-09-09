@@ -409,15 +409,15 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("【正规实付】Supergro Lite 6个月 质保订阅180天（包含同时长X Premium会员）【官方直充】", "", rules).subtype,
-  "y1",
+  "m12",
 );
 assert.equal(
   classifyProduct("【正规实付】Supergro Lite 6个月 质保订阅180天（包含同时长X Premium会员）【官方直充】", "", rules).durationLabel,
-  "1Y",
+  "12M",
 );
 assert.equal(
   classifyProduct("【正规实付】X Premium 6个月 质保订阅180天（包含同时长Supergro Lite会员）【官方直充】", "", rules).subtype,
-  "y1",
+  "m12",
 );
 assert.equal(
   classifyProduct("【成品号】Supergrok 7天成品号【质保订阅5天】grok", "", rules).subtype,
@@ -477,19 +477,19 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("Super gro heavy一年（质保首登，直充质保会员到账）", "Super gro heavy一年官方价值3000美刀/年", rules).subtype,
-  "y1",
+  "m12",
 );
 assert.equal(
   classifyProduct("Super gro heavy一年（质保首登，直充质保会员到账）", "", rules).durationLabel,
-  "1Y",
+  "12M",
 );
 assert.equal(
   classifyProduct("SuperGrok Heavy12个月年卡质保订阅7天，可开发票", "", rules).subtype,
-  "y1",
+  "m12",
 );
 assert.equal(
   classifyProduct("SuperGrok Heavy12个月年卡质保订阅7天，可开发票", "", rules).durationLabel,
-  "1Y",
+  "12M",
 );
 assert.equal(
   classifyProduct("【IOS美区】gro Supergro Heavy 官方充值（月卡） (ID直充)", "", rules).subtype,
@@ -525,11 +525,11 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("绝版 gork super 1年成品，", "一年x会员绑定成品Grok账号", rules).subtype,
-  "y1",
+  "m12",
 );
 assert.equal(
   classifyProduct("绝版 gork super 1年成品，", "一年x会员绑定成品Grok账号", rules).durationLabel,
-  "1Y",
+  "12M",
 );
 assert.equal(
   classifyProduct("Super Grok 1.5视频模型平替", "", rules).category,
@@ -1180,47 +1180,51 @@ const g18m31 = classifyProduct("Gemini 3.1pro 18个月成品号 (22-25年账号)
 assert.equal(g18m31.category, "gemini");
 assert.equal(g18m31.subtype, "m18");
 
-// 2. Gemini 1Y 测试
-const g1y = classifyProduct("Gemini Pro 12个月成品【质保首登丨官方订阅】20-25年高权重老邮箱账号", "", rules);
-assert.equal(g1y.category, "gemini");
-assert.equal(g1y.subtype, "y1");
-assert.equal(g1y.durationDays, 365);
-assert.equal(g1y.durationLabel, "1Y");
-assert.deepEqual(g1y.tags, ["gemini", "y1"]);
+// 2. Gemini 12M 测试
+const g12m = classifyProduct("Gemini Pro 12个月成品【质保首登丨官方订阅】20-25年高权重老邮箱账号", "", rules);
+assert.equal(g12m.category, "gemini");
+assert.equal(g12m.subtype, "m12");
+assert.equal(g12m.durationDays, 365);
+assert.equal(g12m.durationLabel, "12M");
+assert.deepEqual(g12m.tags, ["gemini", "m12"]);
 
-const g1yPixel = classifyProduct("gemini pro pixel 一年认证号，2009–2017老邮箱（质保首登）", "", rules);
-assert.equal(g1yPixel.category, "gemini");
-assert.equal(g1yPixel.subtype, "y1");
+const g12mPixel = classifyProduct("gemini pro pixel 一年认证号，2009–2017老邮箱（质保首登）", "", rules);
+assert.equal(g12mPixel.category, "gemini");
+assert.equal(g12mPixel.subtype, "m12");
 
-const g1yGcp = classifyProduct("【包GCP】Gemini Pro 1年订阅成品号【官方订阅｜美区20-24老邮箱号】", "", rules);
-assert.equal(g1yGcp.category, "gemini");
-assert.equal(g1yGcp.subtype, "y1");
+const g12mGcp = classifyProduct("【包GCP】Gemini Pro 1年订阅成品号【官方订阅｜美区20-24老邮箱号】", "", rules);
+assert.equal(g12mGcp.category, "gemini");
+assert.equal(g12mGcp.subtype, "m12");
 
-const g1yRenji = classifyProduct("人机验证号Gemini pro一年 登陆被封号申诉无售后 闲鱼客户 事多得 不要拍不是给你准备得", "", rules);
-assert.equal(g1yRenji.category, "gemini");
-assert.equal(g1yRenji.subtype, "y1");
+const g12mRenji = classifyProduct("人机验证号Gemini pro一年 登陆被封号申诉无售后 闲鱼客户 事多得 不要拍不是给你准备得", "", rules);
+assert.equal(g12mRenji.category, "gemini");
+assert.equal(g12mRenji.subtype, "m12");
 
-// 3. Gemini 其它规格测试（非 1Y/18M 归入 others）
+// 3. Gemini 3M 测试
 const g3m = classifyProduct("gemini 3个月激活链接", "", rules);
 assert.equal(g3m.category, "gemini");
-assert.equal(g3m.subtype, "others");
-assert.equal(g3m.durationLabel, "Others");
-assert.deepEqual(g3m.tags, ["gemini", "others"]);
+assert.equal(g3m.subtype, "m3");
+assert.equal(g3m.durationDays, 90);
+assert.equal(g3m.durationLabel, "3M");
+assert.deepEqual(g3m.tags, ["gemini", "m3"]);
 
-// 4. Gemini Ultra / 1M 测试（归入 others）
+const g3mLink = classifyProduct("Gemini 三个月优惠链接", "", rules);
+assert.equal(g3mLink.category, "gemini");
+assert.equal(g3mLink.subtype, "m3");
+
+// 4. 无时间分类商品直接丢弃测试（归入 other）
 const gUltra = classifyProduct("Google AI Ultra 20x【质保订阅】支持Antigravity反重力｜家庭组邀请版", "", rules);
-assert.equal(gUltra.category, "gemini");
-assert.equal(gUltra.subtype, "others");
-assert.equal(gUltra.durationLabel, "Others");
+assert.equal(gUltra.category, "other");
+
+const gNoDuration = classifyProduct("Gemini 3.1pro 反重力Antigravity 成品号（已过验证带凭证，可直接登录使用）", "", rules);
+assert.equal(gNoDuration.category, "other");
 
 const g1m = classifyProduct("Gemini Pro 1个月官方订阅独享账号", "", rules);
-assert.equal(g1m.category, "gemini");
-assert.equal(g1m.subtype, "others");
+assert.equal(g1m.category, "other");
 
-// 5. Gemini Free 测试（归入 others）
+// 5. Gemini Free 测试（无时长直接丢弃）
 const gFree = classifyProduct("Gemini 普号体验号（无会员）", "", rules);
-assert.equal(gFree.category, "gemini");
-assert.equal(gFree.subtype, "others");
+assert.equal(gFree.category, "other");
 
 // 6. 干扰项排除测试：不能误判入 Gemini
 assert.equal(

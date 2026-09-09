@@ -318,23 +318,23 @@ function stripGrokWarrantyNoiseText(text) {
 }
 
 function durationMeta(subtype, matches = []) {
-  if (subtype === "m1" || subtype === "m12") {
+  if (subtype === "m1") {
     return { subtype: "m1", durationDays: 30, durationLabel: "1M", matches };
   }
   if (subtype === "m3") {
     return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches };
   }
-  if (subtype === "y1") {
-    return { subtype: "y1", durationDays: 365, durationLabel: "1Y", matches };
+  if (subtype === "m12" || subtype === "y1") {
+    return { subtype: "m12", durationDays: 365, durationLabel: "12M", matches };
   }
   return { subtype: "others", durationDays: null, durationLabel: "Others", matches };
 }
 
 function matchGrokDuration(text, durationTerms = {}) {
   const ordered = [
-    ["y1", durationTerms.y1 || []],
+    ["m12", durationTerms.m12 || durationTerms.y1 || []],
     ["m3", durationTerms.m3 || []],
-    ["m1", durationTerms.m1 || durationTerms.m12 || []],
+    ["m1", durationTerms.m1 || []],
   ];
 
   for (const [subtype, terms] of ordered) {
@@ -346,7 +346,7 @@ function matchGrokDuration(text, durationTerms = {}) {
 
   const yearMatch = text.match(/(?:^|[^a-z0-9])(?:(\d+)\s*年|(\d+)\s*(?:个\s*)?年|一年|年卡|(\d+)\s*year|one\s*year)(?=$|[^a-z0-9])/i);
   if (yearMatch) {
-    return durationMeta("y1", [yearMatch[0].trim()]);
+    return durationMeta("m12", [yearMatch[0].trim()]);
   }
 
   const monthMatch = text.match(/(\d+|一|两|二|三|四|五|六|七|八|九|十|十二|半)\s*(?:个\s*)?月/);
@@ -356,7 +356,7 @@ function matchGrokDuration(text, durationTerms = {}) {
     if (Number.isFinite(months)) {
       if (months <= 1) return durationMeta("m1", [monthMatch[0]]);
       if (months <= 3) return durationMeta("m3", [monthMatch[0]]);
-      if (months > 3) return durationMeta("y1", [monthMatch[0]]);
+      if (months > 3) return durationMeta("m12", [monthMatch[0]]);
     }
   }
 
@@ -368,7 +368,7 @@ function matchGrokDuration(text, durationTerms = {}) {
       const days = weeks * 7;
       if (days <= 31) return durationMeta("m1", [weekMatch[0]]);
       if (days <= 90) return durationMeta("m3", [weekMatch[0]]);
-      return durationMeta("y1", [weekMatch[0]]);
+      return durationMeta("m12", [weekMatch[0]]);
     }
   }
 
@@ -378,7 +378,7 @@ function matchGrokDuration(text, durationTerms = {}) {
     if (Number.isFinite(days)) {
       if (days <= 31) return durationMeta("m1", [dayMatch[0]]);
       if (days <= 90) return durationMeta("m3", [dayMatch[0]]);
-      if (days > 90) return durationMeta("y1", [dayMatch[0]]);
+      if (days > 90) return durationMeta("m12", [dayMatch[0]]);
     }
   }
 
@@ -420,11 +420,11 @@ function classifyGrokProduct(titleText, descriptionText, rules) {
   const titleDuration = matchGrokDuration(cleanedTitleForNoise, rules.grokDurationTerms || {});
   const combinedDuration = matchGrokDuration(cleanedCombinedForNoise, rules.grokDurationTerms || {});
 
-  const explicitDuration = ["m1", "m3", "y1"].includes(titleDuration.subtype)
+  const explicitDuration = ["m1", "m3", "m12"].includes(titleDuration.subtype)
     ? titleDuration
-    : (["m1", "m3", "y1"].includes(combinedDuration.subtype) ? combinedDuration : null);
+    : (["m1", "m3", "m12"].includes(combinedDuration.subtype) ? combinedDuration : null);
 
-  // 1. 如果是明确的付费 Grok（命中 heavy / supergrok 等付费词），或者具有付费时长 (y1, m3, m1) 且无明确普号词
+  // 1. 如果是明确的付费 Grok（命中 heavy / supergrok 等付费词），或者具有付费时长 (m12, m3, m1) 且无明确普号词
   const isPaidGrok = paidMatches.length > 0 || (explicitDuration !== null && freeMatches.length === 0);
   if (isPaidGrok) {
     // 若无明确时长，付费 Grok 默认按 1M 处理
@@ -537,16 +537,20 @@ function durationMetaGemini(subtype, matches = []) {
   if (subtype === "m18") {
     return { subtype: "m18", durationDays: 540, durationLabel: "18M", matches };
   }
-  if (subtype === "y1") {
-    return { subtype: "y1", durationDays: 365, durationLabel: "1Y", matches };
+  if (subtype === "m12" || subtype === "y1") {
+    return { subtype: "m12", durationDays: 365, durationLabel: "12M", matches };
   }
-  return { subtype: "others", durationDays: null, durationLabel: "Others", matches };
+  if (subtype === "m3") {
+    return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches };
+  }
+  return null;
 }
 
 function matchGeminiDuration(text, durationTerms = {}) {
   const ordered = [
     ["m18", durationTerms.m18 || []],
-    ["y1", durationTerms.y1 || []],
+    ["m12", durationTerms.m12 || durationTerms.y1 || []],
+    ["m3", durationTerms.m3 || []],
   ];
 
   for (const [subtype, terms] of ordered) {
@@ -556,12 +560,20 @@ function matchGeminiDuration(text, durationTerms = {}) {
     }
   }
 
+  const explicitM = text.match(/(?:^|[^a-z0-9])(3|12|18)\s*m(?=$|[^a-z0-9])/i);
+  if (explicitM) {
+    const m = explicitM[1];
+    if (m === "18") return durationMetaGemini("m18", [explicitM[0].trim()]);
+    if (m === "12") return durationMetaGemini("m12", [explicitM[0].trim()]);
+    if (m === "3") return durationMetaGemini("m3", [explicitM[0].trim()]);
+  }
+
   const yearMatch = text.match(/(?:^|[^a-z0-9])(?:(\d+(?:\.\d+)?)\s*年|一年半|1\.5\s*年|年卡|(\d+)\s*year|one\s*year)(?=$|[^a-z0-9])/i);
   if (yearMatch) {
     if (/一年半|1\.5/i.test(yearMatch[0])) {
       return durationMetaGemini("m18", [yearMatch[0].trim()]);
     }
-    return durationMetaGemini("y1", [yearMatch[0].trim()]);
+    return durationMetaGemini("m12", [yearMatch[0].trim()]);
   }
 
   const monthMatch = text.match(/(\d+|一|两|二|三|四|五|六|七|八|九|十|十二|十八|半)\s*(?:个\s*)?月/);
@@ -570,8 +582,8 @@ function matchGeminiDuration(text, durationTerms = {}) {
     const months = numMap[monthMatch[1]] ?? Number(monthMatch[1]);
     if (Number.isFinite(months)) {
       if (months > 12) return durationMetaGemini("m18", [monthMatch[0]]);
-      if (months > 3 && months <= 12) return durationMetaGemini("y1", [monthMatch[0]]);
-      return durationMetaGemini("others", [monthMatch[0]]);
+      if (months > 3 && months <= 12) return durationMetaGemini("m12", [monthMatch[0]]);
+      if (months >= 2 && months <= 3) return durationMetaGemini("m3", [monthMatch[0]]);
     }
   }
 
@@ -580,12 +592,12 @@ function matchGeminiDuration(text, durationTerms = {}) {
     const days = Number(dayMatch[1]);
     if (Number.isFinite(days)) {
       if (days > 365) return durationMetaGemini("m18", [dayMatch[0]]);
-      if (days > 90 && days <= 365) return durationMetaGemini("y1", [dayMatch[0]]);
-      return durationMetaGemini("others", [dayMatch[0]]);
+      if (days > 90 && days <= 365) return durationMetaGemini("m12", [dayMatch[0]]);
+      if (days >= 60 && days <= 90) return durationMetaGemini("m3", [dayMatch[0]]);
     }
   }
 
-  return { subtype: "others", durationDays: null, durationLabel: "Others", matches: [] };
+  return null;
 }
 
 function classifyGeminiProduct(titleText, descriptionText, rules) {
@@ -619,41 +631,33 @@ function classifyGeminiProduct(titleText, descriptionText, rules) {
   const cleanedTitleForNoise = stripGeminiWarrantyNoiseText(stripNoiseDurationText(titleOnly, rules.geminiNoiseDurationTerms || []));
   const cleanedCombinedForNoise = stripGeminiWarrantyNoiseText(stripNoiseDurationText(combined, rules.geminiNoiseDurationTerms || []));
 
-  const freeMatches = matchedTerms(cleanedTitleForNoise, rules.geminiFreeTerms || []);
   const titleDuration = matchGeminiDuration(cleanedTitleForNoise, rules.geminiDurationTerms || {});
   const combinedDuration = matchGeminiDuration(cleanedCombinedForNoise, rules.geminiDurationTerms || {});
 
-  const explicitDuration = ["m18", "y1"].includes(titleDuration.subtype)
+  const explicitDuration = (titleDuration && ["m3", "m12", "m18"].includes(titleDuration.subtype))
     ? titleDuration
-    : (["m18", "y1"].includes(combinedDuration.subtype) ? combinedDuration : null);
+    : ((combinedDuration && ["m3", "m12", "m18"].includes(combinedDuration.subtype)) ? combinedDuration : null);
 
-  let finalDuration = explicitDuration;
-  if (!finalDuration) {
-    // 不是 1Y 和 18M 的都放到 Others 分类
-    finalDuration = {
-      subtype: "others",
-      durationDays: null,
-      durationLabel: "Others",
-      matches: freeMatches.length > 0 ? freeMatches : (titleDuration.matches.length > 0 ? titleDuration.matches : ["其他规格"]),
-    };
+  if (!explicitDuration) {
+    return buildResult("other", "unknown", 0, [], ["未匹配到Gemini有效时长规格(3M/12M/18M)，丢弃"]);
   }
 
   const reasons = [
     ...anchorMatches.slice(0, 2).map((term) => `命中Gemini锚点词: ${term}`),
   ];
-  if (finalDuration.matches?.length > 0) {
-    reasons.push(...finalDuration.matches.slice(0, 2).map((term) => `命中时长/套餐: ${term}`));
+  if (explicitDuration.matches?.length > 0) {
+    reasons.push(...explicitDuration.matches.slice(0, 2).map((term) => `命中时长/套餐: ${term}`));
   }
 
   return buildResult(
     "gemini",
-    finalDuration.subtype,
+    explicitDuration.subtype,
     0.9,
-    ["gemini", finalDuration.subtype],
+    ["gemini", explicitDuration.subtype],
     reasons,
     {
-      durationDays: finalDuration.durationDays,
-      durationLabel: finalDuration.durationLabel,
+      durationDays: explicitDuration.durationDays,
+      durationLabel: explicitDuration.durationLabel,
     },
   );
 }

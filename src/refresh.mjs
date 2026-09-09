@@ -689,8 +689,11 @@ export async function applyAiClassifierToUnknowns(items = []) {
         }
 
         let targetSubtype = aiRes.subtype;
-        if (aiRes.category === "grok" && targetSubtype === "m12") {
-          targetSubtype = "m1";
+        if ((aiRes.category === "grok" || aiRes.category === "gemini") && (targetSubtype === "y1" || targetSubtype === "1y")) {
+          targetSubtype = "m12";
+        }
+        if (aiRes.category === "gemini" && !["m3", "m12", "m18"].includes(targetSubtype)) {
+          continue;
         }
 
         result.push({
@@ -1062,24 +1065,24 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
           { id: "free", label: "Free" },
           { id: "m1", label: "1M" },
           { id: "m3", label: "3M" },
-          { id: "y1", label: "1Y" },
+          { id: "m12", label: "12M" },
         ],
       },
       {
         id: "gemini",
         name: "Gemini",
         subtypes: [
-          { id: "y1", label: "1Y" },
+          { id: "m3", label: "3M" },
+          { id: "m12", label: "12M" },
           { id: "m18", label: "18M" },
-          { id: "others", label: "Others" },
         ],
       },
     ],
     categories: [
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
-      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m3", "y1"] },
-      { id: "gemini", name: "Gemini", subtypes: rules.geminiSubtypes || ["y1", "m18", "others"] },
+      { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m3", "m12"] },
+      { id: "gemini", name: "Gemini", subtypes: rules.geminiSubtypes || ["m3", "m12", "m18"] },
     ],
     items: sortedItems,
   };

@@ -121,12 +121,15 @@ assert.match(app, /modeConfigs/);
 assert.match(app, /currentMode/);
 assert.match(app, /m1/);
 assert.match(app, /m3/);
-assert.match(app, /y1/);
+assert.match(app, /m12/);
+assert.doesNotMatch(app, /y1/);
 assert.match(app, /1M/);
+assert.match(app, /12M/);
 assert.match(app, /defaultSubtype: "m1"/);
 assert.match(app, /defaultSubtype: "m18"/);
 assert.match(app, /id: "gemini"/);
-assert.match(app, /Others/);
+assert.doesNotMatch(app, /Others/);
+assert.doesNotMatch(app, /others/);
 assert.match(app, /切换品牌时回到该模式默认标签/);
 assert.match(app, /\["sms", "codex_sms"\]/);
 assert.match(app, /function subtypeForUrl/);
@@ -257,7 +260,35 @@ assert.match(app, /product-group-children/);
   // URL subtype 格式测试：保持与 Grok 一致的 m18 规则
   assert.equal(sandbox.subtypeForUrl("m18"), "m18");
   assert.equal(sandbox.subtypeForUrl("m1"), "m1");
-  assert.equal(sandbox.subtypeForUrl("y1"), "y1");
+  assert.equal(sandbox.subtypeForUrl("m3"), "m3");
+  assert.equal(sandbox.subtypeForUrl("m12"), "m12");
+
+  // 历史参数 y1, others 不再兼容，解析回退到对应模式的默认子类型
+  const getCurrentSubtype = () => vm.runInContext("currentSubtype", sandbox);
+
+  sandbox.window.location.search = "?mode=gemini&type=y1";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m18");
+
+  sandbox.window.location.search = "?mode=gemini&type=others";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m18");
+
+  sandbox.window.location.search = "?mode=gemini&type=m12";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m12");
+
+  sandbox.window.location.search = "?mode=gemini&type=m3";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m3");
+
+  sandbox.window.location.search = "?mode=grok&type=m12";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m12");
+
+  sandbox.window.location.search = "?mode=grok&type=y1";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m1");
 }
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);

@@ -65,7 +65,7 @@ const modeConfigs = {
       { id: "free", label: "Free" },
       { id: "m1", label: "1M" },
       { id: "m3", label: "3M" },
-      { id: "y1", label: "1Y" },
+      { id: "m12", label: "12M" },
     ],
   },
   gemini: {
@@ -74,9 +74,9 @@ const modeConfigs = {
     title: "Gemini 比价",
     defaultSubtype: "m18",
     subtypes: [
-      { id: "y1", label: "1Y" },
+      { id: "m3", label: "3M" },
+      { id: "m12", label: "12M" },
       { id: "m18", label: "18M" },
-      { id: "others", label: "Others" },
     ],
   },
 };
@@ -97,7 +97,6 @@ const subtypeValuesFromUrl = new Map([
   ["pro_20x", "pro_20x"],
   ["sms", "codex_sms"],
   ["codex_sms", "codex_sms"],
-  ["m12", "m1"],
   ["m1", "m1"],
   ["m2", "m1"],
   ["1m", "m1"],
@@ -106,21 +105,17 @@ const subtypeValuesFromUrl = new Map([
   ["m3", "m3"],
   ["3m", "m3"],
   ["3m+", "m3"],
-  ["y1", "y1"],
-  ["1y", "y1"],
-  ["year", "y1"],
+  ["m12", "m12"],
   ["m18", "m18"],
-  ["others", "others"],
-  ["other", "others"],
 ]);
 const subtypeToUrlValue = new Map([
   ["codex_sms", "sms"],
   ["m1", "m1"],
-  ["m12", "m1"],
+  ["m3", "m3"],
+  ["m12", "m12"],
   ["pro_5x", "5x"],
   ["pro_20x", "20x"],
   ["m18", "m18"],
-  ["others", "others"],
 ]);
 const urlStateKeys = {
   mode: "mode",
@@ -598,6 +593,7 @@ function readStateFromUrl() {
   const isGrokDomain = /(?:^|\.)grok(?:\.|$)/.test(host);
   const isGeminiDomain = /(?:^|\.)gemini(?:\.|$)/.test(host);
 
+  const previousMode = currentMode;
   if (mode === "codex" || mode === "grok" || mode === "gemini") {
     currentMode = mode;
   } else if (isIndexDomain || isCodexDomain) {
@@ -610,9 +606,12 @@ function readStateFromUrl() {
     currentMode = "codex";
   }
 
-  ensureSubtypeForMode();
   if (subtype && currentSubtypeValues().includes(subtype)) {
     currentSubtype = subtype;
+  } else if (params.has(urlStateKeys.subtype) || previousMode !== currentMode) {
+    currentSubtype = currentModeConfig().defaultSubtype;
+  } else {
+    ensureSubtypeForMode();
   }
   if (stock === "all") {
     includeOutOfStock.checked = true;

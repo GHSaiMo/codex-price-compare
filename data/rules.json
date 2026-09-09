@@ -7,9 +7,9 @@
     "gemini"
   ],
   "geminiSubtypes": [
-    "y1",
-    "m18",
-    "others"
+    "m3",
+    "m12",
+    "m18"
   ],
   "codexSubtypes": [
     "free",
@@ -31,7 +31,7 @@
     "free",
     "m1",
     "m3",
-    "y1"
+    "m12"
   ],
   "smsSubtype": "codex_sms",
   "smsServiceTerms": [
@@ -227,7 +227,7 @@
     "1.5视频"
   ],
   "grokDurationTerms": {
-    "y1": [
+    "m12": [
       "一年",
       "1年",
       "1 年",
@@ -545,7 +545,7 @@
       "540天",
       "540 天"
     ],
-    "y1": [
+    "m12": [
       "一年",
       "1年",
       "1 年",
@@ -556,8 +556,23 @@
       "1 year",
       "1year",
       "one year",
+      "12 month",
+      "12month",
+      "12 months",
       "365天",
       "365 天"
+    ],
+    "m3": [
+      "3个月",
+      "3 个月",
+      "三个月",
+      "季卡",
+      "季度",
+      "3 month",
+      "3month",
+      "three month",
+      "90天",
+      "90 天"
     ]
   },
   "geminiNoiseDurationTerms": [
