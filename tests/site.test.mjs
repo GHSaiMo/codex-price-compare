@@ -492,4 +492,6 @@ assert.match(styles, /\.recommendations-panel/);
 assert.match(recApp, /function renderBubble/);
 assert.match(recApp, /cancelBtn\.addEventListener\("click", \(\) => \{\s*renderBubble\(container\);?\s*\}\)/);
 assert.match(recApp, /closeBtn\.addEventListener\("click", \(\) => \{[\s\S]*dismissWidget\(\);?\s*\}\)/);
+assert.match(recApp, /const IDLE_TIMEOUT_MS = 15 \* 1000;/);
+
 

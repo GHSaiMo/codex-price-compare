@@ -1,5 +1,5 @@
 (function () {
-  const IDLE_TIMEOUT_MS = 60 * 1000;
+  const IDLE_TIMEOUT_MS = 15 * 1000;
   const STORAGE_KEY_BLOCKED = "codex_rec_blocked";
   const STORAGE_KEY_SUBMITTED = "codex_rec_submitted_at";
   const STORAGE_KEY_PROMPTED = "codex_rec_prompted_date";
