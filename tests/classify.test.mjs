@@ -3,12 +3,14 @@ import { readFile } from "node:fs/promises";
 
 import {
   classifyProduct,
+  isBlockedPrice,
   isCreditQuotaProduct,
   isTutorialProduct,
   normalizeAcgProduct,
   normalizeDujiaoProduct,
   normalizeLdxpProduct,
   refineCodexPlanSubtype,
+  resolveAcgPrice,
   sortProductsForDisplay,
 } from "../src/cleaning.mjs";
 
@@ -1286,6 +1288,57 @@ assert.equal(
   classifyProduct("G Plus 成品号|未接马|gmail邮箱|越南直卡渠道", "", rules).subtype,
   "plus",
 );
+
+// 8. ACG 价格倒挂与容错测试
+assert.equal(resolveAcgPrice({ price: 66, user_price: 660 }), 660);
+assert.equal(resolveAcgPrice({ price: 130, user_price: 130 }), 130);
+assert.equal(resolveAcgPrice({ price: 100, user_price: 90 }), 100);
+assert.equal(resolveAcgPrice({ price: null, user_price: 660 }), 660);
+assert.equal(resolveAcgPrice({ price: "66", user_price: "660" }), 660);
+
+// ACG 商品价格倒挂时自动校正为 user_price
+const correctedAcgPro = normalizeAcgProduct(
+  {
+    id: 74,
+    name: "ChatGPT Pro5x 菲区卡密",
+    price: 66,
+    user_price: 660,
+    stock: "现货充足",
+    category: { name: "gpt" },
+  },
+  { id: "acg-mika", name: "米卡店铺", url: "https://buy.aishopstore.com/", adapter: "acg" },
+  rules,
+);
+assert.ok(correctedAcgPro);
+assert.equal(correctedAcgPro.price, 660);
+assert.equal(correctedAcgPro.subtype, "pro_5x");
+
+// 9. 品类价格下限与异常价格拦截测试
+assert.equal(isBlockedPrice(66, "codex", "pro_5x"), true);
+assert.equal(isBlockedPrice(149, "codex", "pro_5x"), true);
+assert.equal(isBlockedPrice(150, "codex", "pro_5x"), false);
+assert.equal(isBlockedPrice(660, "codex", "pro_5x"), false);
+assert.equal(isBlockedPrice(50, "codex", "pro_20x"), true);
+assert.equal(isBlockedPrice(200, "codex", "pro_20x"), false);
+assert.equal(isBlockedPrice(2500, "codex", "pro_5x"), true);
+assert.equal(isBlockedPrice(0, "codex", "free"), true);
+assert.equal(isBlockedPrice(-10, "codex", "plus"), true);
+
+// 无法通过 user_price 校正且低于品类下限的 Pro 5x 商品应被过滤拦截
+const uncorrectableAcgPro = normalizeAcgProduct(
+  {
+    id: 7499,
+    name: "ChatGPT Pro5x 菲区卡密",
+    price: 66,
+    user_price: 66,
+    stock: "现货充足",
+    category: { name: "gpt" },
+  },
+  { id: "acg-mika", name: "米卡店铺", url: "https://buy.aishopstore.com/", adapter: "acg" },
+  rules,
+);
+assert.equal(uncorrectableAcgPro, null);
+
 
 
 

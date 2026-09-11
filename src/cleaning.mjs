@@ -221,8 +221,40 @@ function normalizePrice(value) {
   return Number.isFinite(price) ? price : null;
 }
 
-function isBlockedPrice(price) {
-  return typeof price === "number" && price >= 2000;
+const DEFAULT_PRICE_FLOORS = {
+  "codex:pro_5x": 150,
+  "codex:pro_20x": 100,
+};
+
+export function isBlockedPrice(price, category, subtype, rules = {}) {
+  if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) return true;
+  if (price >= 2000) return true;
+
+  if (category && subtype) {
+    const key = `${category}:${subtype}`;
+    const floor = rules.priceFloors?.[key] ?? DEFAULT_PRICE_FLOORS[key];
+    if (typeof floor === "number" && price < floor) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function resolveAcgPrice(raw) {
+  const price = normalizePrice(raw.price);
+  const userPrice = normalizePrice(raw.user_price);
+
+  if (price !== null && userPrice !== null) {
+    // 正常情况下零售价 price >= userPrice（或两者相等）。
+    // 若会员价显著大于零售价（例如 2 倍及以上），说明零售标价存在漏输 0 或倒挂失误，优先采纳 user_price
+    if (userPrice >= price * 2) {
+      return userPrice;
+    }
+    return price;
+  }
+
+  return price ?? userPrice ?? null;
 }
 
 function normalizeStockStatus(stockCount, explicitStatus, isSoldOut = false) {
@@ -810,7 +842,7 @@ function withCommonFields(raw, source, rules, fields) {
   const classification = classifyProduct(fields.title, fields.descriptionText, rules);
   if (classification.category === "other") return null;
   const price = normalizePrice(fields.price);
-  if (isBlockedPrice(price)) return null;
+  if (isBlockedPrice(price, classification.category, classification.subtype, rules)) return null;
 
   const isBareMotherSite = !fields.url || /^https?:\/\/[^\/]+\/?$/i.test(fields.url);
   const url = isBareMotherSite ? (source.url || fields.url) : fields.url;
@@ -871,7 +903,7 @@ export function normalizeAcgProduct(raw, source, rules) {
     sourceProductId: raw.id,
     title: raw.name,
     descriptionText: raw.description || "",
-    price: raw.price ?? raw.user_price,
+    price: resolveAcgPrice(raw),
     stockCount: Number.isFinite(stockCount) ? stockCount : null,
     url: new URL(`/item/${raw.id}`, base).href,
     sourceCategory: raw.category?.name,
