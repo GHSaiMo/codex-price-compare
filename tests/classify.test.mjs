@@ -681,6 +681,54 @@ assert.equal(
   "free",
 );
 assert.equal(
+  classifyProduct(
+    "【G Plus号】已绑手机+微软邮箱可接马｜美国家宽注册｜JSON含RT｜(Upi渠道)",
+    "购卡须知 不教使用 小白别拍 不是Plus,不是Plus. 掉401可以重新获取授权 最低额度10M ✅ 特点 · Bug Free号(Codex/网页双支持) · 已绑手机",
+    rules,
+  ).category,
+  "codex",
+);
+assert.equal(
+  classifyProduct(
+    "【G Plus号】已绑手机+微软邮箱可接马｜美国家宽注册｜JSON含RT｜(Upi渠道)",
+    "购卡须知 不教使用 小白别拍 不是Plus,不是Plus. 掉401可以重新获取授权 最低额度10M ✅ 特点 · Bug Free号(Codex/网页双支持) · 已绑手机",
+    rules,
+  ).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct(
+    "G Plus 未接马 默认日抛 质保首登 阿三出品",
+    "购买前看清楚: 不是plus 出现问题先执行重拿刷新 此商品为team rt，质保首登，不懂不要买！以这里为准！",
+    rules,
+  ).subtype,
+  "free",
+);
+assert.equal(
+  classifyProduct(
+    "微软邮箱plus 成品号，未接马（仔细看说明不会不要买）日抛日抛日抛",
+    "Codex可用，质保1h内首登，微软邮箱，如果有账号出现不是plus的情况，直接找我换号，并补偿1元优惠劵",
+    rules,
+  ).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct(
+    "已接马plus【网页+codex反代】带RT 已绑定手机号验证 不包2验",
+    "Codex反代可用，超3小时不售后，除非没有plus会员（是第一次登录封号才处理）",
+    rules,
+  ).subtype,
+  "plus",
+);
+assert.equal(
+  classifyProduct(
+    "ChatGPT Pro 20x 月卡 正价官方直充",
+    "正价官方代充，不是plus，20x算力保障",
+    rules,
+  ).subtype,
+  "pro_20x",
+);
+assert.equal(
   classifyProduct("【Gmail+2FA稳定版✅】OpenAI普通账号｜高权重家宽注册｜独享号｜已注册两月", "", rules).category,
   "codex",
 );

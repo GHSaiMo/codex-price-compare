@@ -131,7 +131,9 @@
     "刀额度",
     "g pro",
     "g plus",
-    "g free"
+    "g free",
+    "bug free",
+    "bug free号"
   ],
   "anchorTerms": [
     "codex",
@@ -456,7 +458,9 @@
   "titleSubtypeTerms": {
     "free": [
       "team",
-      "k12"
+      "k12",
+      "bug free",
+      "bug free号"
     ]
   },
   "subtypeTerms": {
@@ -496,7 +500,9 @@
       "普通账号",
       "普通帐号",
       "team",
-      "手机验证解锁"
+      "手机验证解锁",
+      "bug free",
+      "bug free号"
     ]
   },
   "grokFreeTerms": [

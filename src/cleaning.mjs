@@ -62,7 +62,7 @@ function titleReasonTermsForSubtype(rules, subtype) {
 function explicitPlanSubtype(haystack, subtypeTerms = {}, rules = {}) {
   // 标题里的 free/plus/pro/go 明确套餐词优先。如果包含 team 则优先归为 free。
   // 这里只认核心套餐词，不直接复用 subtypeTerms 全量词表。
-  if (matchedTerms(haystack, ["team", "free", "fre", "free号", "普号", "普通号", "普通账号", "普通帐号"]).length > 0) {
+  if (matchedTerms(haystack, ["team", "free", "fre", "free号", "普号", "普通号", "普通账号", "普通帐号", "bug free", "bug free号"]).length > 0) {
     return "free";
   }
   const hasPlus = matchedTerms(haystack, ["plus", "puls"]).length > 0;
@@ -91,19 +91,26 @@ function explicitPlanSubtype(haystack, subtypeTerms = {}, rules = {}) {
 
 function stripPlusUpgradeContext(text) {
   return text
-    .replace(/(?:可|自行|自己|如需|支持)?\s*(?:升级|开通|开|充值)\s*(?:plus|puls)/g, " ")
-    .replace(/(?:非|不是|并非)\s*[-_]?\s*(?:plus|puls)/g, "")
-    .replace(/(?:不含|没有|无)\s*[-_]?\s*(?:plus|puls)/g, "")
-    .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/g, "")
-    .replace(/(?:plus|puls|pro|free)\s*(?:[/／]\s*(?:plus|puls|pro|free|codex|gpt))*\s*接[码马]/g, " ")
-    .replace(/(?:chatg|chatgpt|gpt)\s+(?:plus|puls)\s+codex\s+接[码马]/g, " ");
+    .replace(/(?:可|自行|自己|如需|支持)?\s*(?:升级|开通|开|充值)\s*(?:plus|puls)/gi, " ")
+    .replace(/(?:非|不是|并非)\s*[-_]?\s*(?:plus|puls)/gi, "")
+    .replace(/(?:不含|没有|无)\s*[-_]?\s*(?:plus|puls)/gi, "")
+    .replace(/[=＝]\s*[0-9一二三四五六七八九十两]+\s*小时\s*(?:plus|puls)/gi, "")
+    .replace(/(?:plus|puls|pro|free)\s*(?:[/／]\s*(?:plus|puls|pro|free|codex|gpt))*\s*接[码马]/gi, " ")
+    .replace(/(?:chatg|chatgpt|gpt)\s+(?:plus|puls)\s+codex\s+接[码马]/gi, " ");
 }
 
 function stripTeamWarningContext(text) {
   return text
-    .replace(/(?:自己账号|账号)?\s*(?:有|带|含)?\s*team\s*(?:不能|不可|无法|请勿|禁止|别|禁)\s*(?:冲|充|使用)?/g, " ")
-    .replace(/(?:请勿|不要|禁|不支持|不能|无法)\s*(?:使用|带|有)?\s*team/g, " ")
-    .replace(/(?:非|不是|并非|不含|没有|无)\s*[-_]?\s*team/g, " ");
+    .replace(/(?:自己账号|账号)?\s*(?:有|带|含)?\s*team\s*(?:不能|不可|无法|请勿|禁止|别|禁)\s*(?:冲|充|使用)?/gi, " ")
+    .replace(/(?:请勿|不要|禁|不支持|不能|无法)\s*(?:使用|带|有)?\s*team/gi, " ")
+    .replace(/(?:非|不是|并非|不含|没有|无)\s*[-_]?\s*team/gi, " ");
+}
+
+function stripHypotheticalPlusContext(text) {
+  return text
+    .replace(/(?:如果|若|如|假设|倘若|遇到|若遇|如有|若有)[^。！!？?\n]{0,30}(?:出现|存在|是|发生)?[^。！!？?\n]{0,20}(?:不是|并非|不含|没有|无)\s*[-_]?(?:plus|puls)(?:的情况|的问题)?/gi, " ")
+    .replace(/(?:如果|若|如|假设|倘若|遇到|若遇|如有|若有|出现)[^。！!？?\n]{0,50}(?:不是|并非|不含|没有|无)\s*[-_]?(?:plus|puls)[^。！!？?\n]{0,50}(?:换号|换|补|补偿|赔|退|处理|售后|包换|包退|联系)/gi, " ")
+    .replace(/除非\s*(?:出现|存在)?[^。！!？?\n]{0,30}(?:不是|并非|不含|没有|无)\s*[-_]?(?:plus|puls)/gi, " ");
 }
 
 function stripPlanPrerequisiteContext(text) {
@@ -120,12 +127,12 @@ function stripPlanPrerequisiteContext(text) {
 
 function matchFreeUpgradePurpose(text) {
   return text.match(
-    /(?:(?:开通?|升级)\s*(?:plus|puls)|(?:plus|puls)\s*(?:开通?|升级))\s*专用/,
+    /(?:(?:开通?|升级)\s*(?:plus|puls)|(?:plus|puls)\s*(?:开通?|升级))\s*专用/i,
   )?.[0] || "";
 }
 
 function matchNonPlusNegation(text) {
-  return text.match(/(?:非|不是|并非|不含|没有|无)\s*[-_]?\s*(?:plus|puls)/)?.[0] || "";
+  return text.match(/(?:非|不是|并非|不含)\s*[-_]?\s*(?:plus|puls)/i)?.[0] || "";
 }
 
 function hasSmsNegation(text) {
@@ -699,9 +706,10 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
   const titleOnly = titleText.toLowerCase();
   const subtypeCombined = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(combined)));
   const subtypeTitleOnly = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(titleOnly)));
+  const cleanedDescForNegation = stripHypotheticalPlusContext(descriptionText);
   const freeUpgradePurposeMatch = matchFreeUpgradePurpose(titleOnly);
-  const nonPlusNegationMatch = matchNonPlusNegation(titleOnly);
-  const freeTitleHintMatch = freeUpgradePurposeMatch || nonPlusNegationMatch;
+  const nonPlusNegationMatch = matchNonPlusNegation(titleOnly) || matchNonPlusNegation(cleanedDescForNegation);
+  const freeTitleHintMatch = Boolean(freeUpgradePurposeMatch || nonPlusNegationMatch);
   const titleExclusionMatches = matchedTerms(titleOnly, rules.titleExclusionTerms || []);
   const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
   const anchorMatches = matchedTerms(combined, rules.anchorTerms || []);
@@ -709,10 +717,11 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
   const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
   const codexMatches = matchedTerms(combined, rules.codexTerms || []);
-  const explicitTitleSubtype = freeTitleHintMatch
+  const rawExplicitTitleSubtype = explicitPlanSubtype(subtypeTitleOnly, rules.subtypeTerms, rules);
+  const explicitTitleSubtype = (freeTitleHintMatch && rawExplicitTitleSubtype !== "pro")
     ? "free"
-    : explicitPlanSubtype(subtypeTitleOnly, rules.subtypeTerms, rules);
-  const titleOnlySubtype = freeTitleHintMatch
+    : rawExplicitTitleSubtype;
+  const titleOnlySubtype = (freeTitleHintMatch && rawExplicitTitleSubtype !== "pro")
     ? "free"
     : firstMatchedSubtype(subtypeTitleOnly, rules.titleSubtypeTerms);
   // 明确 free/plus/pro 优先于 titleSubtypeTerms 里的次要词（如 team）。
