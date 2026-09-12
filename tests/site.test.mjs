@@ -18,6 +18,7 @@ const recApp = await readFile(new URL("recommend.js", root), "utf8");
 
 assert.match(html, /data-products-url="data\/products\.json"/);
 assert.match(html, /包含缺货/);
+assert.doesNotMatch(html, /id="includeOutOfStock"[^>]*checked/);
 assert.match(html, /class="toolbar-row toolbar-row-search" hidden/);
 assert.match(html, /id="searchInput"/);
 assert.match(html, /id="shopFilter"/);
@@ -289,6 +290,19 @@ assert.match(app, /product-group-children/);
   sandbox.window.location.search = "?mode=grok&type=y1";
   sandbox.readStateFromUrl();
   assert.equal(getCurrentSubtype(), "m1");
+
+  const getIncludeOutOfStock = () => vm.runInContext("includeOutOfStock.checked", sandbox);
+  sandbox.window.location.search = "";
+  sandbox.readStateFromUrl();
+  assert.equal(getIncludeOutOfStock(), false);
+
+  sandbox.window.location.search = "?stock=available";
+  sandbox.readStateFromUrl();
+  assert.equal(getIncludeOutOfStock(), false);
+
+  sandbox.window.location.search = "?stock=all";
+  sandbox.readStateFromUrl();
+  assert.equal(getIncludeOutOfStock(), true);
 }
 assert.match(app, /function triggerFilterAnimation/);
 assert.match(app, /render\(\{ animate: true \}\)/);

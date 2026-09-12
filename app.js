@@ -615,7 +615,7 @@ function readStateFromUrl() {
   }
   if (stock === "all") {
     includeOutOfStock.checked = true;
-  } else if (stock === "available") {
+  } else {
     includeOutOfStock.checked = false;
   }
   if (sort === "desc") {
