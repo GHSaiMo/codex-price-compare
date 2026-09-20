@@ -883,11 +883,11 @@ process.on("SIGTERM", () => {
 });
 
 // 1. 优先立即监听 HTTP 端口，确保 tmuxctl/外部健康检查（http://127.0.0.1:49173/）秒级通过
-server.listen(PORT, "127.0.0.1", () => {
+server.listen(PORT, "0.0.0.0", () => {
   logWithTimestamp("log", `Codex Price Compare: http://127.0.0.1:${PORT}`);
 });
 
-adminServer.listen(ADMIN_PORT, "127.0.0.1", () => {
+adminServer.listen(ADMIN_PORT, "0.0.0.0", () => {
   logWithTimestamp("log", `Codex Price Compare Admin: http://127.0.0.1:${ADMIN_PORT}`);
 });
 
