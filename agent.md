@@ -24,6 +24,11 @@
      `ssh nas "cd /vol1/1000/apps/codex-price-compare && git add . && git commit -m '...' && git push origin main"`
    - 随后在 Mac 本地目录拉取同步：
      `cd /Users/hal9000/Websites/codex-price-compare && git pull origin main`
+4. **网络出网分流与反爬风控契约**：
+   - NAS 运行 `sing-box` TUN 智能分流代理（`/opt/sing-box/config.json`）。
+   - **国内流量与卡网抓取**：走 `outbound: "direct"`（通过物理网卡 `enp2s0` 以南京电信家庭宽带 IP 直连），避免被国内卡网平台的阿里云 ESA / 阿里云盾 WAF 识别为海外机房 IP 而拦截。
+   - **海外流量与 API**：走 `outbound: "proxy"`（美国洛杉矶 VPS 节点）。
+   - 规则集位于 NAS 本地 `/opt/sing-box/rules/`（`geoip-cn.srs` 与 `geosite-cn.srs`）。
 
 ---
 
