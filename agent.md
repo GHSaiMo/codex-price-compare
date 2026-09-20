@@ -1,6 +1,33 @@
 # Agent 维护说明
 
-## 更新网站源
+## 1. 运行态感知与环境路由 (Runtime & Host Manifest)
+
+> [!IMPORTANT]
+> **生产常驻环境**：本项目生产常驻服务已正式迁移并托管于局域网 **飞牛 NAS (192.168.50.39)**。
+> - **NAS 服务路径**：`/vol1/1000/apps/codex-price-compare`
+> - **NAS 进程守护**：systemd 服务 `codex-price-compare`（监听 `0.0.0.0:49173`，本地透明中继映射 `127.0.0.1:49173`）
+> - **Mac 本地目录**：`/Users/hal9000/Websites/codex-price-compare`（作为离线开发、数据源爬取与规则验证备份）
+
+### Agent 行为准则 (必须遵守)：
+
+1. **意图路由与确认机制**：
+   - 若用户需求涉及 **“排查价格看板线上报错”、“更新 NAS 生产环境商品数据”、“重启服务” 或 “热修复线上站点”**，Agent 应**直接定位为 NAS 生产环境**，调用 `nas-ops` 技能通过 SSH 访问 NAS。
+   - 若用户需求为 **“新增卡网源”、“修改爬虫/分类逻辑”、“测试分类器”** 但未明确指明环境，Agent **必须先询问用户确认**：
+     > “当前本项目常驻运行于 NAS (192.168.50.39) 生产环境。请问您是希望**直接修改并刷新 NAS 线上服务与数据**，还是**在 Mac 本地进行调试开发**？”
+2. **NAS 生产环境操作流 (nas-ops)**：
+   - 远程日志查看：`ssh nas "journalctl -u codex-price-compare -n 50 -f"`
+   - 重启线上站点：`ssh nas "echo jz0305 | sudo -S systemctl restart codex-price-compare"`
+   - 探活检查：`curl -s http://127.0.0.1:49173/`
+3. **Git 版本控制双端同步**：
+   - NAS 端拥有完整 Git 仓库与 GitHub SSH 免密推送权限。
+   - 在 NAS 端更新数据或代码后：
+     `ssh nas "cd /vol1/1000/apps/codex-price-compare && git add . && git commit -m '...' && git push origin main"`
+   - 随后在 Mac 本地目录拉取同步：
+     `cd /Users/hal9000/Websites/codex-price-compare && git pull origin main`
+
+---
+
+## 2. 更新网站源
 
 当用户提出“更新网站源”“新增卡网源”“同步书签里的店铺”等类似需求时，默认按下面流程处理。
 
