@@ -185,6 +185,25 @@ assert.equal(
   "other",
 );
 assert.equal(
+  classifyProduct("G Plus试用资格号｜越南Gmail注册｜质保首登与免费升级资格", "越南Gmail OTP注册，G Plus (Free) 纯净号（已包含免费升级Plus免费试用资格）", rules).category,
+  "other",
+);
+assert.equal(
+  normalizeLdxpProduct({
+    goods_key: "1cmdve",
+    name: "G Plus试用资格号｜越南Gmail注册｜质保首登与免费升级资格",
+    description: "越南Gmail OTP注册，G Plus (Free) 纯净号（已包含免费升级Plus免费试用资格）",
+    price: "1.35",
+    extend: { stock_count: "19" },
+    link: "/item/1cmdve",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
+  null,
+);
+assert.equal(
+  classifyProduct("【只有资格号可以充】OpenAI Pro20x正价代充【带官方账单】【质保一个月】", "", rules).subtype,
+  "pro_20x",
+);
+assert.equal(
   classifyProduct("谷歌临时邮箱 注册gpt专用", "", rules).category,
   "other",
 );
