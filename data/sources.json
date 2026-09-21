@@ -35,6 +35,14 @@
       "token": "Aileader"
     },
     {
+      "id": "ldxp-9m16s7r3",
+      "name": "Ai_云顶",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/9M16S7R3",
+      "token": "9M16S7R3"
+    },
+    {
       "id": "ldxp-ai1998",
       "name": "ai1998",
       "adapter": "ldxp",
@@ -302,6 +310,14 @@
       "token": "IRPBFS50"
     },
     {
+      "id": "ldxp-whh985",
+      "name": "王哈哈Ai-Plus",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/whh985",
+      "token": "whh985"
+    },
+    {
       "id": "ldxp-google23",
       "name": "小溜商店",
       "adapter": "ldxp",
@@ -317,6 +333,22 @@
       "url": "https://wzyp.cn/shop/AI1xiaomao",
       "token": "AI1xiaomao",
       "core": false
+    },
+    {
+      "id": "ldxp-youzhi",
+      "name": "优质AI科技",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/youzhi",
+      "token": "youzhi"
+    },
+    {
+      "id": "ldxp-luoerl",
+      "name": "与世隔绝的AI小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/luoerl",
+      "token": "luoerl"
     },
     {
       "id": "ldxp-yuanzhu-ai",
@@ -403,6 +435,13 @@
       "enabled": true,
       "url": "https://mfhubs.com/",
       "apiBase": "https://api.mfhubs.com/"
+    },
+    {
+      "id": "dujiao-morimm",
+      "name": "Morimm",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://morimm.com/"
     },
     {
       "id": "dujiao-nexakey",
