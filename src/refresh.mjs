@@ -19,7 +19,6 @@ import {
 import { fetchLdxpViaPlaywright } from "./ldxp-playwright.mjs";
 import { updateWatchPriceHistory } from "./price-history.mjs";
 import { processStockWatchNotifications, readStockWatch } from "./stock-watch.mjs";
-import { queryLocalClassifier } from "./ai-classifier.mjs";
 
 const root = new URL("../", import.meta.url);
 const dataDir = new URL("data/", root);
@@ -677,43 +676,6 @@ export function reclassifyProductItems(items = [], rules = null, sources = null)
     .filter(Boolean);
 }
 
-export async function applyAiClassifierToUnknowns(items = []) {
-  const result = [];
-  for (const item of items) {
-    if (item.subtype === "unknown" || item.category === "other") {
-      const aiRes = await queryLocalClassifier(item.title, item.descriptionText);
-      if (aiRes && aiRes.category && aiRes.subtype) {
-        // 如果 AI 判定为 other 排除项，则直接丢弃不入库
-        if (aiRes.category === "other" || aiRes.subtype === "other") {
-          continue;
-        }
-
-        let targetSubtype = aiRes.subtype;
-        if ((aiRes.category === "grok" || aiRes.category === "gemini") && (targetSubtype === "y1" || targetSubtype === "1y")) {
-          targetSubtype = "m12";
-        }
-        if (aiRes.category === "gemini" && !["m3", "m12", "m18"].includes(targetSubtype)) {
-          continue;
-        }
-
-        result.push({
-          ...item,
-          brand: aiRes.category === "grok" ? "grok" : (aiRes.category === "gemini" ? "gemini" : "codex"),
-          category: aiRes.category,
-          subtype: targetSubtype,
-          confidence: 0.95,
-          tags: [...new Set([aiRes.category, targetSubtype, ...(item.tags || [])])],
-          matchReasons: [...(item.matchReasons || []), `[AI端侧识别]: ${aiRes.category}/${targetSubtype}`],
-        });
-        continue;
-      }
-    }
-    result.push(item);
-  }
-  return result;
-}
-
-
 export function mergeProductsWithStaleSourceItems({
   previousItems = [],
   currentItems = [],
@@ -1041,9 +1003,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
   });
   // 规则更新后统一重算，避免 skipped/stale 以外的旧 subtype 残留，并对齐商品链接
   const reclassifiedItems = reclassifyProductItems(mergedItems, rules, sourcesConfig.sources);
-  // 当规则判定依然为 unknown 时，按需通过本地 AI 伴生小模型兜底识别
-  const aiResolvedItems = await applyAiClassifierToUnknowns(reclassifiedItems);
-  const sortedItems = sortProductsForDisplay(aiResolvedItems);
+  const sortedItems = sortProductsForDisplay(reclassifiedItems);
   const products = {
     generatedAt,
     brands: [

@@ -17,7 +17,7 @@ import {
   toPublicProductsDocument,
 } from "./src/public-payload.mjs";
 import { readPriceHistory, summarizeHistory } from "./src/price-history.mjs";
-import { applyAiClassifierToUnknowns, reclassifyProductItems, refreshProducts } from "./src/refresh.mjs";
+import { reclassifyProductItems, refreshProducts } from "./src/refresh.mjs";
 import { sortProductsForDisplay } from "./src/cleaning.mjs";
 import {
   buildStockWatchView,
@@ -848,12 +848,11 @@ async function syncClassifiedProductsOnStartup() {
     const rules = JSON.parse(rulesRaw);
     if (Array.isArray(products?.items)) {
       const reclassified = reclassifyProductItems(products.items, rules);
-      const aiResolved = await applyAiClassifierToUnknowns(reclassified);
-      products.items = sortProductsForDisplay(aiResolved);
+      products.items = sortProductsForDisplay(reclassified);
       await writeJsonAtomic(productsPath, products);
       invalidatePublicCaches();
       await getPublicProducts().catch(() => {});
-      logWithTimestamp("log", `启动重分类完成：${products.items.length} 条商品已同步最新规则（含 AI 伴生纠偏）`);
+      logWithTimestamp("log", `启动重分类完成：${products.items.length} 条商品已同步最新规则`);
     }
   } catch (error) {
     logWithTimestamp("error", `启动重分类失败：${error.message}`);
