@@ -702,6 +702,103 @@ function classifyGeminiProduct(titleText, descriptionText, rules) {
   );
 }
 
+export function isPureGmailProduct(titleText, descriptionText = "") {
+  const title = String(titleText || "").trim();
+  const lower = title.toLowerCase();
+
+  // 1. 必须命中 Google / Gmail 身份词或注册老号模式
+  const hasGmailIdentity = (
+    /gmail|谷歌邮箱|谷歌账号|谷歌帐号|google账号|google帐号|google账户|google帐户|google\s*邮箱|google邮箱|谷歌老号|gmail老号|gmail邮箱|谷歌mail|谷歌成品/i.test(lower) ||
+    /(?:\d{2}[-_~至到]\d{2}|\d{4})\s*年?\s*(?:左右注册)?\s*(?:gmail|谷歌)/i.test(lower) ||
+    /(?:老号|成品老号|邮箱成品).{0,10}(?:gmail|谷歌)/i.test(lower)
+  );
+  if (!hasGmailIdentity) return false;
+
+  // 2. 接码排除
+  if (/(?:短效|长效|单次|\d+次)?接[码马]|短信接[码马]|短信验证[码马]|手机验证[码马]|换号|无限换号|秒接/i.test(lower)) {
+    return false;
+  }
+
+  // 3. Grok 排除
+  if (/(?:^|[^a-z0-9])(grok|gork|gr0k|supergrok)(?=$|[^a-z0-9]|\d)/i.test(lower)) {
+    return false;
+  }
+
+  // 4. Gemini 订阅会员排除 (具有有效时长)
+  if (/(?:gemini|双子座|google\s*ai|google\s*one\s*ai)/i.test(lower) &&
+      /(?:18\s*个?月|一年半|1\.5\s*年|540\s*天|12\s*个?月|一年|年卡|365\s*天|3\s*个?月|季卡|90\s*天|google\s*one\s*5tb|兑换链接)/i.test(lower)) {
+    return false;
+  }
+
+  // 5. 剥离用于说明邮箱用途的修饰词
+  const stripped = lower
+    .replace(/(?:用于|只用于|专门|专为|支持)?\s*注册\s*(?:g|gpt|chatgpt|openai|plus|puls)\s*(?:专用)?/gi, " ")
+    .replace(/(?:只关注|仅关注)?可不可以注册\s*(?:g|gpt|chatgpt)/gi, " ")
+    .replace(/(?:可|自行|自己|如需|支持)?\s*(?:升级|开通|开|充值)\s*(?:plus|puls)/gi, " ")
+    .replace(/(?:不含|非|不是|并非|无需|没有|无)\s*[-_]?\s*(?:plus|puls)/gi, " ");
+
+  // 6. 检查剩余文本中是否包含真正的 Codex 交付物
+  const hasCodexCore = (
+    /(?:^|[^a-z0-9])(?:codex|chatgpt|openai)(?=$|[^a-z0-9])/i.test(stripped) ||
+    /(?:^|[^a-z0-9])g\s*(?:free|plus|pro)(?=$|[^a-z0-9])/i.test(stripped) ||
+    /(?:^|[^a-z0-9])(?:plus|puls)(?=$|[^a-z0-9])/i.test(stripped) ||
+    /(?:^|[^a-z0-9])(?:free|普号|普通号|普通账号|普通帐号)(?=$|[^a-z0-9])/i.test(stripped) ||
+    /(?:^|[^a-z0-9])(?:5x|20x|5倍|20倍)(?=$|[^a-z0-9])/i.test(stripped) ||
+    Boolean(matchFreeUpgradePurpose(lower)) ||
+    /team|k12|cpa|rt\s*文件|openai账号|openai普通账号/i.test(stripped)
+  );
+
+  if (hasCodexCore) {
+    return false;
+  }
+
+  return true;
+}
+
+export function classifyGmailProduct(titleText, descriptionText = "", rules = {}) {
+  if (!isPureGmailProduct(titleText, descriptionText)) {
+    return buildResult("other", "unknown", 0, [], []);
+  }
+
+  const titleOnly = titleText.toLowerCase();
+  const matched = (rules.geminiGmailTerms || [
+    "gmail",
+    "谷歌邮箱",
+    "谷歌账号",
+    "谷歌帐号",
+    "google账号",
+    "google帐号",
+    "google账户",
+    "google帐户",
+    "google 邮箱",
+    "google邮箱",
+    "谷歌老号",
+    "gmail老号",
+    "gmail邮箱",
+    "谷歌mail",
+    "谷歌成品老号",
+    "谷歌邮箱成品",
+    "谷歌邮箱成品老号",
+    "邮箱成品",
+  ]).filter((t) => titleOnly.includes(t));
+
+  const reasons = matched.length > 0
+    ? matched.slice(0, 2).map((m) => `命中Gmail/Google账号特征: ${m}`)
+    : ["命中Gmail/Google老号命名模式"];
+
+  return buildResult(
+    "gemini",
+    "gmail",
+    0.9,
+    ["gemini", "gmail"],
+    reasons,
+    {
+      durationDays: null,
+      durationLabel: "Gmail",
+    },
+  );
+}
+
 function classifyCodexProduct(titleText, descriptionText, rules) {
   const combined = `${titleText} ${descriptionText}`.toLowerCase();
   const titleOnly = titleText.toLowerCase();
@@ -839,6 +936,11 @@ export function classifyProduct(title, description = "", rules) {
     const geminiResult = classifyGeminiProduct(titleText, descriptionText, rules);
     if (geminiResult.category !== "other") return geminiResult;
     if (codexAnchorMatches.length === 0) return geminiResult;
+  }
+
+  const gmailResult = classifyGmailProduct(titleText, descriptionText, rules);
+  if (gmailResult.category !== "other") {
+    return gmailResult;
   }
 
   return finalizeCodexPlanResult(

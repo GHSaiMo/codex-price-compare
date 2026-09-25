@@ -77,6 +77,7 @@ const modeConfigs = {
       { id: "m3", label: "3M" },
       { id: "m12", label: "12M" },
       { id: "m18", label: "18M" },
+      { id: "gmail", label: "Gmail" },
     ],
   },
 };
@@ -107,6 +108,7 @@ const subtypeValuesFromUrl = new Map([
   ["3m+", "m3"],
   ["m12", "m12"],
   ["m18", "m18"],
+  ["gmail", "gmail"],
 ]);
 const subtypeToUrlValue = new Map([
   ["codex_sms", "sms"],
@@ -116,6 +118,7 @@ const subtypeToUrlValue = new Map([
   ["pro_5x", "5x"],
   ["pro_20x", "20x"],
   ["m18", "m18"],
+  ["gmail", "gmail"],
 ]);
 const urlStateKeys = {
   mode: "mode",

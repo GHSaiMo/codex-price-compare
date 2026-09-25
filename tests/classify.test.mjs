@@ -1193,7 +1193,7 @@ assert.equal(
 );
 assert.equal(
   classifyProduct("🟨【21-26年老号】谷歌邮箱成品老号·Gmail带2fa链接·包登录🟡自动发货", "", rules).category,
-  "other",
+  "gemini",
 );
 assert.equal(
   classifyProduct("codex破甲", "提示词教程", rules).category,
@@ -1311,18 +1311,30 @@ assert.equal(g1m.category, "other");
 const gFree = classifyProduct("Gemini 普号体验号（无会员）", "", rules);
 assert.equal(gFree.category, "other");
 
-// 6. 干扰项排除测试：不能误判入 Gemini
+// 6. 干扰项排除测试：普通邮箱应归入 Gemini:gmail，第三方聚合模型归入 other
 assert.equal(
   classifyProduct("【包GCP】Google邮箱2020-2024|混合地区|带2fa", "", rules).category,
-  "other",
+  "gemini",
+);
+assert.equal(
+  classifyProduct("【包GCP】Google邮箱2020-2024|混合地区|带2fa", "", rules).subtype,
+  "gmail",
 );
 assert.equal(
   classifyProduct("精品稳定老号谷歌邮箱 gmail号 随机地区 21-22年居多", "", rules).category,
-  "other",
+  "gemini",
+);
+assert.equal(
+  classifyProduct("精品稳定老号谷歌邮箱 gmail号 随机地区 21-22年居多", "", rules).subtype,
+  "gmail",
 );
 assert.equal(
   classifyProduct("美区 2-4 年谷歌邮箱（包gcp）", "", rules).category,
-  "other",
+  "gemini",
+);
+assert.equal(
+  classifyProduct("美区 2-4 年谷歌邮箱（包gcp）", "", rules).subtype,
+  "gmail",
 );
 assert.equal(
   classifyProduct("Leonardo 8500分成品号 (不支持sd和H3，有gpt image2，gemini2图片模型)", "", rules).category,
@@ -1333,7 +1345,7 @@ assert.equal(
   "codex",
 );
 
-// 7. 谷歌邮箱/Gmail 注册类商品排除测试（丢弃入 other）
+// 7. 谷歌邮箱/Gmail 账号类商品测试（归入 gemini:gmail）
 for (const title of [
   "谷歌邮箱【注册G专用】",
   "06-19年GMAIL邮箱/2FA/随机地区",
@@ -1344,18 +1356,22 @@ for (const title of [
   "🟨【个人谷歌邮箱Gmail】时间23-24年左右注册GMAIL邮箱/辅助邮箱/2FA/随机地区 质保首登🟡自动发货",
   "🟨【21-26年老号】谷歌邮箱成品老号·Gmail带2fa链接·包登录🟡自动发货",
 ]) {
-  assert.equal(classifyProduct(title, "注册gpt专用或提供登录说明", rules).category, "other");
-  assert.equal(
-    normalizeLdxpProduct({
-      goods_key: "gmail-reg-test",
-      name: title,
-      description: "时间20-24年左右注册GMAIL邮箱/2FA/美区 登录地址 accounts.google.com",
-      price: "12.00",
-      extend: { stock_count: "10" },
-      link: "/item/gmail-reg-test",
-    }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules),
-    null,
-  );
+  const result = classifyProduct(title, "注册gpt专用或提供登录说明", rules);
+  assert.equal(result.category, "gemini");
+  assert.equal(result.subtype, "gmail");
+  assert.equal(result.brand, "gemini");
+  assert.equal(result.durationLabel, "Gmail");
+  const normalized = normalizeLdxpProduct({
+    goods_key: "gmail-reg-test",
+    name: title,
+    description: "时间20-24年左右注册GMAIL邮箱/2FA/美区 登录地址 accounts.google.com",
+    price: "12.00",
+    extend: { stock_count: "10" },
+    link: "/item/gmail-reg-test",
+  }, { id: "ldxp-test", name: "test", url: "https://pay.ldxp.cn/shop/test", adapter: "ldxp" }, rules);
+  assert.notEqual(normalized, null);
+  assert.equal(normalized.category, "gemini");
+  assert.equal(normalized.subtype, "gmail");
 }
 
 // 确保合法的使用谷歌邮箱/Gmail的 Plus 成品号不被误杀

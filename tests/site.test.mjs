@@ -283,6 +283,11 @@ assert.match(app, /product-group-children/);
   sandbox.readStateFromUrl();
   assert.equal(getCurrentSubtype(), "m3");
 
+  sandbox.window.location.search = "?mode=gemini&type=gmail";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "gmail");
+  assert.equal(sandbox.subtypeForUrl("gmail"), "gmail");
+
   sandbox.window.location.search = "?mode=grok&type=m12";
   sandbox.readStateFromUrl();
   assert.equal(getCurrentSubtype(), "m12");
