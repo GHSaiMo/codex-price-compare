@@ -94,6 +94,22 @@ assert.equal(
   "codex_sms",
 );
 assert.equal(
+  classifyProduct("🗽秒接 无限换号码【五天】Codex🇺🇸手机接马验证（秒接 接不到退款 五天可接两次同一账号）", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("🗽秒接 无限换号码【五天】Codex🇺🇸手机接马验证（秒接 接不到退款 五天可接两次同一账号）", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
+  classifyProduct("🗽秒接 无限换号码【五天】Codex🇺🇸手机接马验证（秒接 接不到退款 五天可接两次同一账", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("🗽秒接 无限换号码【五天】Codex🇺🇸手机接马验证（秒接 接不到退款 五天可接两次同一账", "", rules).subtype,
+  "codex_sms",
+);
+assert.equal(
   classifyProduct("G接马free号 有RT，附送微软长效邮箱", "", rules).category,
   "codex",
 );

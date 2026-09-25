@@ -408,13 +408,6 @@
       "url": "https://aisou.pro/"
     },
     {
-      "id": "acg-ai-buy",
-      "name": "聊聊AI",
-      "adapter": "acg",
-      "enabled": true,
-      "url": "https://ai-buy.vip/"
-    },
-    {
       "id": "acg-mika",
       "name": "米卡店铺",
       "adapter": "acg",
