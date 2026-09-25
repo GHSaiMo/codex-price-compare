@@ -74,10 +74,10 @@ const modeConfigs = {
     title: "Gemini 比价",
     defaultSubtype: "m18",
     subtypes: [
+      { id: "gmail", label: "Gmail" },
       { id: "m3", label: "3M" },
       { id: "m12", label: "12M" },
       { id: "m18", label: "18M" },
-      { id: "gmail", label: "Gmail" },
     ],
   },
 };

@@ -1032,10 +1032,10 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         id: "gemini",
         name: "Gemini",
         subtypes: [
+          { id: "gmail", label: "Gmail" },
           { id: "m3", label: "3M" },
           { id: "m12", label: "12M" },
           { id: "m18", label: "18M" },
-          { id: "gmail", label: "Gmail" },
         ],
       },
     ],
@@ -1043,7 +1043,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
       { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m3", "m12"] },
-      { id: "gemini", name: "Gemini", subtypes: rules.geminiSubtypes || ["m3", "m12", "m18", "gmail"] },
+      { id: "gemini", name: "Gemini", subtypes: rules.geminiSubtypes || ["gmail", "m3", "m12", "m18"] },
     ],
     items: sortedItems,
   };
