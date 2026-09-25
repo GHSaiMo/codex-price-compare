@@ -3,31 +3,23 @@
 ## 1. 运行态感知与环境路由 (Runtime & Host Manifest)
 
 > [!IMPORTANT]
-> **生产常驻环境**：本项目生产常驻服务已正式迁移并托管于局域网 **飞牛 NAS (192.168.50.39)**。
-> - **NAS 服务路径**：`/vol1/1000/apps/codex-price-compare`
-> - **NAS 进程守护**：systemd 服务 `codex-price-compare`（监听 `0.0.0.0:49173`，本地透明中继映射 `127.0.0.1:49173`）
-> - **Mac 本地目录**：`/Users/hal9000/Websites/codex-price-compare`（作为离线开发、数据源爬取与规则验证备份）
+> **生产常驻环境**：本项目生产常驻服务已迁移至 **Mac 本机 (9000.local)**。
+> - **Mac 本地目录**：`/Users/hal9000/Websites/codex-price-compare`
+> - **进程守护**：tmux 会话 `codex-price-compare`（监听 `0.0.0.0:49173` 与管理端 `49174`）
+> - **回退代理配置**：`.env` 中 `FALLBACK_PROXY_URL=http://127.0.0.1:7890`（本机代理）
+> - **微信变动通知**：`.env` 中 `WECHATBRIDGE_URL=http://127.0.0.1:5033/`（本机 WeChatBridge）
 
 ### Agent 行为准则 (必须遵守)：
 
-1. **意图路由与确认机制**：
-   - 若用户需求涉及 **“排查价格看板线上报错”、“更新 NAS 生产环境商品数据”、“重启服务” 或 “热修复线上站点”**，Agent 应**直接定位为 NAS 生产环境**，调用 `nas-ops` 技能通过 SSH 访问 NAS。
-   - 若用户需求为 **“新增卡网源”、“修改爬虫/分类逻辑”、“测试分类器”** 但未明确指明环境，Agent **必须先询问用户确认**：
-     > “当前本项目常驻运行于 NAS (192.168.50.39) 生产环境。请问您是希望**直接修改并刷新 NAS 线上服务与数据**，还是**在 Mac 本地进行调试开发**？”
-2. **NAS 生产环境操作流 (nas-ops)**：
-   - 远程日志查看：`ssh nas "journalctl -u codex-price-compare -n 50 -f"`
-   - 重启线上站点：`ssh nas "echo jz0305 | sudo -S systemctl restart codex-price-compare"`
-   - 探活检查：`curl -s http://127.0.0.1:49173/`
-3. **Git 版本控制双端同步**：
-   - NAS 端拥有完整 Git 仓库与 GitHub SSH 免密推送权限。
-   - 在 NAS 端更新数据或代码后：
-     `ssh nas "cd /vol1/1000/apps/codex-price-compare && git add . && git commit -m '...' && git push origin main"`
-   - 随后在 Mac 本地目录拉取同步：
-     `cd /Users/hal9000/Websites/codex-price-compare && git pull origin main`
-4. **网络出网分流与反爬风控契约**：
-   - NAS 系统默认关闭 TUN 虚拟网卡，默认出网路由 100% 绑定物理网卡 `enp2s0`。
-   - **国内流量与卡网抓取**：天然直接走南京电信家庭宽带公网 IP（`117.89.232.186`）出网，物理级杜绝国内卡网平台的阿里云 ESA / 阿里云盾 WAF 滑块风控。
-   - **海外流量与代理能力**：`sing-box` 常驻监听本地混合代理端口 `0.0.0.0:7890`（支持 HTTP/SOCKS5），需出海的容器/任务显式配置代理出网，规则集位于 `/opt/sing-box/rules/`。
+1. **环境定位**：
+   - 生产环境为 Mac 本机，开发调试与运行均直接在本地目录 `/Users/hal9000/Websites/codex-price-compare` 下进行。
+   - 服务启停与状态管理通过 `tmuxctl`（如 `/Users/hal9000/Projects/tmux/tmuxctl restart codex-price-compare`）。
+2. **探活检查**：
+   - 前台：`curl -s http://127.0.0.1:49173/`
+   - 管理端：`curl -s http://127.0.0.1:49174/`
+3. **网络出网与代理契约**：
+   - 国内大部分卡网直接通过直连 fetch 出网；
+   - 触发 Cloudflare/WAF 阻断的海外源通过本地回退代理 `127.0.0.1:7890` 出网。
 
 ---
 
