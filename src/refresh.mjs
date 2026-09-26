@@ -636,7 +636,10 @@ export function buildSourceHealth({
 
 export function reclassifyProductItem(item, rules, sources = null) {
   if (!item || !rules) return item;
-  const classification = classifyProduct(item.title, item.descriptionText, rules);
+  const classification = classifyProduct(item.title, item.descriptionText, rules, {
+    url: item.url,
+    id: item.id,
+  });
   if (!classification || classification.category === "other") return null;
 
   let url = item.url;

@@ -885,7 +885,104 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
   return buildResult("other", "unknown", 0, [], []);
 }
 
-export function classifyProduct(title, description = "", rules) {
+function normalizeManualMatchText(str) {
+  return String(str || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+export function matchManualOverride(title, rules = {}, context = {}) {
+  const manualOverrides = rules?.manualOverrides;
+  if (!manualOverrides || typeof manualOverrides !== "object") return null;
+
+  const titleText = stripHtml(title);
+  const normalizedTitle = normalizeManualMatchText(titleText);
+  const url = context?.url ? String(context.url).trim() : "";
+  const id = context?.id ? String(context.id).trim() : "";
+
+  for (const [category, subtypes] of Object.entries(manualOverrides)) {
+    if (!subtypes || typeof subtypes !== "object") continue;
+    for (const [subtype, entries] of Object.entries(subtypes)) {
+      if (!Array.isArray(entries)) continue;
+      for (const entry of entries) {
+        if (!entry) continue;
+        let isMatch = false;
+        const entryObj = typeof entry === "object" ? entry : null;
+        const target = typeof entry === "string" ? entry : (entry?.title || entry?.url || entry?.id || "");
+
+        if (typeof entry === "string") {
+          const normTarget = normalizeManualMatchText(target);
+          if (normTarget && normTarget === normalizedTitle) {
+            isMatch = true;
+          } else if (url && (target === url || url.includes(target))) {
+            isMatch = true;
+          } else if (id && target === id) {
+            isMatch = true;
+          }
+        } else if (entryObj) {
+          if (entryObj.title && normalizeManualMatchText(entryObj.title) === normalizedTitle) {
+            isMatch = true;
+          } else if (entryObj.url && url && (url === entryObj.url || url.includes(entryObj.url))) {
+            isMatch = true;
+          } else if (entryObj.id && id && id === entryObj.id) {
+            isMatch = true;
+          }
+        }
+
+        if (isMatch) {
+          if (category === "other") {
+            return buildResult(
+              "other",
+              subtype || "unknown",
+              0,
+              [],
+              [entryObj?.reason || `命中手工维护排除名单: ${target}`],
+            );
+          }
+
+          const brand = entryObj?.brand || (category === "grok" ? "grok" : (category === "gemini" ? "gemini" : "codex"));
+          const tags = entryObj?.tags || (category === "codex" ? [subtype] : (category === "sms" ? ["codex", "sms"] : [category, subtype]));
+          let durationDays = entryObj?.durationDays ?? null;
+          let durationLabel = entryObj?.durationLabel ?? null;
+
+          if (durationDays == null && durationLabel == null) {
+            if (category === "gemini") {
+              if (subtype === "m3") { durationDays = 90; durationLabel = "3M"; }
+              else if (subtype === "m12") { durationDays = 365; durationLabel = "12M"; }
+              else if (subtype === "m18") { durationDays = 540; durationLabel = "18M"; }
+              else if (subtype === "gmail") { durationDays = null; durationLabel = "Gmail"; }
+            } else if (category === "grok") {
+              if (subtype === "m1") { durationDays = 30; durationLabel = "1M"; }
+              else if (subtype === "m3") { durationDays = 90; durationLabel = "3M"; }
+              else if (subtype === "m12") { durationDays = 365; durationLabel = "12M"; }
+            }
+          }
+
+          return buildResult(
+            category,
+            subtype,
+            entryObj?.confidence ?? 1.0,
+            tags,
+            [entryObj?.reason || `命中手工维护白名单: ${category}/${subtype}`],
+            {
+              brand,
+              durationDays,
+              durationLabel,
+              ...(entryObj?.bypassPriceFloor ? { bypassPriceFloor: true } : {}),
+            },
+          );
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+export function classifyProduct(title, description = "", rules = {}, context = {}) {
+  const manualResult = matchManualOverride(title, rules, context);
+  if (manualResult) {
+    return manualResult;
+  }
+
   const titleText = stripHtml(title);
   const descriptionText = stripHtml(description);
   const titleOnly = titleText.toLowerCase();
@@ -951,10 +1048,13 @@ export function classifyProduct(title, description = "", rules) {
 }
 
 function withCommonFields(raw, source, rules, fields) {
-  const classification = classifyProduct(fields.title, fields.descriptionText, rules);
+  const classification = classifyProduct(fields.title, fields.descriptionText, rules, {
+    url: fields.url,
+    id: `${source.id || source.name}:${fields.sourceProductId}`,
+  });
   if (classification.category === "other") return null;
   const price = normalizePrice(fields.price);
-  if (isBlockedPrice(price, classification.category, classification.subtype, rules)) return null;
+  if (!classification.bypassPriceFloor && isBlockedPrice(price, classification.category, classification.subtype, rules)) return null;
 
   const isBareMotherSite = !fields.url || /^https?:\/\/[^\/]+\/?$/i.test(fields.url);
   const url = isBareMotherSite ? (source.url || fields.url) : fields.url;

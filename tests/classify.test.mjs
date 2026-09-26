@@ -6,6 +6,7 @@ import {
   isBlockedPrice,
   isCreditQuotaProduct,
   isTutorialProduct,
+  matchManualOverride,
   normalizeAcgProduct,
   normalizeDujiaoProduct,
   normalizeLdxpProduct,
@@ -1438,6 +1439,74 @@ const uncorrectableAcgPro = normalizeAcgProduct(
 );
 assert.equal(uncorrectableAcgPro, null);
 
+// 10. 手工维护个例白名单 / 黑名单短路匹配测试 (manualOverrides)
+const manualPlusResult = classifyProduct(
+  "(质保30天)手搓一卡一指纹G 成品号 - 屎黄手搓品",
+  "默认大家都是成年人...",
+  rules,
+);
+assert.equal(manualPlusResult.category, "codex");
+assert.equal(manualPlusResult.subtype, "plus");
+assert.equal(manualPlusResult.confidence, 1.0);
+assert.ok(manualPlusResult.matchReasons[0].includes("命中手工维护白名单: codex/plus"));
 
+// 测试归一化空格与大小写容错
+const manualPlusSpaced = classifyProduct(
+  "  (质保30天)手搓一卡一指纹g   成品号 - 屎黄手搓品  ",
+  "",
+  rules,
+);
+assert.equal(manualPlusSpaced.subtype, "plus");
 
+// 测试 URL 与 ID 匹配维度
+const customRulesWithUrlAndId = {
+  ...rules,
+  manualOverrides: {
+    ...rules.manualOverrides,
+    codex: {
+      ...rules.manualOverrides.codex,
+      pro_20x: [
+        "https://example.com/item/special-pro",
+        "custom-source:special-id",
+      ],
+    },
+    other: {
+      unknown: [
+        "测试手工排除商品",
+      ],
+    },
+  },
+};
 
+const matchedByUrl = classifyProduct("随意标题无关键字", "", customRulesWithUrlAndId, {
+  url: "https://example.com/item/special-pro",
+});
+assert.equal(matchedByUrl.category, "codex");
+assert.equal(matchedByUrl.subtype, "pro_20x");
+
+const matchedById = classifyProduct("随意标题无关键字2", "", customRulesWithUrlAndId, {
+  id: "custom-source:special-id",
+});
+assert.equal(matchedById.category, "codex");
+assert.equal(matchedById.subtype, "pro_20x");
+
+// 手工排除
+const manualExcluded = classifyProduct("测试手工排除商品", "", customRulesWithUrlAndId);
+assert.equal(manualExcluded.category, "other");
+
+// normalizeLdxpProduct 完整流验证
+const normalizedManualLdxp = normalizeLdxpProduct(
+  {
+    goods_key: "y477uj",
+    name: "(质保30天)手搓一卡一指纹G 成品号 - 屎黄手搓品",
+    description: "OpenAI 挽留期",
+    price: "94.00",
+    category: { name: "G Plus带质保" },
+  },
+  { id: "ldxp-ft7", name: "FT7", url: "https://wzyp.cn/shop/FT7", adapter: "ldxp" },
+  rules,
+);
+assert.ok(normalizedManualLdxp);
+assert.equal(normalizedManualLdxp.category, "codex");
+assert.equal(normalizedManualLdxp.subtype, "plus");
+assert.equal(normalizedManualLdxp.price, 94);

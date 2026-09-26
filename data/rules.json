@@ -6,6 +6,35 @@
     "grok",
     "gemini"
   ],
+  "manualOverrides": {
+    "codex": {
+      "plus": [
+        "(质保30天)手搓一卡一指纹G 成品号 - 屎黄手搓品"
+      ],
+      "pro_5x": [],
+      "pro_20x": [],
+      "free": [],
+      "api": []
+    },
+    "sms": {
+      "codex_sms": []
+    },
+    "grok": {
+      "free": [],
+      "m1": [],
+      "m3": [],
+      "m12": []
+    },
+    "gemini": {
+      "gmail": [],
+      "m3": [],
+      "m12": [],
+      "m18": []
+    },
+    "other": {
+      "unknown": []
+    }
+  },
   "geminiSubtypes": [
     "gmail",
     "m3",

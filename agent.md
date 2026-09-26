@@ -58,6 +58,65 @@
 node --check server.mjs && node --check src/cleaning.mjs && node --check app.js && node --check admin.js && node --check theme.js && node --check source-sort.js && node --check sources.js
 ```
 
+---
+
+## 3. 个例商品手工直录/覆盖维护 (Manual Overrides)
+
+当遇到卖家黑话（如“G 成品号”、“屎黄手搓品”）、无标准关键词或命名极不规范，但人工确认应归入某一分类（或需强制排除）的商品时，**严禁为了单一特例修改全局正则/大词库**（防止引发大规模误伤与规则污染），应直接通过手工直录白名单/黑名单机制维护。
+
+### 3.1 配置文件与分类路径
+
+* **配置文件**：[`data/rules.json`](file:///Users/hal9000/Websites/codex-price-compare/data/rules.json)
+* **目标字段**：`manualOverrides[category][subtype]`
+
+各主流品类对应路径：
+* **Codex**：
+  * Plus：`manualOverrides.codex.plus`
+  * 5x Pro：`manualOverrides.codex.pro_5x`
+  * 20x Pro：`manualOverrides.codex.pro_20x`
+  * 普号：`manualOverrides.codex.free`
+  * API：`manualOverrides.codex.api`
+* **SMS (接码)**：`manualOverrides.sms.codex_sms`
+* **Grok**：`manualOverrides.grok.m1` / `m3` / `m12` / `free`
+* **Gemini**：`manualOverrides.gemini.gmail` / `m3` / `m12` / `m18`
+* **手工排除 (黑名单)**：`manualOverrides.other.unknown`
+
+### 3.2 支持录入的格式
+
+数组内支持以下维度（分类器短路优先，赋予 `confidence: 1.0`）：
+1. **完整标题字符串（推荐，最常用）**：
+   * 例：`"(质保30天)手搓一卡一指纹G 成品号 - 屎黄手搓品"`
+   * 清洗器会自动去除 HTML 标签，并对首尾空格、内部连续空格以及英文字母大小写进行归一化容错。
+2. **商品链接 / URL**：
+   * 例：`"https://wzyp.cn/item/y477uj"`
+   * 当卖家频繁微调标题导致标题匹配失效时，直接填入商品链接或关键路径。
+3. **商品全局 ID**：
+   * 例：`"ldxp-ft7:y477uj"`
+4. **对象高级定义（可选）**：
+   * 例：`{ "title": "...", "reason": "人工指定", "durationDays": 30, "durationLabel": "1M" }`
+
+### 3.3 Agent 操作规范流程
+
+当用户要求“把【XXX】商品加入到 XX 分类”或“把【XXX】排除”时，Agent 按以下流程执行：
+
+1. **查重并追加配置**：
+   * 读取 [`data/rules.json`](file:///Users/hal9000/Websites/codex-price-compare/data/rules.json)，在目标 `manualOverrides[category][subtype]` 数组中追加该商品的完整标题或 URL（避免重复添加）。
+2. **同步现存商品库（热生效）**：
+   * 运行重分类同步脚本，使 `data/products.json` 现存数据立即按新白名单修正：
+     ```bash
+     node --input-type=module -e "import fs from 'node:fs'; import { reclassifyProductItems } from './src/refresh.mjs'; import { sortProductsForDisplay } from './src/cleaning.mjs'; const rules = JSON.parse(fs.readFileSync('data/rules.json', 'utf8')); const products = JSON.parse(fs.readFileSync('data/products.json', 'utf8')); products.items = sortProductsForDisplay(reclassifyProductItems(products.items, rules)); fs.writeFileSync('data/products.json', JSON.stringify(products, null, 2) + '\n', 'utf8');"
+     ```
+3. **验证与测试**：
+   * 运行测试套件与语法检查：
+     ```bash
+     npm test && node --check src/cleaning.mjs
+     ```
+4. **汇报与提示**：
+   * 告知用户已完成录入并同步至 `data/products.json`。
+   * 如线上后台常驻运行中，提示用户前台已可直接读取最新数据，无需强制重启服务。
+
+---
+
 ## 注意事项
 
 - 不要自动启动或重启开发服务；如果需要刷新运行中的页面，请先提示用户。
