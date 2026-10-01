@@ -3,23 +3,25 @@
 ## 1. 运行态感知与环境路由 (Runtime & Host Manifest)
 
 > [!IMPORTANT]
-> **生产常驻环境**：本项目生产常驻服务已迁移至 **Mac 本机 (9000.local)**。
-> - **Mac 本地目录**：`/Users/hal9000/Websites/codex-price-compare`
-> - **进程守护**：tmux 会话 `codex-price-compare`（监听 `0.0.0.0:49173` 与管理端 `49174`）
-> - **回退代理配置**：`.env` 中 `FALLBACK_PROXY_URL=http://127.0.0.1:7890`（本机代理）
-> - **微信变动通知**：`.env` 中 `WECHATBRIDGE_URL=http://127.0.0.1:5033/`（本机 WeChatBridge）
+> **生产常驻环境**：本项目生产常驻服务托管于局域网 **飞牛 NAS (192.168.50.39)**。
+> - **NAS 服务路径**：`/vol1/1000/apps/codex-price-compare`
+> - **NAS 进程守护**：systemd 服务 `codex-price-compare`（监听 `0.0.0.0:49173`，本地透明中继映射 `127.0.0.1:49173`）
+> - **Mac 本地目录**：`/Users/hal9000/Websites/codex-price-compare`（作为离线开发、数据源爬取与规则验证备份）
+> - **回退代理配置**：`.env` 中 `FALLBACK_PROXY_URL=http://127.0.0.1:7890`
+> - **微信变动通知**：`.env` 中 `WECHATBRIDGE_URL=http://127.0.0.1:5033/`
 
 ### Agent 行为准则 (必须遵守)：
 
 1. **环境定位**：
-   - 生产环境为 Mac 本机，开发调试与运行均直接在本地目录 `/Users/hal9000/Websites/codex-price-compare` 下进行。
-   - 服务启停与状态管理通过 `tmuxctl`（如 `/Users/hal9000/Projects/tmux/tmuxctl restart codex-price-compare`）。
+   - 生产环境托管于 NAS (192.168.50.39)，本地通过 `lan-proxy-bridge` 中继端口 `49173` 与 `49174`。
+   - Tmux 控制台通过 `nas-service-runner codex-price-compare systemd` 挂接远程 systemd 日志流。
+   - 开发调试在 Mac 本地目录 `/Users/hal9000/Websites/codex-price-compare` 下进行，提交并同步到 NAS。
 2. **探活检查**：
    - 前台：`curl -s http://127.0.0.1:49173/`
    - 管理端：`curl -s http://127.0.0.1:49174/`
 3. **网络出网与代理契约**：
    - 国内大部分卡网直接通过直连 fetch 出网；
-   - 触发 Cloudflare/WAF 阻断的海外源通过本地回退代理 `127.0.0.1:7890` 出网。
+   - 触发 Cloudflare/WAF 阻断的海外源通过回退代理 `127.0.0.1:7890` 出网。
 
 ---
 
