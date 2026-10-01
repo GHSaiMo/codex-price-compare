@@ -330,7 +330,7 @@ assert.doesNotMatch(app, /themeToggle/);
 assert.match(themeApp, /themeToggle/);
 assert.match(themeApp, /localStorage\.setItem\("color-theme"/);
 assert.match(themeApp, /document\.body\.dataset\.theme/);
-assert.equal(packageJson.scripts.start, "node server.mjs");
+assert.match(packageJson.scripts.start, /^(?:bun|node) server\.mjs$/);
 assert.match(server, /const PORT = 49173;/);
 assert.match(server, /const ADMIN_PORT = 49174;/);
 assert.match(server, /\.svg": "image\/svg\+xml; charset=utf-8"/);

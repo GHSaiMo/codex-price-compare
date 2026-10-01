@@ -16,7 +16,11 @@ export async function writeAtomic(targetPath, content) {
   const filePath = toFilePath(targetPath);
   const tempPath = `${filePath}.tmp.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
   try {
-    await writeFile(tempPath, content, "utf8");
+    if (typeof Bun !== "undefined" && typeof Bun.write === "function") {
+      await Bun.write(tempPath, content);
+    } else {
+      await writeFile(tempPath, content, "utf8");
+    }
     await rename(tempPath, filePath);
   } catch (error) {
     await unlink(tempPath).catch(() => {});

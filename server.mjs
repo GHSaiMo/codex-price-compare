@@ -125,7 +125,9 @@ async function sendCompressed(request, response, statusCode, content, contentTyp
   const accept = request ? String(request.headers?.["accept-encoding"] || "") : "";
   if (buffer.length >= 1024 && /\bgzip\b/i.test(accept)) {
     try {
-      const compressed = await gzipAsync(buffer);
+      const compressed = typeof Bun !== "undefined" && typeof Bun.gzipSync === "function"
+        ? Bun.gzipSync(buffer)
+        : await gzipAsync(buffer);
       headers["content-encoding"] = "gzip";
       headers["content-length"] = compressed.length;
       headers["vary"] = "Accept-Encoding";
@@ -168,7 +170,9 @@ async function getPublicProducts() {
   const mtimeMs = fileStat ? fileStat.mtimeMs : 0;
   if (!publicProductsCache || publicProductsCache.mtimeMs !== mtimeMs) {
     try {
-      const rawText = await readFile(productsPath, "utf8");
+      const rawText = typeof Bun !== "undefined"
+        ? await Bun.file(productsPath).text()
+        : await readFile(productsPath, "utf8");
       const raw = JSON.parse(rawText);
       const payload = toPublicProductsDocument(raw);
       const json = JSON.stringify(payload);
@@ -192,7 +196,9 @@ async function getPublicMeta() {
   const mtimeMs = fileStat ? fileStat.mtimeMs : 0;
   if (!publicMetaCache || publicMetaCache.mtimeMs !== mtimeMs) {
     try {
-      const rawText = await readFile(metaPath, "utf8");
+      const rawText = typeof Bun !== "undefined"
+        ? await Bun.file(metaPath).text()
+        : await readFile(metaPath, "utf8");
       const raw = JSON.parse(rawText);
       const payload = toPublicMeta(raw);
       const json = JSON.stringify(payload);
@@ -794,7 +800,9 @@ function createStaticServer(defaultFile, port, allowApi = false) {
         return;
       }
 
-      const fileContent = await readFile(filePath);
+      const fileContent = typeof Bun !== "undefined"
+        ? Buffer.from(await Bun.file(filePath).arrayBuffer())
+        : await readFile(filePath);
       await sendCompressed(
         request,
         response,
@@ -822,7 +830,9 @@ function createStaticServer(defaultFile, port, allowApi = false) {
       return;
     }
 
-    const fileContent = await readFile(filePath);
+    const fileContent = typeof Bun !== "undefined"
+      ? Buffer.from(await Bun.file(filePath).arrayBuffer())
+      : await readFile(filePath);
     await sendCompressed(
       request,
       response,

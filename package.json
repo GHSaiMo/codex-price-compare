@@ -5,12 +5,19 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "start": "node server.mjs",
-    "refresh": "node scripts/refresh-products.mjs",
-    "test": "node tests/classify.test.mjs && node tests/refresh.test.mjs && node tests/stock-watch.test.mjs && node tests/site.test.mjs && node tests/recommendations.test.mjs"
+    "start": "bun server.mjs",
+    "start:node": "node server.mjs",
+    "dev": "bun --watch server.mjs",
+    "refresh": "bun scripts/refresh-products.mjs",
+    "refresh:node": "node scripts/refresh-products.mjs",
+    "test": "bun tests/classify.test.mjs && bun tests/refresh.test.mjs && bun tests/stock-watch.test.mjs && bun tests/site.test.mjs && bun tests/recommendations.test.mjs && bun tests/fs-atomic.test.mjs",
+    "test:node": "node tests/classify.test.mjs && node tests/refresh.test.mjs && node tests/stock-watch.test.mjs && node tests/site.test.mjs && node tests/recommendations.test.mjs && node tests/fs-atomic.test.mjs"
   },
   "dependencies": {
     "playwright": "^1.60.0",
     "qrcode-generator": "^2.0.4"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2"
   }
 }
