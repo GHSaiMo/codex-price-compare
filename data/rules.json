@@ -32,7 +32,9 @@
       "m18": []
     },
     "other": {
-      "unknown": []
+      "unknown": [
+        "gpt协议次数"
+      ]
     }
   },
   "geminiSubtypes": [
@@ -473,7 +475,8 @@
     "cursor pro",
     "cursor",
     "leonardo",
-    "代理请重新对接"
+    "代理请重新对接",
+    "gpt协议次数"
   ],
   "titleSubtypeTerms": {
     "free": [

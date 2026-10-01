@@ -1510,3 +1510,24 @@ assert.ok(normalizedManualLdxp);
 assert.equal(normalizedManualLdxp.category, "codex");
 assert.equal(normalizedManualLdxp.subtype, "plus");
 assert.equal(normalizedManualLdxp.price, 94);
+
+// 测试 gpt协议次数 丢弃 (手动黑名单与标题排除)
+const gptProtocolResult = classifyProduct("gpt协议次数", "", rules);
+assert.equal(gptProtocolResult.category, "other");
+assert.equal(gptProtocolResult.subtype, "unknown");
+
+const gptProtocolVariantResult = classifyProduct("【低价发卡】gpt协议次数 1000次", "", rules);
+assert.equal(gptProtocolVariantResult.category, "other");
+assert.equal(gptProtocolVariantResult.subtype, "unknown");
+
+const normalizedGptProtocol = normalizeLdxpProduct(
+  {
+    goods_key: "protocol_test",
+    name: "gpt协议次数",
+    price: "10.00",
+    category: { name: "协议" },
+  },
+  { id: "ldxp-test", name: "TestShop", url: "https://example.com/shop/test", adapter: "ldxp" },
+  rules,
+);
+assert.equal(normalizedGptProtocol, null);
