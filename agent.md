@@ -1,25 +1,45 @@
 # Agent 维护说明
 
-## 1. 运行态感知与环境路由 (Runtime & Host Manifest)
+## 1. 运行态感知与环境路由 (NAS-First 架构准则)
 
 > [!IMPORTANT]
 > **生产常驻环境**：本项目生产常驻服务托管于局域网 **飞牛 NAS (192.168.50.39)**。
 > - **NAS 服务路径**：`/vol1/1000/apps/codex-price-compare`
-> - **NAS 进程守护**：systemd 服务 `codex-price-compare`（监听 `0.0.0.0:49173`，本地透明中继映射 `127.0.0.1:49173`）
-> - **Mac 本地目录**：`/Users/hal9000/Websites/codex-price-compare`（作为离线开发、数据源爬取与规则验证备份）
+> - **SSH 访问契约**：`ssh nas`（连接 `192.168.50.39:2022`，用户 `jiuzai`，认证私钥 `~/.ssh/nas_ed25519`）
+> - **NAS 进程守护**：systemd 服务 `codex-price-compare`（监听 `0.0.0.0:49173` 与管理端 `49174`，Mac 本地通过透明中继桥映射 `127.0.0.1:49173` / `49174`）
+> - **Mac 本地目录**：`/Users/hal9000/Websites/codex-price-compare`（仅作代码同步与开发副本，非线上运行进程）
 > - **回退代理配置**：`.env` 中 `FALLBACK_PROXY_URL=http://127.0.0.1:7890`
 > - **微信变动通知**：`.env` 中 `WECHATBRIDGE_URL=http://127.0.0.1:5033/`
 
-### Agent 行为准则 (必须遵守)：
+### 核心操作原则（必须严格遵守）：
 
-1. **环境定位**：
-   - 生产环境托管于 NAS (192.168.50.39)，本地通过 `lan-proxy-bridge` 中继端口 `49173` 与 `49174`。
-   - Tmux 控制台通过 `nas-service-runner codex-price-compare systemd` 挂接远程 systemd 日志流。
-   - 开发调试在 Mac 本地目录 `/Users/hal9000/Websites/codex-price-compare` 下进行，提交并同步到 NAS。
-2. **探活检查**：
-   - 前台：`curl -s http://127.0.0.1:49173/`
-   - 管理端：`curl -s http://127.0.0.1:49174/`
-3. **网络出网与代理契约**：
+1. **修改与生效默认以 NAS 为主 (NAS-First)**：
+   - 以后修改本项目（包括分类规则、词表补充、白名单维护、清洗逻辑、网站源等），**核心是修改和作用于 NAS 上托管运行的实际进程与数据**。
+   - 所有变更必须保证第一时间在 NAS 环境生效，严禁出现“只改了 Mac 本地或仅推送到 GitHub，而遗漏了 NAS 实际运行态”的情况。
+   - 变更流程标准动作：在本地或 NAS 修改验证后推送到 GitHub，必须立即通过 `ssh nas "cd /vol1/1000/apps/codex-price-compare && git pull"` 同步到 NAS。
+2. **服务重启与热重载目标为 NAS 端**：
+   - 用户访问的 `http://127.0.0.1:49173/` 实际为 NAS 服务的局域网中继映射。
+   - **任何服务重启操作，目标一律为 NAS 端的 systemd 服务**：
+     ```bash
+     ssh nas "sudo systemctl restart codex-price-compare"
+     ```
+   - 状态检查与日志流：
+     ```bash
+     ssh nas "systemctl status codex-price-compare --no-pager"
+     ```
+3. **Mac 端定位：保持代码同步即可**：
+   - Mac 本地仓库用于辅助开发、语法检查与测试套件回归（`npm test`）。
+   - Mac 端无需常驻运行生产服务进程，只要保持与 GitHub / NAS 的代码同步即可。
+4. **探活与线上真实数据验证**：
+   - 每次规则修改或商品调整后，验证必须直接针对 NAS 映射的端点验证：
+     ```bash
+     # 探活检查
+     curl -s http://127.0.0.1:49173/
+     curl -s http://127.0.0.1:49174/
+     # 检查实际商品数据是否已在 NAS 线上数据中生效
+     curl -s http://127.0.0.1:49173/data/products.json | grep -F "目标关键词"
+     ```
+5. **网络出网与代理契约**：
    - 国内大部分卡网直接通过直连 fetch 出网；
    - 触发 Cloudflare/WAF 阻断的海外源通过回退代理 `127.0.0.1:7890` 出网。
 
@@ -103,25 +123,35 @@ node --check server.mjs && node --check src/cleaning.mjs && node --check app.js 
 
 1. **查重并追加配置**：
    * 读取 [`data/rules.json`](file:///Users/hal9000/Websites/codex-price-compare/data/rules.json)，在目标 `manualOverrides[category][subtype]` 数组中追加该商品的完整标题或 URL（避免重复添加）。
-2. **同步现存商品库（热生效）**：
-   * 运行重分类同步脚本，使 `data/products.json` 现存数据立即按新白名单修正：
-     ```bash
-     node --input-type=module -e "import fs from 'node:fs'; import { reclassifyProductItems } from './src/refresh.mjs'; import { sortProductsForDisplay } from './src/cleaning.mjs'; const rules = JSON.parse(fs.readFileSync('data/rules.json', 'utf8')); const products = JSON.parse(fs.readFileSync('data/products.json', 'utf8')); products.items = sortProductsForDisplay(reclassifyProductItems(products.items, rules)); fs.writeFileSync('data/products.json', JSON.stringify(products, null, 2) + '\n', 'utf8');"
-     ```
-3. **验证与测试**：
+   * 若涉及新特征词或正则匹配逻辑，同步更新 `data/rules.json` 及 `src/cleaning.mjs`。
+2. **本地测试与代码提交推送**：
    * 运行测试套件与语法检查：
      ```bash
      npm test && node --check src/cleaning.mjs
      ```
-4. **汇报与提示**：
-   * 告知用户已完成录入并同步至 `data/products.json`。
-   * 如线上后台常驻运行中，提示用户前台已可直接读取最新数据，无需强制重启服务。
+   * 提交并推送到 GitHub 远程仓库：
+     ```bash
+     git add -A && git commit -m "..." && git push origin main
+     ```
+3. **NAS 同步与全库热生效（必须执行的核心步）**：
+   * 无论在本地做何种变更，必须立即同步到 NAS 端并在 NAS 上触发重分类与生效：
+     ```bash
+     ssh nas "cd /vol1/1000/apps/codex-price-compare && git pull && node --input-type=module -e \"import fs from 'node:fs'; import { reclassifyProductItems } from './src/refresh.mjs'; import { sortProductsForDisplay } from './src/cleaning.mjs'; const rules = JSON.parse(fs.readFileSync('data/rules.json', 'utf8')); const products = JSON.parse(fs.readFileSync('data/products.json', 'utf8')); products.items = sortProductsForDisplay(reclassifyProductItems(products.items, rules)); fs.writeFileSync('data/products.json', JSON.stringify(products, null, 2) + '\n', 'utf8');\""
+     ```
+   * 若修改了服务层逻辑或 `cleaning.mjs` 模块代码，需同步重启 NAS 端常驻服务：
+     ```bash
+     ssh nas "sudo systemctl restart codex-price-compare"
+     ```
+4. **线上前台探活验证与汇报**：
+   * 通过 `curl http://127.0.0.1:49173/data/products.json | grep -F "目标关键词"` 确认数据已在 NAS 线上端点生效。
+   - 告知用户已完成录入并在 NAS 生产端同步生效。
 
 ---
 
 ## 注意事项
 
-- 不要自动启动或重启开发服务；如果需要刷新运行中的页面，请先提示用户。
+- **生产服务在 NAS**：不要在 Mac 本地启动或常驻开发服务争抢中继端口；重启服务一律指重启 NAS 端的 systemd 服务（`ssh nas "sudo systemctl restart codex-price-compare"`）。
+- **Mac 端定位**：Mac 本地仅作为工作区与代码备份，保持 `git pull` 与 GitHub 同步即可。
 - 不要把明显无关的商品强行归入 Codex / ChatGPT 分类。
 - 不要添加需要账号登录、绕过限制或抓取非公开信息的数据源。
 - 编辑 Markdown 文档默认使用中文。
