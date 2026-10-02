@@ -111,6 +111,43 @@ assert.equal(
   "codex_sms",
 );
 assert.equal(
+  classifyProduct("云自营👑Plus｜美区Codex接-码｜AI_云顶👑客户专用｜其他客户请勿拍！！！", "", rules).category,
+  "sms",
+);
+assert.equal(
+  classifyProduct("云自营👑Plus｜美区Codex接-码｜AI_云顶👑客户专用｜其他客户请勿拍！！！", "", rules).subtype,
+  "codex_sms",
+);
+{
+  const rulesWithoutSmsManual = {
+    ...rules,
+    manualOverrides: {
+      ...rules.manualOverrides,
+      sms: { codex_sms: [] },
+    },
+  };
+  assert.equal(
+    classifyProduct("云自营👑Plus｜美区Codex接-码｜无直录测试", "", rulesWithoutSmsManual).category,
+    "sms",
+  );
+  assert.equal(
+    classifyProduct("云自营👑Plus｜美区Codex接-码｜无直录测试", "", rulesWithoutSmsManual).subtype,
+    "codex_sms",
+  );
+  assert.equal(
+    classifyProduct("G Free| 双-接-码+RT| 可用codex", "", rulesWithoutSmsManual).category,
+    "codex",
+  );
+  assert.equal(
+    classifyProduct("G Free| 双-接-码+RT| 可用codex", "", rulesWithoutSmsManual).subtype,
+    "free",
+  );
+  assert.equal(
+    classifyProduct("Gpt Free（codex已-接-码 | 高额度 | 刷新RT）", "", rulesWithoutSmsManual).subtype,
+    "free",
+  );
+}
+assert.equal(
   classifyProduct("G接马free号 有RT，附送微软长效邮箱", "", rules).category,
   "codex",
 );
@@ -1449,6 +1486,16 @@ assert.equal(manualPlusResult.category, "codex");
 assert.equal(manualPlusResult.subtype, "plus");
 assert.equal(manualPlusResult.confidence, 1.0);
 assert.ok(manualPlusResult.matchReasons[0].includes("命中手工维护白名单: codex/plus"));
+
+const manualSmsResult = classifyProduct(
+  "云自营👑Plus｜美区Codex接-码｜AI_云顶👑客户专用｜其他客户请勿拍！！！",
+  "",
+  rules,
+);
+assert.equal(manualSmsResult.category, "sms");
+assert.equal(manualSmsResult.subtype, "codex_sms");
+assert.equal(manualSmsResult.confidence, 1.0);
+assert.ok(manualSmsResult.matchReasons[0].includes("命中手工维护白名单: sms/codex_sms"));
 
 // 测试归一化空格与大小写容错
 const manualPlusSpaced = classifyProduct(
