@@ -11,6 +11,9 @@
 > - **回退代理配置**：`.env` 中 `FALLBACK_PROXY_URL=http://127.0.0.1:7890`
 > - **微信变动通知**：`.env` 中 `WECHATBRIDGE_URL=http://127.0.0.1:5033/`
 
+> [!TIP]
+> **一键部署**：`scripts/deploy-nas.sh [--no-restart]` 通过 SSH 以 git bundle 把本地 `main` 同步到 NAS（不依赖 GitHub / 代理），随后重启 systemd 服务并探活 49173/49174。NAS 上 `git pull` 经 Mac 代理（`192.168.50.9:7898`）时可能因上游不通而卡住，此时优先用该脚本。
+
 ### 核心操作原则（必须严格遵守）：
 
 1. **修改与生效默认以 NAS 为主 (NAS-First)**：
