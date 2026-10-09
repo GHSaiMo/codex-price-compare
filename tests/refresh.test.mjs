@@ -1061,3 +1061,27 @@ try {
   assert.equal(fallbackInvoked, false);
 }
 
+
+{
+  const { runHostGroups, resolveRefreshConcurrency } = await import("../src/refresh.mjs");
+  assert.equal(resolveRefreshConcurrency({}), 4);
+  assert.equal(resolveRefreshConcurrency({ REFRESH_CONCURRENCY: "2" }), 2);
+  assert.equal(resolveRefreshConcurrency({ REFRESH_CONCURRENCY: "x" }), 4);
+
+  let active = 0;
+  let peak = 0;
+  const seen = [];
+  await runHostGroups([["a1", "a2"], ["b1"], ["c1"], ["d1"], ["e1"]], async (group) => {
+    active += 1;
+    peak = Math.max(peak, active);
+    for (const id of group) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      seen.push(id);
+    }
+    active -= 1;
+  }, 2);
+  assert.equal(peak, 2);
+  assert.equal(seen.length, 6);
+  assert.ok(seen.indexOf("a1") < seen.indexOf("a2"));
+  console.log("host group concurrency tests passed");
+}

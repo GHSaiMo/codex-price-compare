@@ -2,12 +2,13 @@ import { createReadStream } from "node:fs";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createHash } from "node:crypto";
-import { gzip as gzipCb } from "node:zlib";
+import { brotliCompress as brotliCb, constants as zlibConstants, gzip as gzipCb } from "node:zlib";
 import { promisify } from "node:util";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const gzipAsync = promisify(gzipCb);
+const brotliAsync = promisify(brotliCb);
 
 import { loadDotEnv } from "./src/env.mjs";
 import { writeJsonAtomic } from "./src/fs-atomic.mjs";
@@ -115,20 +116,57 @@ async function existingFileOrDefault(filePath, defaultFile) {
   return join(ROOT, defaultFile);
 }
 
-async function sendCompressed(request, response, statusCode, content, contentType, extraHeaders = {}) {
+const COMPRESS_CACHE_MAX_ENTRIES = 64;
+const compressCache = new Map();
+
+function pickEncoding(acceptEncoding) {
+  if (/\bbr\b/i.test(acceptEncoding)) return "br";
+  if (/\bgzip\b/i.test(acceptEncoding)) return "gzip";
+  return null;
+}
+
+async function compressBuffer(buffer, encoding) {
+  if (encoding === "br") {
+    return brotliAsync(buffer, {
+      params: {
+        [zlibConstants.BROTLI_PARAM_QUALITY]: 9,
+        [zlibConstants.BROTLI_PARAM_SIZE_HINT]: buffer.length,
+      },
+    });
+  }
+  return typeof Bun !== "undefined" && typeof Bun.gzipSync === "function"
+    ? Bun.gzipSync(buffer)
+    : gzipAsync(buffer);
+}
+
+// 带 etag 的内容压缩一次后缓存，etag 变化即自然失效。
+async function getCompressed(buffer, encoding, cacheKey) {
+  const key = cacheKey ? `${encoding}:${cacheKey}` : null;
+  if (key && compressCache.has(key)) return compressCache.get(key);
+  const compressed = await compressBuffer(buffer, encoding);
+  if (key) {
+    if (compressCache.size >= COMPRESS_CACHE_MAX_ENTRIES) {
+      compressCache.delete(compressCache.keys().next().value);
+    }
+    compressCache.set(key, compressed);
+  }
+  return compressed;
+}
+
+async function sendCompressed(request, response, statusCode, content, contentType, extraHeaders = {}, cacheKey = extraHeaders.etag) {
   const buffer = Buffer.isBuffer(content) ? content : Buffer.from(String(content), "utf8");
   const headers = {
     "content-type": contentType,
     ...extraHeaders,
   };
 
-  const accept = request ? String(request.headers?.["accept-encoding"] || "") : "";
-  if (buffer.length >= 1024 && /\bgzip\b/i.test(accept)) {
+  const encoding = buffer.length >= 1024
+    ? pickEncoding(String(request?.headers?.["accept-encoding"] || ""))
+    : null;
+  if (encoding) {
     try {
-      const compressed = typeof Bun !== "undefined" && typeof Bun.gzipSync === "function"
-        ? Bun.gzipSync(buffer)
-        : await gzipAsync(buffer);
-      headers["content-encoding"] = "gzip";
+      const compressed = await getCompressed(buffer, encoding, cacheKey);
+      headers["content-encoding"] = encoding;
       headers["content-length"] = compressed.length;
       headers["vary"] = "Accept-Encoding";
       response.writeHead(statusCode, headers);
@@ -812,7 +850,8 @@ function createStaticServer(defaultFile, port, allowApi = false) {
         {
           etag: etag,
           "cache-control": "no-cache",
-        }
+        },
+        `${filePath}:${etag}`
       );
       return;
     }
@@ -842,7 +881,8 @@ function createStaticServer(defaultFile, port, allowApi = false) {
       {
         etag: etag,
         "cache-control": cacheControl,
-      }
+      },
+      `${filePath}:${etag}`
     );
   });
 }

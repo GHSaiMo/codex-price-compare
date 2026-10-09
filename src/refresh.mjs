@@ -31,6 +31,7 @@ const STOCK_WATCH_PATH = "data/stock-watch.json";
 const PRICE_HISTORY_PATH = "data/price-history.json";
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
 const BACKUP_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 15 * 1000;
 const LDXP_MAX_SOURCES_PER_RUN = 10;
 const LDXP_DELAY_MIN_MS = 12 * 1000;
 const LDXP_DELAY_MAX_MS = 25 * 1000;
@@ -43,7 +44,14 @@ export function isDomesticWafHost(hostname) {
   return host === "wzyp.cn" || host.endsWith(".wzyp.cn") || host === "pay.ldxp.cn";
 }
 
+const ldxpSessionCache = new Map();
+const LDXP_SESSION_TTL_MS = 10 * 60 * 1000;
+
 export async function prewarmLdxpSession(source, options = {}) {
+  // 同一店铺 URL 在 TTL 内复用 cookie（探测与刷新、重试之间），省一次 GET。
+  const cacheKey = options.cache === false ? null : String(source.url);
+  const cached = cacheKey ? ldxpSessionCache.get(cacheKey) : null;
+  if (cached && cached.expiresAt > Date.now()) return { cookie: cached.cookie };
   try {
     const response = await fetch(source.url, {
       method: "GET",
@@ -62,6 +70,9 @@ export async function prewarmLdxpSession(source, options = {}) {
       .map((c) => String(c).split(";")[0].trim())
       .filter(Boolean)
       .join("; ");
+    if (cacheKey && cookieHeader) {
+      ldxpSessionCache.set(cacheKey, { cookie: cookieHeader, expiresAt: Date.now() + LDXP_SESSION_TTL_MS });
+    }
     return { cookie: cookieHeader };
   } catch {
     return { cookie: "" };
@@ -697,6 +708,36 @@ export function mergeProductsWithStaleSourceItems({
   return [...currentItems, ...staleItems];
 }
 
+function groupSourcesByHost(sources) {
+  const groups = new Map();
+  for (const source of sources) {
+    let host;
+    try {
+      host = sourceHost(source);
+    } catch {
+      host = `invalid:${source.id}`;
+    }
+    if (!groups.has(host)) groups.set(host, []);
+    groups.get(host).push(source);
+  }
+  return [...groups.values()];
+}
+
+export function resolveRefreshConcurrency(env = process.env) {
+  const value = Number(env.REFRESH_CONCURRENCY);
+  return Number.isInteger(value) && value > 0 ? value : 4;
+}
+
+export async function runHostGroups(groups, worker, concurrency = 4) {
+  const queue = [...groups];
+  const runners = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (queue.length > 0) {
+      await worker(queue.shift());
+    }
+  });
+  await Promise.all(runners);
+}
+
 function randomLdxpDelayMs(env = process.env) {
   const config = resolveLdxpSchedulerConfig(env);
   return Math.round(config.delayMinMs + Math.random() * (config.delayMaxMs - config.delayMinMs));
@@ -708,6 +749,7 @@ export async function requestJson(url, {
   headers: extraHeaders = {},
   fallbackProxy = null,
   maxRedirects = 5,
+  timeoutMs = REQUEST_TIMEOUT_MS,
 } = {}) {
   const headers = {
     "user-agent": DEFAULT_BROWSER_UA,
@@ -728,6 +770,7 @@ export async function requestJson(url, {
         headers,
         ...(body !== null ? { body: JSON.stringify(body) } : {}),
         redirect: "manual",
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       if ([301, 302, 307, 308].includes(response.status) && response.headers.get("location")) {
@@ -936,57 +979,65 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
   const fallbackProxy = new FallbackProxyContext();
   const blockedHosts = new Set();
   const nextLdxpState = ldxpPlan.nextState;
-  let previousLdxpHost = null;
+  const itemsBySource = new Map();
 
-  try {
-    for (const source of refreshSources) {
-      try {
-        if (source.adapter === "ldxp") {
-          const host = sourceHost(source);
-          if (previousLdxpHost) await sleep(randomLdxpDelayMs());
-          previousLdxpHost = host;
-        }
-        const adapter = adapters[source.adapter];
-        if (!adapter) throw new Error(`未知适配器: ${source.adapter}`);
-        const fetchedAt = new Date().toISOString();
-        const fetchedItems = await adapter(source, rules, { fallbackProxy, blockedHosts, ldxpFetchMode });
-        items.push(...fetchedItems.map((item) => ({ ...item, fetchedAt })));
-        nextLdxpState.lastSuccess = {
-          ...(nextLdxpState.lastSuccess || {}),
-          [source.id]: fetchedAt,
+  const refreshOne = async (source) => {
+    try {
+      const adapter = adapters[source.adapter];
+      if (!adapter) throw new Error(`未知适配器: ${source.adapter}`);
+      const fetchedAt = new Date().toISOString();
+      const fetchedItems = await adapter(source, rules, { fallbackProxy, blockedHosts, ldxpFetchMode });
+      itemsBySource.set(source.id, fetchedItems.map((item) => ({ ...item, fetchedAt })));
+      nextLdxpState.lastSuccess = {
+        ...(nextLdxpState.lastSuccess || {}),
+        [source.id]: fetchedAt,
+      };
+      if (nextLdxpState.lastFailures?.[source.id]) {
+        delete nextLdxpState.lastFailures[source.id];
+      }
+    } catch (error) {
+      staleSourceIds.add(source.id);
+      if (source.adapter === "ldxp") {
+        const host = sourceHost(source);
+        nextLdxpState.lastFailures = {
+          ...(nextLdxpState.lastFailures || {}),
+          [source.id]: {
+            at: new Date().toISOString(),
+            message: error.message,
+          },
         };
-        if (nextLdxpState.lastFailures?.[source.id]) {
-          delete nextLdxpState.lastFailures[source.id];
-        }
-      } catch (error) {
-        staleSourceIds.add(source.id);
-        if (source.adapter === "ldxp") {
-          const host = sourceHost(source);
-          nextLdxpState.lastFailures = {
-            ...(nextLdxpState.lastFailures || {}),
-            [source.id]: {
-              at: new Date().toISOString(),
-              message: error.message,
+        if (DOMAIN_SKIP_ERROR_PATTERNS.some((pattern) => pattern.test(error.message))) {
+          nextLdxpState.cooldowns = {
+            ...(nextLdxpState.cooldowns || {}),
+            [host]: {
+              reason: error.message,
+              startedAt: new Date().toISOString(),
+              until: new Date(Date.now() + ldxpSchedulerConfig.domainCooldownMs).toISOString(),
             },
           };
-          if (DOMAIN_SKIP_ERROR_PATTERNS.some((pattern) => pattern.test(error.message))) {
-            nextLdxpState.cooldowns = {
-              ...(nextLdxpState.cooldowns || {}),
-              [host]: {
-                reason: error.message,
-                startedAt: new Date().toISOString(),
-                until: new Date(Date.now() + ldxpSchedulerConfig.domainCooldownMs).toISOString(),
-              },
-            };
-          }
         }
-        errors.push({
-          sourceId: source.id,
-          sourceName: source.name,
-          adapter: source.adapter,
-          message: error.message,
-        });
       }
+      errors.push({
+        sourceId: source.id,
+        sourceName: source.name,
+        adapter: source.adapter,
+        message: error.message,
+      });
+    }
+  };
+
+  try {
+    // 不同域名并行，同一域名内保持串行与限速，避免触发 WAF。
+    await runHostGroups(groupSourcesByHost(refreshSources), async (group) => {
+      let previousWasLdxp = false;
+      for (const source of group) {
+        if (source.adapter === "ldxp" && previousWasLdxp) await sleep(randomLdxpDelayMs());
+        previousWasLdxp = source.adapter === "ldxp";
+        await refreshOne(source);
+      }
+    }, resolveRefreshConcurrency());
+    for (const source of refreshSources) {
+      items.push(...(itemsBySource.get(source.id) || []));
     }
   } finally {
     await fallbackProxy.close();

@@ -109,19 +109,37 @@ export function shouldRetryWithPinnedAddress(error) {
   return PINNED_ADDRESS_ERROR_PATTERNS.some((pattern) => pattern.test(message));
 }
 
+const DNS_CHECK_TTL_MS = 5 * 60 * 1000;
+const dnsCheckCache = new Map();
+
 export async function systemLookupLooksPoisoned(hostname) {
   if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
     return false;
   }
+  const cached = dnsCheckCache.get(hostname);
+  if (cached && cached.expiresAt > Date.now()) return cached.poisoned;
+  let poisoned = false;
   try {
     const records = await dns.lookup(hostname, { all: true, verbatim: true });
-    return records.some((record) => isUnusableAddress(record.address));
+    poisoned = records.some((record) => isUnusableAddress(record.address));
   } catch {
-    return false;
+    poisoned = false;
   }
+  dnsCheckCache.set(hostname, { poisoned, expiresAt: Date.now() + DNS_CHECK_TTL_MS });
+  return poisoned;
 }
 
+const dohCache = new Map();
+
 export async function resolveDohIpv4(hostname, context = null) {
+  const cached = dohCache.get(hostname);
+  if (cached && cached.expiresAt > Date.now()) return cached.ip;
+  const ip = await lookupDohIpv4(hostname, context);
+  if (ip) dohCache.set(hostname, { ip, expiresAt: Date.now() + DNS_CHECK_TTL_MS });
+  return ip;
+}
+
+async function lookupDohIpv4(hostname, context = null) {
   const url = `${DOH_URL}?name=${encodeURIComponent(hostname)}&type=A`;
   try {
     const response = await fetch(url, {
@@ -244,7 +262,17 @@ export class FallbackProxyContext {
     return this.config.enabled === true;
   }
 
-  async ensureTunnel() {
+  ensureTunnel() {
+    // 并行刷新时多个请求可能同时触发，共用同一次启动，避免重复 spawn ssh。
+    if (!this.tunnelPromise) {
+      this.tunnelPromise = this.startTunnel().finally(() => {
+        this.tunnelPromise = null;
+      });
+    }
+    return this.tunnelPromise;
+  }
+
+  async startTunnel() {
     if (!this.enabled || !this.config.sshHost) return;
     if (await canConnect(this.config.localHost, this.config.localPort)) return;
 

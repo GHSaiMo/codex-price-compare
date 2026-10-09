@@ -965,10 +965,18 @@ function restoreLocalCache() {
 }
 
 function saveLocalProductsCache(items, etag) {
-  try {
-    localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ items, etag }));
-  } catch {
-    // Ignore storage quota error
+  // 序列化数百 KB 数据会阻塞主线程，推迟到空闲时再写。
+  const write = () => {
+    try {
+      localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ items, etag }));
+    } catch {
+      // Ignore storage quota error
+    }
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(write, { timeout: 5000 });
+  } else {
+    setTimeout(write, 0);
   }
 }
 
@@ -1151,4 +1159,14 @@ syncBackToTop();
 writeStateToUrl();
 restoreLocalCache();
 loadData();
-setInterval(loadData, DATA_RELOAD_INTERVAL_MS);
+let lastLoadAt = Date.now();
+const loadDataIfVisible = () => {
+  if (document.hidden) return;
+  lastLoadAt = Date.now();
+  loadData();
+};
+setInterval(loadDataIfVisible, DATA_RELOAD_INTERVAL_MS);
+// 标签页隐藏时不轮询；回到前台且数据已过期时立即补一次。
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && Date.now() - lastLoadAt >= DATA_RELOAD_INTERVAL_MS) loadDataIfVisible();
+});
