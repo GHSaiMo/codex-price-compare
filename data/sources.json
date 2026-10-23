@@ -426,8 +426,7 @@
       "name": "沐风小铺",
       "adapter": "dujiao",
       "enabled": true,
-      "url": "https://mfhubs.com/",
-      "apiBase": "https://api.mfhubs.com/"
+      "url": "https://mfhubs.com/"
     },
     {
       "id": "dujiao-morimm",

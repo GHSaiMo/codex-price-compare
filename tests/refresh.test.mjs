@@ -645,7 +645,7 @@ assert.ok(sources.sources.some((source) => (
   && source.token === "niceai"
 )));
 assert.ok(
-  sources.sources.some((source) => source.url === "https://mfhubs.com/" && source.apiBase === "https://api.mfhubs.com/"),
+  sources.sources.some((source) => source.url === "https://mfhubs.com/" && source.adapter === "dujiao"),
 );
 assert.ok(
   sources.sources.some((source) => source.url === "https://kelaode.vip/" && source.apiBase === "https://api.kelaode.vip/"),
