@@ -55,7 +55,9 @@
     },
     "other": {
       "unknown": [
-        "gpt协议次数"
+        "gpt协议次数",
+        "ldxp-aishop86:kyvmwf",
+        "https://wzyp.cn/item/kyvmwf"
       ]
     }
   },
@@ -442,7 +444,11 @@
     "官方中转",
     "中转 api",
     "官方中转 api",
-    "官方中转api"
+    "官方中转api",
+    "muse ai",
+    "muse-ai",
+    "museai",
+    "muse"
   ],
   "titleExclusionTerms": [
     "deepseek",
