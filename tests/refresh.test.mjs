@@ -592,6 +592,7 @@ assert.equal(sources.version, 1);
 assert.ok(sources.sources.some((source) => source.adapter === "ldxp"));
 assert.ok(sources.sources.some((source) => source.adapter === "acg"));
 assert.ok(sources.sources.some((source) => source.adapter === "dujiao"));
+assert.ok(sources.sources.some((source) => source.adapter === "16688"));
 assert.ok(sources.sources.length >= 30);
 assert.ok(!sources.sources.some((source) => source.id === "acg-caowo" || source.url === "https://caowo.store/"));
 assert.ok(!sources.sources.some((source) => source.id === "ldxp-kaka" || source.url === "https://pay.ldxp.cn/shop/D92VW084"));

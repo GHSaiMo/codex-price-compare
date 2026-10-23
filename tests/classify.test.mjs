@@ -7,6 +7,7 @@ import {
   isCreditQuotaProduct,
   isTutorialProduct,
   matchManualOverride,
+  normalize16688Product,
   normalizeAcgProduct,
   normalizeDujiaoProduct,
   normalizeLdxpProduct,
@@ -1089,6 +1090,26 @@ const dujiao = normalizeDujiaoProduct(
 assert.equal(dujiao.subtype, "plus");
 assert.equal(dujiao.stockStatus, "low_stock");
 
+const p16688 = normalize16688Product(
+  {
+    goods_no: "G61857250",
+    name: "美国实卡长效接马codex接马绑定注册通用🔥15-30天【质保不来码】PLUS接马codex接马codex长效 基本可以三绑",
+    description: "登录 Codex 软件接马",
+    price: 10,
+    goods_category_no: "C915651",
+    stock_available_quantity: 13,
+    stock_available_status: "normal",
+  },
+  { id: "16688-s686505", name: "安安", url: "https://www.16688.com.cn/shop/S686505", adapter: "16688" },
+  rules,
+  { C915651: "各类接🐴" },
+);
+assert.equal(p16688.category, "sms");
+assert.equal(p16688.subtype, "codex_sms");
+assert.equal(p16688.url, "https://www.16688.com.cn/goods/G61857250");
+assert.equal(p16688.stockStatus, "in_stock");
+assert.equal(p16688.sourceCategory, "各类接🐴");
+
 assert.deepEqual(
   sortProductsForDisplay([
     { price: 9, stockStatus: "out_of_stock" },
@@ -1578,3 +1599,29 @@ const normalizedGptProtocol = normalizeLdxpProduct(
   rules,
 );
 assert.equal(normalizedGptProtocol, null);
+
+// 测试 Muse AI 商品全面过滤
+const museCases = [
+  "Muse AI 10亿token成品号（类似于SuperGroK bot）",
+  "Muse AI成品号 带10亿token（对标SuperGro-k bot）",
+  "Meta Muse AI 成品号",
+  "Muse 10亿token成品号",
+  "Muse成品号",
+];
+for (const title of museCases) {
+  const res = classifyProduct(title, "Meta 旗下个人 AI 智能体 Muse", rules);
+  assert.equal(res.category, "other", `Expected 'other' for ${title}`);
+  assert.equal(res.subtype, "unknown", `Expected 'unknown' for ${title}`);
+
+  const normalized = normalizeLdxpProduct(
+    {
+      goods_key: "muse_test",
+      name: title,
+      price: "50.00",
+      description: "Meta Muse AI",
+    },
+    { id: "ldxp-test", name: "TestShop", url: "https://example.com/shop/test", adapter: "ldxp" },
+    rules,
+  );
+  assert.equal(normalized, null, `Expected normalizeLdxpProduct to return null for ${title}`);
+}

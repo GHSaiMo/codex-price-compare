@@ -2,6 +2,7 @@ const adapterOrder = {
   ldxp: 0,
   acg: 1,
   dujiao: 2,
+  16688: 3,
 };
 const zhCollator = new Intl.Collator("zh-CN", {
   numeric: true,

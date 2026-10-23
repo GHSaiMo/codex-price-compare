@@ -9,10 +9,30 @@
   "manualOverrides": {
     "codex": {
       "plus": [
-        "(质保30天)手搓一卡一指纹G 成品号 - 屎黄手搓品"
+        "(质保30天)手搓一卡一指纹G 成品号 - 屎黄手搓品",
+        {
+          "title": "plus官方充值月卡（质保30天）----直冲个人账号---自动发货-(24h全自动充值)----限时优惠--开票联系客服",
+          "reason": "ChatGPT Plus月卡官方代充直冲",
+          "durationDays": 30,
+          "durationLabel": "1M"
+        }
       ],
-      "pro_5x": [],
-      "pro_20x": [],
+      "pro_5x": [
+        {
+          "title": "PRO 5X官方充值月卡(质保一个月) ---全自动发货-充值个人账号-(24小时全自动充值) ----限时福利价格",
+          "reason": "ChatGPT Pro 5x官方充值月卡",
+          "durationDays": 30,
+          "durationLabel": "1M"
+        }
+      ],
+      "pro_20x": [
+        {
+          "title": "PRO 10X 200$ 官方充值月卡(质保30天) 24小时全自动充值 直冲个人账号 ---全自动发货",
+          "reason": "ChatGPT Pro 200$月卡直冲",
+          "durationDays": 30,
+          "durationLabel": "1M"
+        }
+      ],
       "free": [],
       "api": []
     },
@@ -299,7 +319,11 @@
     "深度求索",
     "视频模型",
     "视频模型平替",
-    "1.5视频"
+    "1.5视频",
+    "muse ai",
+    "muse-ai",
+    "museai",
+    "muse"
   ],
   "grokDurationTerms": {
     "m12": [
@@ -512,7 +536,11 @@
     "cursor",
     "leonardo",
     "代理请重新对接",
-    "gpt协议次数"
+    "gpt协议次数",
+    "muse ai",
+    "muse-ai",
+    "museai",
+    "muse"
   ],
   "titleSubtypeTerms": {
     "free": [

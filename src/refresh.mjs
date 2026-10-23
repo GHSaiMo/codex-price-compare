@@ -4,6 +4,7 @@ import { writeJsonAtomic } from "./fs-atomic.mjs";
 
 import {
   classifyProduct,
+  normalize16688Product,
   normalizeAcgProduct,
   normalizeDujiaoProduct,
   normalizeLdxpProduct,
@@ -516,6 +517,19 @@ export async function probeSource(source, { fallbackProxy = null } = {}) {
     }
     return true;
   }
+  if (source.adapter === "16688") {
+    const base = new URL(source.url);
+    const shopNo = source.token || (source.url.match(/\/shop\/([^\/\?#]+)/) || [])[1];
+    const res = await postJson(
+      new URL("/shopApi/shop/detail", base),
+      { shop_no: shopNo },
+      { fallbackProxy },
+    );
+    if (res.code !== 1) {
+      throw new Error(res.msg || "店铺接口异常");
+    }
+    return true;
+  }
   throw new Error(`未知或不支持探测的适配器: ${source.adapter}`);
 }
 
@@ -908,10 +922,58 @@ async function fetchDujiao(source, rules, options = {}) {
     .filter(Boolean);
 }
 
+async function fetch16688(source, rules, options = {}) {
+  const base = new URL(source.url);
+  const shopNo = source.token || (source.url.match(/\/shop\/([^\/\?#]+)/) || [])[1];
+  if (!shopNo) throw new Error(`无法从配置或 URL 中提取 16688 店铺编号: ${source.url}`);
+
+  const requestOptions = {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      referer: source.url,
+      origin: base.origin,
+    },
+  };
+
+  let shopName = source.name;
+  try {
+    const shopRes = await postJson(new URL("/shopApi/shop/detail", base), { shop_no: shopNo }, requestOptions);
+    if (shopRes.code === 1 && shopRes.data?.name) {
+      shopName = shopRes.data.name;
+    }
+  } catch {
+    // 忽略店铺信息获取异常
+  }
+
+  const categoryMap = {};
+  try {
+    const catRes = await postJson(new URL("/shopApi/goodsCategory/list", base), { shop_no: shopNo }, requestOptions);
+    if (catRes.code === 1 && Array.isArray(catRes.data)) {
+      for (const cat of catRes.data) {
+        if (cat.goods_category_no && cat.name) {
+          categoryMap[cat.goods_category_no] = cat.name;
+        }
+      }
+    }
+  } catch {
+    // 忽略分类获取异常
+  }
+
+  const goodsRes = await postJson(new URL("/shopApi/goods/list", base), { shop_no: shopNo }, requestOptions);
+  if (goodsRes.code !== 1) throw new Error(goodsRes.msg || "商品列表读取失败");
+
+  const list = goodsRes.data?.list || [];
+  return list
+    .map((raw) => normalize16688Product(raw, { ...source, name: shopName }, rules, categoryMap))
+    .filter(Boolean);
+}
+
 const adapters = {
   ldxp: fetchLdxp,
   acg: fetchAcg,
   dujiao: fetchDujiao,
+  16688: fetch16688,
 };
 
 export async function refreshProducts({ nextRefreshAt = null } = {}) {

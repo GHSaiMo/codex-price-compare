@@ -37,6 +37,10 @@ function includesTerm(haystack, term) {
   if (normalizedTerm === "g rok" || normalizedTerm === "g r o k") {
     return /(^|[^a-z0-9])g\s+r\s*[o0]\s*k(?=$|[^a-z0-9]|\d)/.test(normalizedHaystack);
   }
+  // muse 限制边界，避免 museum / amused 等误伤
+  if (normalizedTerm === "muse") {
+    return /(^|[^a-z0-9])muse(?=[^a-z0-9]|$)/.test(normalizedHaystack);
+  }
   return normalizedHaystack.includes(normalizedTerm);
 }
 
@@ -1149,6 +1153,30 @@ export function normalizeDujiaoProduct(raw, source, rules) {
       id: raw.id,
       slug: raw.slug,
       category: textOf(raw.category?.name),
+    },
+  });
+}
+
+export function normalize16688Product(raw, source, rules, categoryMap = {}) {
+  const base = new URL(source.url);
+  const stockCount = Number(raw.stock_available_quantity);
+  const categoryName = categoryMap[raw.goods_category_no] || "";
+  const url = raw.goods_no ? new URL(`/goods/${raw.goods_no}`, base).href : source.url;
+
+  return withCommonFields(raw, source, rules, {
+    sourceProductId: raw.goods_no || raw.id || raw.name,
+    title: raw.name,
+    descriptionText: raw.description || "",
+    price: raw.price,
+    stockCount: Number.isFinite(stockCount) ? stockCount : null,
+    stockStatus: raw.stock_available_status,
+    url,
+    sourceCategory: categoryName,
+    raw: {
+      goodsNo: raw.goods_no,
+      categoryNo: raw.goods_category_no,
+      categoryName,
+      stockStatus: raw.stock_available_status,
     },
   });
 }

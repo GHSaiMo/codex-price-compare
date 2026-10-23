@@ -73,7 +73,7 @@ export interface PublicProductsDocument {
   items: PublicProductItem[];
 }
 
-export type SourceAdapter = "ldxp" | "acg" | "dujiao";
+export type SourceAdapter = "ldxp" | "acg" | "dujiao" | "16688";
 
 export interface SourceConfig {
   id: string;

@@ -140,6 +140,28 @@ async function fetchDujiaoName(source) {
   return { name: null, status: last?.status || 0, via: last?.via || "error", msg: last?.text ? String(last.text).slice(0, 120) : "" };
 }
 
+async function fetch16688Name(source) {
+  const base = new URL(source.url);
+  const shopNo = source.token || (source.url.match(/\/shop\/([^\/\?#]+)/) || [])[1];
+  const url = new URL("/shopApi/shop/detail", base).href;
+  const response = await fetchWithProxy(url, {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/plain, */*",
+      "content-type": "application/json",
+      referer: source.url,
+      origin: base.origin,
+    },
+    body: JSON.stringify({ shop_no: shopNo }),
+  });
+  try {
+    const data = JSON.parse(response.text);
+    return { name: data?.data?.name || null, status: response.status, via: response.via, msg: data?.msg || "" };
+  } catch {
+    return { name: null, status: response.status, via: response.via, msg: response.text.replace(/\s+/g, " ").slice(0, 120) };
+  }
+}
+
 const productNames = new Map();
 for (const item of productsConfig.items || []) {
   if (!item.sourceId || !item.sourceName) continue;
@@ -154,6 +176,7 @@ for (const source of sourcesConfig.sources) {
     if (source.adapter === "ldxp") fetched = await fetchLdxpName(source);
     else if (source.adapter === "acg") fetched = await fetchAcgName(source);
     else if (source.adapter === "dujiao") fetched = await fetchDujiaoName(source);
+    else if (source.adapter === "16688") fetched = await fetch16688Name(source);
     else fetched = { name: null, status: 0, via: "skip", msg: "unsupported adapter" };
     results.push({
       id: source.id,
