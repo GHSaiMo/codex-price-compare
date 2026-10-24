@@ -1705,4 +1705,18 @@ assert.equal(beibeiItem.price, 75);
 assert.equal(beibeiItem.stockCount, 10);
 assert.equal(beibeiItem.stockStatus, "in_stock");
 
+// 测试托金小店等空邮箱、点数额度、Notion 等手工排除
+const excludedTitles = [
+  "全新微软空邮箱，用于换绑OpenAI账号（转移账号用）",
+  "Codex 250点官方正规额度（开发者专属 / 正规代付）",
+  "Codex 500点官方正规额度（开发者专属 / 正规代付）",
+  "Codex 1000点官方正规额度（开发者专属 / 正规代付）",
+  "【Claude平替】Notion AI 商业版12个月（代充），质保订阅90天【封号较少，能用Claude模型】",
+];
+for (const title of excludedTitles) {
+  const result = classifyProduct(title, "包括 GPT5.6 等等", rules);
+  assert.equal(result.category, "other", `Expected 'other' for ${title}`);
+}
+
+
 

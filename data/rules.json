@@ -60,7 +60,12 @@
       "unknown": [
         "gpt协议次数",
         "ldxp-aishop86:kyvmwf",
-        "https://wzyp.cn/item/kyvmwf"
+        "https://wzyp.cn/item/kyvmwf",
+        "全新微软空邮箱，用于换绑OpenAI账号（转移账号用）",
+        "Codex 250点官方正规额度（开发者专属 / 正规代付）",
+        "Codex 500点官方正规额度（开发者专属 / 正规代付）",
+        "Codex 1000点官方正规额度（开发者专属 / 正规代付）",
+        "【Claude平替】Notion AI 商业版12个月（代充），质保订阅90天【封号较少，能用Claude模型】"
       ]
     }
   },
@@ -334,7 +339,10 @@
     "muse ai",
     "muse-ai",
     "museai",
-    "muse"
+    "muse",
+    "notion ai",
+    "notion",
+    "空邮箱"
   ],
   "grokDurationTerms": {
     "m12": [
@@ -457,7 +465,10 @@
     "muse ai",
     "muse-ai",
     "museai",
-    "muse"
+    "muse",
+    "notion ai",
+    "notion",
+    "空邮箱"
   ],
   "titleExclusionTerms": [
     "deepseek",
@@ -555,7 +566,10 @@
     "muse ai",
     "muse-ai",
     "museai",
-    "muse"
+    "muse",
+    "notion ai",
+    "notion",
+    "空邮箱"
   ],
   "titleSubtypeTerms": {
     "free": [
