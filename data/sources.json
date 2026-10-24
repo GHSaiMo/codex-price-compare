@@ -457,6 +457,13 @@
       "enabled": true,
       "url": "https://www.16688.com.cn/shop/S686505",
       "token": "S686505"
+    },
+    {
+      "id": "dujiao-xiaojiu",
+      "name": "小久",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://98-xj.com/"
     }
   ]
 }

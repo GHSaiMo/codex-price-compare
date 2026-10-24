@@ -1625,3 +1625,13 @@ for (const title of museCases) {
   );
   assert.equal(normalized, null, `Expected normalizeLdxpProduct to return null for ${title}`);
 }
+
+// 测试 OpenAI 新命名 Pro 100 / Pro 200 分类
+const pro100Res = classifyProduct("GPT Pro 100 菲律宾区卡冲", "", rules);
+assert.equal(pro100Res.category, "codex");
+assert.equal(pro100Res.subtype, "pro_5x");
+
+const pro200Res = classifyProduct("GPT Pro 200 菲律宾区卡冲", "", rules);
+assert.equal(pro200Res.category, "codex");
+assert.equal(pro200Res.subtype, "pro_20x");
+
