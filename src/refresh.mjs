@@ -512,7 +512,7 @@ export async function probeSource(source, { fallbackProxy = null } = {}) {
       new URL("/api/v1/public/products", source.apiBase || source.url),
       { fallbackProxy },
     );
-    if (res.status_code !== 0) {
+    if (res.status_code !== 0 && res.ok !== true) {
       throw new Error(res.msg || "商品接口异常");
     }
     return true;
@@ -916,8 +916,19 @@ async function fetchAcg(source, rules, options = {}) {
 async function fetchDujiao(source, rules, options = {}) {
   const apiBase = new URL(source.apiBase || source.url);
   const data = await getJson(new URL("/api/v1/public/products", apiBase), options);
-  if (data.status_code !== 0) throw new Error(data.msg || "商品列表读取失败");
-  return (data.data || [])
+  if (data.status_code !== 0 && data.ok !== true) throw new Error(data.msg || "商品列表读取失败");
+  const list = Array.isArray(data.data)
+    ? data.data
+    : Array.isArray(data.items)
+      ? data.items
+      : Array.isArray(data.products)
+        ? data.products
+        : Array.isArray(data.data?.list)
+          ? data.data.list
+          : Array.isArray(data.data?.items)
+            ? data.data.items
+            : [];
+  return list
     .map((raw) => normalizeDujiaoProduct(raw, source, rules))
     .filter(Boolean);
 }

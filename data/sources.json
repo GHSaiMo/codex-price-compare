@@ -51,6 +51,15 @@
       "token": "ai1998"
     },
     {
+      "id": "ldxp-chuhai",
+      "name": "AI奥特曼【源头招代理】",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/chuhai",
+      "token": "chuhai",
+      "core": false
+    },
+    {
       "id": "ldxp-pay-ldxp-cn-c8j9tmgv",
       "name": "AI成品",
       "adapter": "ldxp",
@@ -168,6 +177,15 @@
       "core": false
     },
     {
+      "id": "ldxp-yeh34ocz",
+      "name": "咕咕嘎嘎|AI源头直营",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/YEH34OCZ",
+      "token": "YEH34OCZ",
+      "core": false
+    },
+    {
       "id": "ldxp-ljmzqqh3",
       "name": "咕咕咕",
       "adapter": "ldxp",
@@ -199,6 +217,15 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/6YEJH8PE",
       "token": "6YEJH8PE"
+    },
+    {
+      "id": "ldxp-j8canm9q",
+      "name": "海海星星AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/J8CANM9Q",
+      "token": "J8CANM9Q",
+      "core": false
     },
     {
       "id": "ldxp-hug-ai",
@@ -252,6 +279,15 @@
       "token": "F16K31U5"
     },
     {
+      "id": "ldxp-o5w37fvj",
+      "name": "莫克奇AI",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/O5W37FVJ",
+      "token": "O5W37FVJ",
+      "core": false
+    },
+    {
       "id": "ldxp-niuniushop",
       "name": "牛牛ai专卖店",
       "adapter": "ldxp",
@@ -299,6 +335,15 @@
       "enabled": true,
       "url": "https://wzyp.cn/shop/6Q8DVZ9B",
       "token": "6Q8DVZ9B",
+      "core": false
+    },
+    {
+      "id": "ldxp-5xw5r5kp",
+      "name": "托金小店",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/5XW5R5KP",
+      "token": "5XW5R5KP",
       "core": false
     },
     {
@@ -392,6 +437,15 @@
       "token": "ULT21PVZ"
     },
     {
+      "id": "ldxp-vsas78g9",
+      "name": "智启AI服务站",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://wzyp.cn/shop/VSAS78G9",
+      "token": "VSAS78G9",
+      "core": false
+    },
+    {
       "id": "ldxp-zxc",
       "name": "自行车 Ai 店铺",
       "adapter": "ldxp",
@@ -399,6 +453,13 @@
       "url": "https://wzyp.cn/shop/ZXC",
       "token": "ZXC",
       "core": false
+    },
+    {
+      "id": "acg-aibuji",
+      "name": "AI补给站",
+      "adapter": "acg",
+      "enabled": true,
+      "url": "https://aibuji.com/"
     },
     {
       "id": "acg-aisou",
@@ -413,6 +474,13 @@
       "adapter": "acg",
       "enabled": true,
       "url": "https://buy.aishopstore.com/"
+    },
+    {
+      "id": "dujiao-gpt-duo",
+      "name": "AI DUO",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://www.gpt-duo.com/"
     },
     {
       "id": "dujiao-ac-card",
@@ -444,11 +512,25 @@
       "apiBase": "https://api.kelaode.vip/"
     },
     {
+      "id": "dujiao-qiuqiu",
+      "name": "球球",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://qiuqiugpt.com/"
+    },
+    {
       "id": "dujiao-spark-zone",
       "name": "Spark-zone",
       "adapter": "dujiao",
       "enabled": true,
       "url": "https://spark-zone.org/"
+    },
+    {
+      "id": "dujiao-xiaojiu",
+      "name": "小久",
+      "adapter": "dujiao",
+      "enabled": true,
+      "url": "https://98-xj.com/"
     },
     {
       "id": "16688-s686505",
@@ -459,11 +541,28 @@
       "token": "S686505"
     },
     {
-      "id": "dujiao-xiaojiu",
-      "name": "小久",
-      "adapter": "dujiao",
+      "id": "16688-s704668",
+      "name": "ai跑起来",
+      "adapter": "16688",
       "enabled": true,
-      "url": "https://98-xj.com/"
+      "url": "https://www.16688.com.cn/shop/S704668",
+      "token": "S704668"
+    },
+    {
+      "id": "16688-s191336",
+      "name": "大鳄鱼官方代充",
+      "adapter": "16688",
+      "enabled": true,
+      "url": "https://www.16688.com.cn/shop/S191336",
+      "token": "S191336"
+    },
+    {
+      "id": "16688-s387781",
+      "name": "钢铁侠AI",
+      "adapter": "16688",
+      "enabled": true,
+      "url": "https://www.16688.com.cn/shop/S387781",
+      "token": "S387781"
     }
   ]
 }

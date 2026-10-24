@@ -1635,3 +1635,74 @@ const pro200Res = classifyProduct("GPT Pro 200 菲律宾区卡冲", "", rules);
 assert.equal(pro200Res.category, "codex");
 assert.equal(pro200Res.subtype, "pro_20x");
 
+// 测试 ACG 隐藏库存文本与状态映射
+const acgSoldOut = normalizeAcgProduct(
+  {
+    id: 84,
+    name: "GPT Plus 一个月成品账号【质保全程订阅和封号】",
+    price: "120.00",
+    stock: "已售罄",
+    stock_state: 0,
+    category: { name: "GPT" },
+  },
+  { id: "acg-aibuji", name: "AI补给站", url: "https://aibuji.com/", adapter: "acg" },
+  rules,
+);
+assert.ok(acgSoldOut);
+assert.equal(acgSoldOut.stockStatus, "out_of_stock");
+
+const acgInStock = normalizeAcgProduct(
+  {
+    id: 51,
+    name: "GPT PLUS【官方直充｜月卡｜质保30天订阅】",
+    price: "132.00",
+    stock: "非常多",
+    stock_state: 4,
+    category: { name: "GPT" },
+  },
+  { id: "acg-aibuji", name: "AI补给站", url: "https://aibuji.com/", adapter: "acg" },
+  rules,
+);
+assert.ok(acgInStock);
+assert.equal(acgInStock.stockStatus, "in_stock");
+
+// 测试 Dujiao 人工代充库存合并与 Beibei 发卡字段兼容
+const dujiaoManual = normalizeDujiaoProduct(
+  {
+    id: 16,
+    slug: "chatgpt-pro-5x-philippines-monthly",
+    title: { "zh-CN": "ChatGPT Pro 100（5X）月卡充值｜菲区" },
+    price_amount: "680.00",
+    auto_stock_available: 0,
+    manual_stock_available: 1,
+    stock_status: "in_stock",
+    is_sold_out: false,
+    category: { name: { "zh-CN": "ChatGPT" } },
+  },
+  { id: "dujiao-gpt-duo", name: "AI DUO", url: "https://www.gpt-duo.com/", adapter: "dujiao" },
+  rules,
+);
+assert.ok(dujiaoManual);
+assert.equal(dujiaoManual.stockCount, 1);
+assert.equal(dujiaoManual.stockStatus, "in_stock");
+
+const beibeiItem = normalizeDujiaoProduct(
+  {
+    id: "cmvg23pv202icuswk26bh8tft",
+    slug: "chatgpt-plus-ph-account",
+    title: "ChatGPT Plus 月卡｜菲区半价成品号｜官方正规充值【质保订阅】",
+    price: 75,
+    stock: 10,
+    is_sold_out: false,
+    status: "in_stock",
+    category_label: "ChatGPT",
+  },
+  { id: "dujiao-qiuqiu", name: "球球", url: "https://qiuqiugpt.com/", adapter: "dujiao" },
+  rules,
+);
+assert.ok(beibeiItem);
+assert.equal(beibeiItem.price, 75);
+assert.equal(beibeiItem.stockCount, 10);
+assert.equal(beibeiItem.stockStatus, "in_stock");
+
+

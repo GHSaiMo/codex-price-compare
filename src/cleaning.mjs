@@ -1114,6 +1114,14 @@ export function normalizeLdxpProduct(raw, source, rules) {
 export function normalizeAcgProduct(raw, source, rules) {
   const base = new URL(source.url);
   const stockCount = Number(raw.stock);
+  const isSoldOut = raw.stock_state === 0 || raw.stock === "已售罄" || stockCount === 0;
+  const stockStatus = isSoldOut
+    ? "out_of_stock"
+    : raw.stock_state === 1 || raw.stock === "即将售罄"
+      ? "low_stock"
+      : raw.stock_state >= 2 || ["一般", "充足", "非常多"].includes(raw.stock)
+        ? "in_stock"
+        : undefined;
 
   return withCommonFields(raw, source, rules, {
     sourceProductId: raw.id,
@@ -1121,6 +1129,8 @@ export function normalizeAcgProduct(raw, source, rules) {
     descriptionText: raw.description || "",
     price: resolveAcgPrice(raw),
     stockCount: Number.isFinite(stockCount) ? stockCount : null,
+    stockStatus,
+    isSoldOut,
     url: new URL(`/item/${raw.id}`, base).href,
     sourceCategory: raw.category?.name,
     raw: {
@@ -1135,24 +1145,29 @@ export function normalizeAcgProduct(raw, source, rules) {
 
 export function normalizeDujiaoProduct(raw, source, rules) {
   const base = new URL(source.url);
-  const title = textOf(raw.title);
+  const title = textOf(raw.title || raw.name);
   const descriptionText = `${textOf(raw.description)} ${stripHtml(raw.content)}`.trim();
-  const stockCount = Number(raw.auto_stock_available ?? raw.manual_stock_available);
+  const rawStock = (Number(raw.auto_stock_available) || 0) + (Number(raw.manual_stock_available) || 0);
+  const directStock = raw.stock ?? raw.stock_count;
+  const stockCount = Number(directStock != null ? directStock : (rawStock > 0 ? rawStock : (raw.auto_stock_available ?? raw.manual_stock_available)));
+  const price = raw.price_amount ?? raw.price;
+  const isSoldOut = raw.is_sold_out === true || raw.stock_status === "out_of_stock" || raw.status === "out_of_stock" || stockCount === 0;
+  const stockStatus = raw.stock_status || raw.status;
 
   return withCommonFields(raw, source, rules, {
     sourceProductId: raw.id || raw.slug,
     title,
     descriptionText,
-    price: raw.price_amount,
+    price,
     stockCount: Number.isFinite(stockCount) ? stockCount : null,
-    stockStatus: raw.stock_status,
-    isSoldOut: raw.is_sold_out,
+    stockStatus,
+    isSoldOut,
     url: new URL(`/products/${raw.slug || raw.id}`, base).href,
-    sourceCategory: textOf(raw.category?.name),
+    sourceCategory: textOf(raw.category?.name || raw.category_label || raw.category),
     raw: {
       id: raw.id,
       slug: raw.slug,
-      category: textOf(raw.category?.name),
+      category: textOf(raw.category?.name || raw.category_label || raw.category),
     },
   });
 }
