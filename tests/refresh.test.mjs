@@ -84,6 +84,7 @@ assert.deepEqual(
     proxyUrl: "socks5h://127.0.0.1:7891",
     requestAttempts: 3,
     retryDelayMs: 1000,
+    timeoutSec: 30,
   },
 );
 assert.deepEqual(
@@ -91,6 +92,7 @@ assert.deepEqual(
     FALLBACK_PROXY_URL: "http://127.0.0.1:7890",
     FALLBACK_PROXY_REQUEST_ATTEMPTS: "5",
     FALLBACK_PROXY_RETRY_DELAY_MS: "250",
+    FALLBACK_PROXY_TIMEOUT_SEC: "15",
   }),
   {
     enabled: true,
@@ -99,6 +101,7 @@ assert.deepEqual(
     proxyUrl: "http://127.0.0.1:7890",
     requestAttempts: 5,
     retryDelayMs: 250,
+    timeoutSec: 15,
   },
 );
 let fallbackCommandAttempts = 0;
@@ -135,6 +138,7 @@ assert.equal(
   "ac-card.org:443:104.21.50.237:443",
 );
 assert.equal(shouldRetryWithPinnedAddress(new Error("SSL_ERROR_SYSCALL")), true);
+assert.equal(shouldRetryWithPinnedAddress(new Error("curl: (28) Operation timed out after 60001 milliseconds")), true);
 assert.equal(shouldRetryWithPinnedAddress(createHttpError(404, "https://example.com")), false);
 const pinnedCalls = [];
 const pinningFallback = new FallbackProxyContext({
@@ -789,6 +793,16 @@ assert.equal(shouldDisableFailedSource({
   lastSuccessAt: "2026-07-21T00:00:00.000Z",
   now: deadNow,
 }), false);
+assert.equal(shouldDisableFailedSource({
+  message: "curl: (28) Operation timed out after 60001 milliseconds with 0 bytes received",
+  failedAt: "2026-07-20T00:00:00.000Z",
+  now: deadNow,
+}), true);
+assert.equal(shouldDisableFailedSource({
+  message: "fetch failed: getaddrinfo ENOTFOUND aibuji.com",
+  failedAt: "2026-07-20T00:00:00.000Z",
+  now: deadNow,
+}), true);
 
 const disabled = disableDeadSources([
   { id: "dead", name: "死店", adapter: "ldxp", core: true, url: "https://pay.ldxp.cn/shop/dead" },

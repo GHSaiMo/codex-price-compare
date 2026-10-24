@@ -458,7 +458,9 @@
       "id": "acg-aibuji",
       "name": "AI补给站",
       "adapter": "acg",
-      "enabled": true,
+      "enabled": false,
+      "disabledAt": "2026-10-24T15:35:00.000Z",
+      "disabledReason": "网站服务宕机不可达 (Operation timed out / 502 Bad Gateway)",
       "url": "https://aibuji.com/"
     },
     {

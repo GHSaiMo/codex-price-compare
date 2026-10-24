@@ -8,12 +8,15 @@ const DEFAULT_LOCAL_HOST = "127.0.0.1";
 const DEFAULT_LOCAL_PORT = 7891;
 const DEFAULT_REQUEST_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1000;
+const DEFAULT_REQUEST_TIMEOUT_SEC = 30;
 const DOH_URL = "https://cloudflare-dns.com/dns-query";
 const PINNED_ADDRESS_ERROR_PATTERNS = [
   /SSL_ERROR_SYSCALL/,
   /SSL_connect/,
   /Could not resolve/i,
   /Connection timed out/i,
+  /Operation timed out/i,
+  /timed out/i,
   /Failed to connect/i,
   /Connection reset/i,
   /empty reply/i,
@@ -39,6 +42,7 @@ export function buildFallbackProxyConfig(env = process.env) {
   const proxyUrl = String(env.FALLBACK_PROXY_URL || `socks5h://${localHost}:${localPort}`).trim();
   const requestAttempts = positiveInteger(env.FALLBACK_PROXY_REQUEST_ATTEMPTS, DEFAULT_REQUEST_ATTEMPTS);
   const retryDelayMs = nonNegativeInteger(env.FALLBACK_PROXY_RETRY_DELAY_MS, DEFAULT_RETRY_DELAY_MS);
+  const timeoutSec = positiveInteger(env.FALLBACK_PROXY_TIMEOUT_SEC, DEFAULT_REQUEST_TIMEOUT_SEC);
 
   if (!sshHost && !env.FALLBACK_PROXY_URL) return { enabled: false };
   return {
@@ -49,6 +53,7 @@ export function buildFallbackProxyConfig(env = process.env) {
     proxyUrl,
     requestAttempts,
     retryDelayMs,
+    timeoutSec,
   };
 }
 
@@ -311,7 +316,8 @@ export class FallbackProxyContext {
   }
 
   buildCurlArgs(url, { method = "GET", headers = {}, body = null, connectTo = null } = {}) {
-    const args = ["-sS", "-m", "60"];
+    const timeoutSec = positiveInteger(this.config?.timeoutSec, DEFAULT_REQUEST_TIMEOUT_SEC);
+    const args = ["-sS", "-m", String(timeoutSec)];
     if (connectTo) args.push("--connect-to", connectTo);
     args.push(
       "-x",
@@ -362,12 +368,13 @@ export class FallbackProxyContext {
   }
 
   async fetchJsonOverSsh(url, { method = "GET", headers = {}, body = null } = {}) {
+    const timeoutSec = positiveInteger(this.config?.timeoutSec, DEFAULT_REQUEST_TIMEOUT_SEC);
     const args = [
       "curl",
       "--compressed",
       "-sS",
       "-m",
-      "60",
+      String(timeoutSec),
       "-w",
       "\n__HTTP_STATUS__:%{http_code}",
     ];

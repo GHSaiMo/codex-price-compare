@@ -446,7 +446,7 @@ export function shouldDisableFailedSource({
   const failedTime = new Date(failedAt || 0).getTime();
   if (!Number.isFinite(failedTime) || now.getTime() - failedTime < staleMs) return false;
   if (lastSuccessAt && new Date(lastSuccessAt).getTime() >= failedTime) return false;
-  return /HTTP 5\d\d/.test(String(message || ""));
+  return /HTTP 5\d\d/.test(String(message || "")) || /timed? ?out|ENOTFOUND|ECONNREFUSED|ECONNRESET/i.test(String(message || ""));
 }
 
 export function disableDeadSources(sources = [], {
@@ -1070,15 +1070,15 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
       }
     } catch (error) {
       staleSourceIds.add(source.id);
+      nextLdxpState.lastFailures = {
+        ...(nextLdxpState.lastFailures || {}),
+        [source.id]: {
+          at: new Date().toISOString(),
+          message: error.message,
+        },
+      };
       if (source.adapter === "ldxp") {
         const host = sourceHost(source);
-        nextLdxpState.lastFailures = {
-          ...(nextLdxpState.lastFailures || {}),
-          [source.id]: {
-            at: new Date().toISOString(),
-            message: error.message,
-          },
-        };
         if (DOMAIN_SKIP_ERROR_PATTERNS.some((pattern) => pattern.test(error.message))) {
           nextLdxpState.cooldowns = {
             ...(nextLdxpState.cooldowns || {}),
