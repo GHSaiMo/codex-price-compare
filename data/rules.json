@@ -342,7 +342,10 @@
     "muse",
     "notion ai",
     "notion",
-    "空邮箱"
+    "空邮箱",
+    "点数额度",
+    "点官方正规额度",
+    "点额度"
   ],
   "grokDurationTerms": {
     "m12": [
@@ -468,7 +471,10 @@
     "muse",
     "notion ai",
     "notion",
-    "空邮箱"
+    "空邮箱",
+    "点数额度",
+    "点官方正规额度",
+    "点额度"
   ],
   "titleExclusionTerms": [
     "deepseek",
@@ -569,7 +575,10 @@
     "muse",
     "notion ai",
     "notion",
-    "空邮箱"
+    "空邮箱",
+    "点数额度",
+    "点官方正规额度",
+    "点额度"
   ],
   "titleSubtypeTerms": {
     "free": [
