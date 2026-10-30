@@ -305,14 +305,6 @@
       "core": false
     },
     {
-      "id": "ldxp-rick",
-      "name": "Rick的杂货铺",
-      "adapter": "ldxp",
-      "enabled": true,
-      "url": "https://wzyp.cn/shop/rick",
-      "token": "rick"
-    },
-    {
       "id": "ldxp-catfk-4kviporq",
       "name": "山姆AI",
       "adapter": "ldxp",
@@ -458,9 +450,7 @@
       "id": "acg-aibuji",
       "name": "AI补给站",
       "adapter": "acg",
-      "enabled": false,
-      "disabledAt": "2026-10-24T15:35:00.000Z",
-      "disabledReason": "网站服务宕机不可达 (Operation timed out / 502 Bad Gateway)",
+      "enabled": true,
       "url": "https://aibuji.com/"
     },
     {
