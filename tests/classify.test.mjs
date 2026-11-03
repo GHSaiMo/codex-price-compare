@@ -1300,29 +1300,40 @@ for (const [title, desc] of quotaTitles) {
 // Gemini 分类测试用例
 // ==========================================
 
-// 1. Gemini 18M 测试
+// 1. Gemini 24M 测试（包含 18 个月归入 24 个月）
 const g18m = classifyProduct("Gemini 18个月链接（无需绑卡，登陆即可领取）", "", rules);
 assert.equal(g18m.category, "gemini");
-assert.equal(g18m.subtype, "m18");
-assert.equal(g18m.durationDays, 540);
-assert.equal(g18m.durationLabel, "18M");
-assert.deepEqual(g18m.tags, ["gemini", "m18"]);
+assert.equal(g18m.subtype, "m24");
+assert.equal(g18m.durationDays, 730);
+assert.equal(g18m.durationLabel, "24M");
+assert.deepEqual(g18m.tags, ["gemini", "m24"]);
 
 const g18mJio = classifyProduct("JIO渠道 Gemini Pro 18个月 激活链接", "", rules);
 assert.equal(g18mJio.category, "gemini");
-assert.equal(g18mJio.subtype, "m18");
+assert.equal(g18mJio.subtype, "m24");
 
 const g18mAntigravity = classifyProduct("包反重力首登|随机|gemini pro 18个月|（ 带JS格式 带RT）主页备用卡网", "", rules);
 assert.equal(g18mAntigravity.category, "gemini");
-assert.equal(g18mAntigravity.subtype, "m18");
+assert.equal(g18mAntigravity.subtype, "m24");
 
 const g18mMix = classifyProduct("美区|gemini pro一年或者18个月混装|老邮箱|（（ 谷歌云没封 ）主页备用卡网", "", rules);
 assert.equal(g18mMix.category, "gemini");
-assert.equal(g18mMix.subtype, "m18");
+assert.equal(g18mMix.subtype, "m24");
 
 const g18m31 = classifyProduct("Gemini 3.1pro 18个月成品号 (22-25年账号)", "", rules);
 assert.equal(g18m31.category, "gemini");
-assert.equal(g18m31.subtype, "m18");
+assert.equal(g18m31.subtype, "m24");
+
+const g24m = classifyProduct("Gemini 24个月激活链接（无需绑卡，登陆即可领取）", "", rules);
+assert.equal(g24m.category, "gemini");
+assert.equal(g24m.subtype, "m24");
+assert.equal(g24m.durationDays, 730);
+assert.equal(g24m.durationLabel, "24M");
+assert.deepEqual(g24m.tags, ["gemini", "m24"]);
+
+const g2y = classifyProduct("Gemini Pro 2年订阅成品号【官方订阅｜美区老邮箱号】", "", rules);
+assert.equal(g2y.category, "gemini");
+assert.equal(g2y.subtype, "m24");
 
 // 2. Gemini 12M 测试
 const g12m = classifyProduct("Gemini Pro 12个月成品【质保首登丨官方订阅】20-25年高权重老邮箱账号", "", rules);
@@ -1344,17 +1355,24 @@ const g12mRenji = classifyProduct("人机验证号Gemini pro一年 登陆被封�
 assert.equal(g12mRenji.category, "gemini");
 assert.equal(g12mRenji.subtype, "m12");
 
-// 3. Gemini 3M 测试
+// 3. Gemini 6M 测试
+const g6m = classifyProduct("gemini 6个月激活链接", "", rules);
+assert.equal(g6m.category, "gemini");
+assert.equal(g6m.subtype, "m6");
+assert.equal(g6m.durationDays, 180);
+assert.equal(g6m.durationLabel, "6M");
+assert.deepEqual(g6m.tags, ["gemini", "m6"]);
+
+const gHalfYear = classifyProduct("Gemini Pro 半年官方订阅独享账号", "", rules);
+assert.equal(gHalfYear.category, "gemini");
+assert.equal(gHalfYear.subtype, "m6");
+
+// 4. Gemini 3M 测试（无有效时长规格，直接丢弃）
 const g3m = classifyProduct("gemini 3个月激活链接", "", rules);
-assert.equal(g3m.category, "gemini");
-assert.equal(g3m.subtype, "m3");
-assert.equal(g3m.durationDays, 90);
-assert.equal(g3m.durationLabel, "3M");
-assert.deepEqual(g3m.tags, ["gemini", "m3"]);
+assert.equal(g3m.category, "other");
 
 const g3mLink = classifyProduct("Gemini 三个月优惠链接", "", rules);
-assert.equal(g3mLink.category, "gemini");
-assert.equal(g3mLink.subtype, "m3");
+assert.equal(g3mLink.category, "other");
 
 // 4. 无时间分类商品直接丢弃测试（归入 other）
 const gUltra = classifyProduct("Google AI Ultra 20x【质保订阅】支持Antigravity反重力｜家庭组邀请版", "", rules);

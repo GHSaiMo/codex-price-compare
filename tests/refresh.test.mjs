@@ -457,7 +457,7 @@ assert.deepEqual(
     id: "ldxp-ak:gemini-18m",
     brand: "gemini",
     category: "gemini",
-    subtype: "m18",
+    subtype: "m24",
   }],
 );
 assert.deepEqual(

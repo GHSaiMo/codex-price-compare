@@ -127,7 +127,7 @@ assert.doesNotMatch(app, /y1/);
 assert.match(app, /1M/);
 assert.match(app, /12M/);
 assert.match(app, /defaultSubtype: "m1"/);
-assert.match(app, /defaultSubtype: "m18"/);
+assert.match(app, /defaultSubtype: "m24"/);
 assert.match(app, /id: "gemini"/);
 assert.doesNotMatch(app, /Others/);
 assert.doesNotMatch(app, /others/);
@@ -140,9 +140,9 @@ assert.match(app, /plus_topup/);
 assert.match(app, /pro_5x/);
 assert.match(app, /pro_20x/);
 assert.match(app, /\["m1", "m1"\]/);
-assert.match(app, /\["m18", "m18"\]/);
-assert.doesNotMatch(app, /\["m18", "18m"\]/);
-assert.doesNotMatch(app, /\["18m"/);
+assert.match(app, /\["m24", "m24"\]/);
+assert.match(app, /\["m6", "m6"\]/);
+assert.match(app, /\["m18", "m24"\]/);
 assert.match(app, /function createQrImage/);
 assert.match(app, /qrcode/);
 assert.match(app, /createShareUrl\(\)/);
@@ -258,8 +258,10 @@ assert.match(app, /product-group-children/);
     "https://pay.ldxp.cn/item/abc",
   );
 
-  // URL subtype 格式测试：保持与 Grok 一致的 m18 规则
-  assert.equal(sandbox.subtypeForUrl("m18"), "m18");
+  // URL subtype 格式测试：对齐 m6, m12, m24 及 m18 归入 m24 规则
+  assert.equal(sandbox.subtypeForUrl("m24"), "m24");
+  assert.equal(sandbox.subtypeForUrl("m18"), "m24");
+  assert.equal(sandbox.subtypeForUrl("m6"), "m6");
   assert.equal(sandbox.subtypeForUrl("m1"), "m1");
   assert.equal(sandbox.subtypeForUrl("m3"), "m3");
   assert.equal(sandbox.subtypeForUrl("m12"), "m12");
@@ -269,17 +271,33 @@ assert.match(app, /product-group-children/);
 
   sandbox.window.location.search = "?mode=gemini&type=y1";
   sandbox.readStateFromUrl();
-  assert.equal(getCurrentSubtype(), "m18");
+  assert.equal(getCurrentSubtype(), "m24");
 
   sandbox.window.location.search = "?mode=gemini&type=others";
   sandbox.readStateFromUrl();
-  assert.equal(getCurrentSubtype(), "m18");
+  assert.equal(getCurrentSubtype(), "m24");
+
+  sandbox.window.location.search = "?mode=gemini&type=m18";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m24");
+
+  sandbox.window.location.search = "?mode=gemini&type=m24";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m24");
+
+  sandbox.window.location.search = "?mode=gemini&type=m6";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m6");
 
   sandbox.window.location.search = "?mode=gemini&type=m12";
   sandbox.readStateFromUrl();
   assert.equal(getCurrentSubtype(), "m12");
 
   sandbox.window.location.search = "?mode=gemini&type=m3";
+  sandbox.readStateFromUrl();
+  assert.equal(getCurrentSubtype(), "m24");
+
+  sandbox.window.location.search = "?mode=grok&type=m3";
   sandbox.readStateFromUrl();
   assert.equal(getCurrentSubtype(), "m3");
 

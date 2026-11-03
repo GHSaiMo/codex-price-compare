@@ -578,23 +578,23 @@ function stripGeminiWarrantyNoiseText(text) {
 }
 
 function durationMetaGemini(subtype, matches = []) {
-  if (subtype === "m18") {
-    return { subtype: "m18", durationDays: 540, durationLabel: "18M", matches };
+  if (subtype === "m24" || subtype === "m18") {
+    return { subtype: "m24", durationDays: 730, durationLabel: "24M", matches };
   }
   if (subtype === "m12" || subtype === "y1") {
     return { subtype: "m12", durationDays: 365, durationLabel: "12M", matches };
   }
-  if (subtype === "m3") {
-    return { subtype: "m3", durationDays: 90, durationLabel: "3M", matches };
+  if (subtype === "m6") {
+    return { subtype: "m6", durationDays: 180, durationLabel: "6M", matches };
   }
-  return null;
+  return { subtype: "unsupported", durationDays: null, durationLabel: "Unsupported", matches };
 }
 
 function matchGeminiDuration(text, durationTerms = {}) {
   const ordered = [
-    ["m18", durationTerms.m18 || []],
+    ["m24", durationTerms.m24 || []],
     ["m12", durationTerms.m12 || durationTerms.y1 || []],
-    ["m3", durationTerms.m3 || []],
+    ["m6", durationTerms.m6 || []],
   ];
 
   for (const [subtype, terms] of ordered) {
@@ -604,30 +604,35 @@ function matchGeminiDuration(text, durationTerms = {}) {
     }
   }
 
-  const explicitM = text.match(/(?:^|[^a-z0-9])(3|12|18)\s*m(?=$|[^a-z0-9])/i);
+  const explicitM = text.match(/(?:^|[^a-z0-9])(1|2|3|6|12|18|24)\s*m(?=$|[^a-z0-9])/i);
   if (explicitM) {
     const m = explicitM[1];
-    if (m === "18") return durationMetaGemini("m18", [explicitM[0].trim()]);
+    if (m === "24" || m === "18") return durationMetaGemini("m24", [explicitM[0].trim()]);
     if (m === "12") return durationMetaGemini("m12", [explicitM[0].trim()]);
-    if (m === "3") return durationMetaGemini("m3", [explicitM[0].trim()]);
+    if (m === "6") return durationMetaGemini("m6", [explicitM[0].trim()]);
+    return durationMetaGemini("unsupported", [explicitM[0].trim()]);
   }
 
-  const yearMatch = text.match(/(?:^|[^a-z0-9])(?:(\d+(?:\.\d+)?)\s*年|一年半|1\.5\s*年|年卡|(\d+)\s*year|one\s*year)(?=$|[^a-z0-9])/i);
+  const yearMatch = text.match(/(?:^|[^a-z0-9])(?:(\d+(?:\.\d+)?)\s*年|一年半|1\.5\s*年|两\s*年|年卡|(\d+)\s*year|one\s*year|two\s*year)(?=$|[^a-z0-9])/i);
   if (yearMatch) {
-    if (/一年半|1\.5/i.test(yearMatch[0])) {
-      return durationMetaGemini("m18", [yearMatch[0].trim()]);
+    if (/两年|2\s*年|2\s*year|two\s*year|一年半|1\.5/i.test(yearMatch[0])) {
+      return durationMetaGemini("m24", [yearMatch[0].trim()]);
+    }
+    if (/半年|0\.5/i.test(yearMatch[0])) {
+      return durationMetaGemini("m6", [yearMatch[0].trim()]);
     }
     return durationMetaGemini("m12", [yearMatch[0].trim()]);
   }
 
-  const monthMatch = text.match(/(\d+|一|两|二|三|四|五|六|七|八|九|十|十二|十八|半)\s*(?:个\s*)?月/);
+  const monthMatch = text.match(/(\d+|一|两|二|三|四|五|六|七|八|九|十|十二|十八|二十四|半)\s*(?:个\s*)?月/);
   if (monthMatch) {
-    const numMap = { "半": 0.5, "一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10, "十二": 12, "十八": 18 };
+    const numMap = { "半": 0.5, "一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10, "十二": 12, "十八": 18, "二十四": 24 };
     const months = numMap[monthMatch[1]] ?? Number(monthMatch[1]);
     if (Number.isFinite(months)) {
-      if (months > 12) return durationMetaGemini("m18", [monthMatch[0]]);
-      if (months > 3 && months <= 12) return durationMetaGemini("m12", [monthMatch[0]]);
-      if (months >= 2 && months <= 3) return durationMetaGemini("m3", [monthMatch[0]]);
+      if (months > 12) return durationMetaGemini("m24", [monthMatch[0]]);
+      if (months > 6 && months <= 12) return durationMetaGemini("m12", [monthMatch[0]]);
+      if (months >= 4 && months <= 6) return durationMetaGemini("m6", [monthMatch[0]]);
+      return durationMetaGemini("unsupported", [monthMatch[0]]);
     }
   }
 
@@ -635,9 +640,10 @@ function matchGeminiDuration(text, durationTerms = {}) {
   if (dayMatch) {
     const days = Number(dayMatch[1]);
     if (Number.isFinite(days)) {
-      if (days > 365) return durationMetaGemini("m18", [dayMatch[0]]);
-      if (days > 90 && days <= 365) return durationMetaGemini("m12", [dayMatch[0]]);
-      if (days >= 60 && days <= 90) return durationMetaGemini("m3", [dayMatch[0]]);
+      if (days > 365) return durationMetaGemini("m24", [dayMatch[0]]);
+      if (days > 180 && days <= 365) return durationMetaGemini("m12", [dayMatch[0]]);
+      if (days >= 120 && days <= 180) return durationMetaGemini("m6", [dayMatch[0]]);
+      return durationMetaGemini("unsupported", [dayMatch[0]]);
     }
   }
 
@@ -678,12 +684,25 @@ function classifyGeminiProduct(titleText, descriptionText, rules) {
   const titleDuration = matchGeminiDuration(cleanedTitleForNoise, rules.geminiDurationTerms || {});
   const combinedDuration = matchGeminiDuration(cleanedCombinedForNoise, rules.geminiDurationTerms || {});
 
-  const explicitDuration = (titleDuration && ["m3", "m12", "m18"].includes(titleDuration.subtype))
-    ? titleDuration
-    : ((combinedDuration && ["m3", "m12", "m18"].includes(combinedDuration.subtype)) ? combinedDuration : null);
+  let explicitDuration = null;
+  if (titleDuration) {
+    if (["m6", "m12", "m24"].includes(titleDuration.subtype)) {
+      explicitDuration = titleDuration;
+    } else {
+      return buildResult(
+        "other",
+        "unknown",
+        0,
+        [],
+        [`标题明确为不支持的时长规格(${titleDuration.matches?.[0] || titleDuration.subtype})，丢弃`],
+      );
+    }
+  } else if (combinedDuration && ["m6", "m12", "m24"].includes(combinedDuration.subtype)) {
+    explicitDuration = combinedDuration;
+  }
 
   if (!explicitDuration) {
-    return buildResult("other", "unknown", 0, [], ["未匹配到Gemini有效时长规格(3M/12M/18M)，丢弃"]);
+    return buildResult("other", "unknown", 0, [], ["未匹配到Gemini有效时长规格(6M/12M/24M)，丢弃"]);
   }
 
   const reasons = [
@@ -949,9 +968,9 @@ export function matchManualOverride(title, rules = {}, context = {}) {
 
           if (durationDays == null && durationLabel == null) {
             if (category === "gemini") {
-              if (subtype === "m3") { durationDays = 90; durationLabel = "3M"; }
+              if (subtype === "m6") { durationDays = 180; durationLabel = "6M"; }
               else if (subtype === "m12") { durationDays = 365; durationLabel = "12M"; }
-              else if (subtype === "m18") { durationDays = 540; durationLabel = "18M"; }
+              else if (subtype === "m24" || subtype === "m18") { durationDays = 730; durationLabel = "24M"; }
               else if (subtype === "gmail") { durationDays = null; durationLabel = "Gmail"; }
             } else if (category === "grok") {
               if (subtype === "m1") { durationDays = 30; durationLabel = "1M"; }
