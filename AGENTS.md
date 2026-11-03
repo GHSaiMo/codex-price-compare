@@ -103,7 +103,7 @@ node --check server.mjs && node --check src/cleaning.mjs && node --check app.js 
   * API：`manualOverrides.codex.api`
 * **SMS (接码)**：`manualOverrides.sms.codex_sms`
 * **Grok**：`manualOverrides.grok.m1` / `m3` / `m12` / `free`
-* **Gemini**：`manualOverrides.gemini.gmail` / `m6` / `m12` / `m24`
+* **Gemini**：`manualOverrides.gemini.gmail` / `m3` / `m6` / `m12` / `m24`
 * **手工排除 (黑名单)**：`manualOverrides.other.unknown`
 
 ### 3.2 支持录入的格式

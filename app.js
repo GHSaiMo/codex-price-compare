@@ -75,6 +75,7 @@ const modeConfigs = {
     defaultSubtype: "m24",
     subtypes: [
       { id: "gmail", label: "Gmail" },
+      { id: "m3", label: "3M" },
       { id: "m6", label: "6M" },
       { id: "m12", label: "12M" },
       { id: "m24", label: "24M" },
@@ -210,7 +211,7 @@ function matchesSearch(item, query = currentQuery) {
 function canonicalSubtype(item) {
   if (item?.subtype === "go") return "free";
   if (item?.brand === "gemini" || item?.category === "gemini") {
-    if (item?.subtype === "m1" || item?.subtype === "m3") return "m6";
+    if (item?.subtype === "m1") return "m3";
     if (item?.subtype === "m18") return "m24";
   }
   return item?.subtype;
@@ -629,8 +630,8 @@ function readStateFromUrl() {
     currentMode = "codex";
   }
 
-  if (currentMode === "gemini" && (subtype === "m1" || subtype === "m3")) {
-    subtype = "m6";
+  if (currentMode === "gemini" && subtype === "m1") {
+    subtype = "m3";
   }
 
   if (subtype && currentSubtypeValues().includes(subtype)) {

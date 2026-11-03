@@ -295,11 +295,11 @@ assert.match(app, /product-group-children/);
 
   sandbox.window.location.search = "?mode=gemini&type=m3";
   sandbox.readStateFromUrl();
-  assert.equal(getCurrentSubtype(), "m6");
+  assert.equal(getCurrentSubtype(), "m3");
 
   sandbox.window.location.search = "?mode=gemini&type=m1";
   sandbox.readStateFromUrl();
-  assert.equal(getCurrentSubtype(), "m6");
+  assert.equal(getCurrentSubtype(), "m3");
 
   sandbox.window.location.search = "?mode=grok&type=m3";
   sandbox.readStateFromUrl();

@@ -1160,6 +1160,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
         name: "Gemini",
         subtypes: [
           { id: "gmail", label: "Gmail" },
+          { id: "m3", label: "3M" },
           { id: "m6", label: "6M" },
           { id: "m12", label: "12M" },
           { id: "m24", label: "24M" },
@@ -1170,7 +1171,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
       { id: "codex", name: "Codex", subtypes: rules.codexSubtypes },
       { id: "sms", name: "接码", subtypes: [rules.smsSubtype] },
       { id: "grok", name: "Grok", subtypes: rules.grokSubtypes || ["free", "m1", "m3", "m12"] },
-      { id: "gemini", name: "Gemini", subtypes: rules.geminiSubtypes || ["gmail", "m6", "m12", "m24"] },
+      { id: "gemini", name: "Gemini", subtypes: rules.geminiSubtypes || ["gmail", "m3", "m6", "m12", "m24"] },
     ],
     items: sortedItems,
   };
