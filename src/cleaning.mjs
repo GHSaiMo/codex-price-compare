@@ -584,7 +584,7 @@ function durationMetaGemini(subtype, matches = []) {
   if (subtype === "m12" || subtype === "y1") {
     return { subtype: "m12", durationDays: 365, durationLabel: "12M", matches };
   }
-  if (subtype === "m6") {
+  if (subtype === "m6" || subtype === "m3" || subtype === "m1") {
     return { subtype: "m6", durationDays: 180, durationLabel: "6M", matches };
   }
   return { subtype: "unsupported", durationDays: null, durationLabel: "Unsupported", matches };
@@ -609,7 +609,7 @@ function matchGeminiDuration(text, durationTerms = {}) {
     const m = explicitM[1];
     if (m === "24" || m === "18") return durationMetaGemini("m24", [explicitM[0].trim()]);
     if (m === "12") return durationMetaGemini("m12", [explicitM[0].trim()]);
-    if (m === "6") return durationMetaGemini("m6", [explicitM[0].trim()]);
+    if (m === "6" || m === "3" || m === "2" || m === "1") return durationMetaGemini("m6", [explicitM[0].trim()]);
     return durationMetaGemini("unsupported", [explicitM[0].trim()]);
   }
 
@@ -631,7 +631,7 @@ function matchGeminiDuration(text, durationTerms = {}) {
     if (Number.isFinite(months)) {
       if (months > 12) return durationMetaGemini("m24", [monthMatch[0]]);
       if (months > 6 && months <= 12) return durationMetaGemini("m12", [monthMatch[0]]);
-      if (months >= 4 && months <= 6) return durationMetaGemini("m6", [monthMatch[0]]);
+      if (months <= 6) return durationMetaGemini("m6", [monthMatch[0]]);
       return durationMetaGemini("unsupported", [monthMatch[0]]);
     }
   }
@@ -642,7 +642,7 @@ function matchGeminiDuration(text, durationTerms = {}) {
     if (Number.isFinite(days)) {
       if (days > 365) return durationMetaGemini("m24", [dayMatch[0]]);
       if (days > 180 && days <= 365) return durationMetaGemini("m12", [dayMatch[0]]);
-      if (days >= 120 && days <= 180) return durationMetaGemini("m6", [dayMatch[0]]);
+      if (days <= 180) return durationMetaGemini("m6", [dayMatch[0]]);
       return durationMetaGemini("unsupported", [dayMatch[0]]);
     }
   }
@@ -968,7 +968,7 @@ export function matchManualOverride(title, rules = {}, context = {}) {
 
           if (durationDays == null && durationLabel == null) {
             if (category === "gemini") {
-              if (subtype === "m6") { durationDays = 180; durationLabel = "6M"; }
+              if (subtype === "m6" || subtype === "m3" || subtype === "m1") { durationDays = 180; durationLabel = "6M"; }
               else if (subtype === "m12") { durationDays = 365; durationLabel = "12M"; }
               else if (subtype === "m24" || subtype === "m18") { durationDays = 730; durationLabel = "24M"; }
               else if (subtype === "gmail") { durationDays = null; durationLabel = "Gmail"; }

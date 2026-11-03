@@ -208,7 +208,12 @@ function matchesSearch(item, query = currentQuery) {
 }
 
 function canonicalSubtype(item) {
-  return item?.subtype === "go" ? "free" : item?.subtype;
+  if (item?.subtype === "go") return "free";
+  if (item?.brand === "gemini" || item?.category === "gemini") {
+    if (item?.subtype === "m1" || item?.subtype === "m3") return "m6";
+    if (item?.subtype === "m18") return "m24";
+  }
+  return item?.subtype;
 }
 
 function matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock = true } = {}) {
@@ -599,7 +604,7 @@ function loadImage(src) {
 function readStateFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const mode = params.get(urlStateKeys.mode);
-  const subtype = subtypeValuesFromUrl.get(params.get(urlStateKeys.subtype));
+  let subtype = subtypeValuesFromUrl.get(params.get(urlStateKeys.subtype));
   const stock = params.get(urlStateKeys.stock);
   const sort = params.get(urlStateKeys.sort);
   const query = params.get(urlStateKeys.query);
@@ -622,6 +627,10 @@ function readStateFromUrl() {
     currentMode = "gemini";
   } else {
     currentMode = "codex";
+  }
+
+  if (currentMode === "gemini" && (subtype === "m1" || subtype === "m3")) {
+    subtype = "m6";
   }
 
   if (subtype && currentSubtypeValues().includes(subtype)) {
