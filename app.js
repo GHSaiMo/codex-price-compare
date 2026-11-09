@@ -1,6 +1,7 @@
 const productList = document.querySelector("#productList");
 const summary = document.querySelector("#summary");
 const stats = document.querySelector("#stats");
+const fxFlip = (el, text) => (window.FX ? window.FX.flip(el, text) : void (el.textContent = text));
 const emptyState = document.querySelector("#emptyState");
 const sortButton = document.querySelector("#sortButton");
 const includeOutOfStock = document.querySelector("#includeOutOfStock");
@@ -301,8 +302,8 @@ function toggleGeminiTip() {
 
 function syncModeChrome() {
   const config = currentModeConfig();
-  if (pageTitle) pageTitle.textContent = config.title;
-  if (brandEyebrow) brandEyebrow.textContent = config.label;
+  if (pageTitle) fxFlip(pageTitle, config.title);
+  if (brandEyebrow) fxFlip(brandEyebrow, config.label);
   if (documentTitle) documentTitle.textContent = config.title;
   document.body.dataset.mode = currentMode;
   if (currentMode !== "gemini") {

@@ -2186,3 +2186,121 @@ input {
   line-height: 1.4;
 }
 
+
+/* ---- Effect Atlas 动效（fx.js）：Masked Word Flip / Dock Menu Dropdown / Pixel Wipe Button ---- */
+.fx-flip-mask {
+  display: inline-grid;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-block: 0.12em;
+  margin-block: -0.12em;
+}
+.fx-flip-word {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.fx-pixel {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.fx-pixel-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.fx-native-select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.shop-field + .fx-dock,
+.fx-dock {
+  position: relative;
+  min-width: 0;
+}
+.fx-dock-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.fx-dock-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-dock-chev {
+  flex: none;
+  width: 12px;
+  height: 8px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fx-dock.is-open .fx-dock-chev { transform: rotate(180deg); }
+.fx-dock-list {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: translate3d(0, -6px, 0) scale(0.98);
+  transform-origin: top center;
+  transition: opacity 0.26s cubic-bezier(0.22, 1, 0.36, 1), transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fx-dock-list[hidden] { display: none; }
+.fx-dock.is-open .fx-dock-list { opacity: 1; transform: none; }
+.fx-dock-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0;
+  transform: translate3d(0, -4px, 0);
+  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--n, 0) * 18ms),
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--n, 0) * 18ms), background 0.15s;
+}
+.fx-dock.is-open .fx-dock-item { opacity: 1; transform: none; }
+.fx-dock-item:hover,
+.fx-dock-item:focus-visible { background: var(--accent-soft); outline: none; }
+.fx-dock-item[aria-selected="true"] { color: var(--accent); font-weight: 800; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-dock-chev,
+  .fx-dock-list,
+  .fx-dock-item { transition: none; }
+  .fx-pixel-grain { display: none; }
+}
