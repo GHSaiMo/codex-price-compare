@@ -3,6 +3,7 @@ export const PUBLIC_STATIC_PATHS = new Set([
   "/index.html",
   "/app.js",
   "/theme.js",
+  "/fx.js",
   "/styles.css",
   "/sources.html",
   "/sources.js",
