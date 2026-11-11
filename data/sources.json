@@ -271,16 +271,6 @@
       "core": false
     },
     {
-      "id": "ldxp-f16k31u5",
-      "name": "猛哥Ai",
-      "adapter": "ldxp",
-      "enabled": false,
-      "url": "https://wzyp.cn/shop/F16K31U5",
-      "token": "F16K31U5",
-      "disabledAt": "2026-11-07T17:08:06.350Z",
-      "disabledReason": "店铺链接不存在"
-    },
-    {
       "id": "ldxp-o5w37fvj",
       "name": "莫克奇AI",
       "adapter": "ldxp",

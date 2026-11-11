@@ -15,6 +15,13 @@
           "reason": "ChatGPT Plus月卡官方代充直冲",
           "durationDays": 30,
           "durationLabel": "1M"
+        },
+        {
+          "url": "https://kelaode.vip/products/gptplus1",
+          "title": "ChatGPT iOS",
+          "reason": "ChatGPT iOS 充值 Plus",
+          "durationDays": 30,
+          "durationLabel": "1M"
         }
       ],
       "pro_5x": [
@@ -59,6 +66,7 @@
     },
     "other": {
       "unknown": [
+        "https://aibuji.com/item/510",
         "gpt协议次数",
         "ldxp-aishop86:kyvmwf",
         "https://wzyp.cn/item/kyvmwf",
