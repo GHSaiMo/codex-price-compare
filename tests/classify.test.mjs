@@ -1768,5 +1768,13 @@ assert.equal(
   "other",
 );
 
+const antiproCdkPlus = classifyProduct(
+  "《可以囤卡 自动化秒冲》 菲区CDK卡充Plus （带账单质保订阅）",
+  "",
+  rules,
+);
+assert.equal(antiproCdkPlus.category, "codex");
+assert.equal(antiproCdkPlus.subtype, "plus");
+
 
 
