@@ -126,7 +126,9 @@ function stripPlanPrerequisiteContext(text) {
     .replace(/[（(]\s*(?:gpt\s*)?(?:free|Free)\s*账号(?:勿|请勿|无法|不能|不可)[下拍购买].*?[)）]/gi, " ")
     .replace(/(?:需知[：:]\s*)?(?:gpt\s*)?(?:free|Free)\s*账号(?:勿|请勿|无法|不能|不可|禁止|别)\s*(?:下拍|下单|购买|充值|使用|升级)/gi, " ")
     .replace(/[（(]\s*(?:free|Free)账号勿[下拍].*?[)）]/gi, " ")
-    .replace(/(?:free|Free)账号勿[下拍]/gi, " ");
+    .replace(/(?:free|Free)账号勿[下拍]/gi, " ")
+    .replace(/[（(]\s*(?:无须|无需|不需|不用|不必|不限)\s*(?:账号|帐号)?\s*(?:为|是)?\s*(?:free|Free)\s*(?:状态|账号|帐号)?\s*[)）]/gi, " ")
+    .replace(/(?:无须|无需|不需|不用|不必|不限)\s*(?:账号|帐号)\s*(?:为|是)?\s*(?:free|Free)\s*(?:状态|账号|帐号)?/gi, " ");
 }
 
 function matchFreeUpgradePurpose(text) {
@@ -204,7 +206,8 @@ export function isCreditQuotaProduct(title) {
   const text = String(title || "").toLowerCase().trim();
   if (!text) return false;
   if (/(?:非|not|no)\s*[-_]?\s*api/.test(text)) return true;
-  if (/(?:^|[^a-z0-9$刀美])\d+\s*额度/.test(text)) return true;
+  if (/(?:^|[^a-z0-9$刀美])\d+\s*(?:额度|信用点数?)/.test(text)) return true;
+  if (/信用点数\s*(?:代充|充值|直充|官方充值)?/.test(text)) return true;
   if (/(?:官方充值|直充|充值).{0,8}(?:codex|gpt)?.{0,8}额度|额度.{0,8}(?:官方充值|直充|充值)/.test(text)) return true;
   return false;
 }

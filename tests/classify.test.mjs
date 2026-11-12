@@ -1745,5 +1745,28 @@ for (const title of excludedTitles) {
   assert.equal(result.category, "other", `Expected 'other' for ${title}`);
 }
 
+// Antipro 店铺回归：无须账号为Free状态 归入 plus；信用点数代充与神秘小站介绍排除
+const antiproFreeStatePlus = classifyProduct(
+  "【正规秒充】GPT Plus 官方充值（无须账号为Free状态）（充值是覆盖而非累计时间）",
+  "自助激活： 打开充值网站自助充值激活PULS会员",
+  rules,
+);
+assert.equal(antiproFreeStatePlus.category, "codex");
+assert.equal(antiproFreeStatePlus.subtype, "plus");
+
+for (const title of [
+  "Codex 250 信用点数代充",
+  "Codex 500 信用点数代充",
+  "Codex 1000 信用点数代充",
+]) {
+  assert.equal(isCreditQuotaProduct(title), true);
+  assert.equal(classifyProduct(title, "Codex 信用点数代充，额度为1000额度", rules).category, "other");
+}
+
+assert.equal(
+  classifyProduct("神秘小站介绍", "目前GPT，claude系列全量支持，grok即将支持完毕。", rules).category,
+  "other",
+);
+
 
 

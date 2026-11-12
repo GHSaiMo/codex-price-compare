@@ -134,6 +134,14 @@
       "token": "1PTC0Z1B"
     },
     {
+      "id": "ldxp-catfk-antipro",
+      "name": "Antipro",
+      "adapter": "ldxp",
+      "enabled": true,
+      "url": "https://catfk.com/shop/Antipro",
+      "token": "Antipro"
+    },
+    {
       "id": "ldxp-catcoder",
       "name": "CatCoder AI",
       "adapter": "ldxp",
