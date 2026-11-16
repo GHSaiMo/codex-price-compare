@@ -460,6 +460,13 @@
       "url": "https://buy.aishopstore.com/"
     },
     {
+      "id": "acg-zzaibox",
+      "name": "赵赵AI小店",
+      "adapter": "acg",
+      "enabled": true,
+      "url": "https://zzaibox.cn/"
+    },
+    {
       "id": "dujiao-gpt-duo",
       "name": "AI DUO",
       "adapter": "dujiao",
