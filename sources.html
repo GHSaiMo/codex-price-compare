@@ -2,6 +2,15 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8">
+    <meta name="color-scheme" content="light dark">
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("color-theme");
+        if (savedTheme === "light" || savedTheme === "dark") {
+          document.querySelector('meta[name="color-scheme"]').content = savedTheme;
+        }
+      } catch {}
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>店铺列表 - Codex比价</title>
     <link rel="icon" href="assets/logo.svg" type="image/svg+xml">

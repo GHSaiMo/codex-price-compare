@@ -1,32 +1,32 @@
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
+  --color-scheme: light;
   --content-width: 780px;
-  --bg: #f7f7f4;
-  --panel: #ffffff;
-  --panel-muted: #fafafa;
-  --out-panel: #f0f2f4;
-  --text: #1f2328;
-  --muted: #667085;
-  --line: #d9dee7;
-  --accent: #0f766e;
-  --accent-soft: #e4f5f1;
-  --warn: #9a3412;
-  --shadow: 0 14px 36px rgba(30, 41, 59, 0.08);
-}
+  --bg: light-dark(#f7f7f4, #101214);
+  --panel: light-dark(#ffffff, #171a1f);
+  --panel-muted: light-dark(#fafafa, #20242b);
+  --out-panel: light-dark(#f0f2f4, #1e2228);
+  --text: light-dark(#1f2328, #f1f5f9);
+  --muted: light-dark(#667085, #a7b0bd);
+  --line: light-dark(#d9dee7, #313842);
+  --accent: light-dark(#0f766e, #5eead4);
+  --accent-soft: light-dark(#e4f5f1, #14332f);
+  --warn: light-dark(#9a3412, #fb923c);
+  --shadow: 0 14px 36px light-dark(rgba(30, 41, 59, 0.08), rgba(0, 0, 0, 0.26));
 
-[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #101214;
-  --panel: #171a1f;
-  --panel-muted: #20242b;
-  --out-panel: #1e2228;
-  --text: #f1f5f9;
-  --muted: #a7b0bd;
-  --line: #313842;
-  --accent: #5eead4;
-  --accent-soft: #14332f;
-  --warn: #fb923c;
-  --shadow: 0 14px 36px rgba(0, 0, 0, 0.26);
+  @media (prefers-color-scheme: dark) {
+    --color-scheme: dark;
+  }
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+    --color-scheme: dark;
+  }
+
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+    --color-scheme: light;
+  }
 }
 
 * {
@@ -386,6 +386,16 @@ input {
   display: none;
   fill: currentColor;
   stroke: none;
+}
+
+@container style(--color-scheme: dark) {
+  .theme-icon-sun {
+    display: none;
+  }
+
+  .theme-icon-moon {
+    display: block;
+  }
 }
 
 [data-theme="dark"] .theme-icon-sun {
@@ -1820,13 +1830,8 @@ input {
 }
 
 .rec-status-pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-[data-theme="dark"] .rec-status-pending {
-  background: #78350f;
-  color: #fde68a;
+  background: light-dark(#fef3c7, #78350f);
+  color: light-dark(#92400e, #fde68a);
 }
 
 .rec-status-accepted {
@@ -2035,6 +2040,12 @@ input {
     right: auto;
     width: clamp(320px, calc(50vw - 460px), 360px);
     max-height: calc(100vh - 120px);
+  }
+}
+
+@container style(--color-scheme: dark) {
+  .gemini-tip-card {
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 

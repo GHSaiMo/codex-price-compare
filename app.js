@@ -693,7 +693,15 @@ function createQrImage(url) {
 }
 
 function canvasColor(name) {
-  return getComputedStyle(document.body).getPropertyValue(name).trim();
+  const raw = getComputedStyle(document.body).getPropertyValue(name).trim();
+  if (!raw.includes("light-dark(")) return raw;
+  const probe = document.createElement("span");
+  probe.style.color = `var(${name})`;
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+  const resolved = getComputedStyle(probe).color;
+  probe.remove();
+  return resolved || raw;
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
