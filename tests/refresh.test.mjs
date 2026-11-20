@@ -667,6 +667,7 @@ assert.ok(
 assert.equal(isPublicStaticPath("/"), true);
 assert.equal(isPublicStaticPath("/index.html"), true);
 assert.equal(isPublicStaticPath("/data/products.json"), true);
+assert.equal(isPublicStaticPath("/1e0d4c727107206d37dc36faa6042ca5.txt"), true);
 assert.equal(isPublicStaticPath("/.env"), false);
 assert.equal(isPublicStaticPath("/src/refresh.mjs"), false);
 assert.equal(isPublicStaticPath("/data/stock-watch.json"), false);

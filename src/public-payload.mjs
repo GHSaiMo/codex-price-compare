@@ -14,6 +14,7 @@ export const PUBLIC_STATIC_PATHS = new Set([
   "/data/products.json",
   "/data/meta.json",
   "/data/sources.json",
+  "/1e0d4c727107206d37dc36faa6042ca5.txt",
 ]);
 
 const PUBLIC_PRODUCT_KEYS = [

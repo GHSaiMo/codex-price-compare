@@ -63,6 +63,7 @@ const contentTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
 };
 
 function formatGmt8Timestamp(date = new Date()) {
@@ -820,6 +821,7 @@ function createStaticServer(defaultFile, port, allowApi = false) {
     const filePath = await existingFileOrDefault(resolvePath(request.url, defaultFile, port), defaultFile);
     const contentType = contentTypes[extname(filePath)] || "application/octet-stream";
     const isHtml = filePath.endsWith(".html");
+    const isTxt = filePath.endsWith(".txt");
     const fileStat = await stat(filePath).catch(() => null);
     if (!fileStat || !fileStat.isFile()) {
       response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
@@ -856,9 +858,11 @@ function createStaticServer(defaultFile, port, allowApi = false) {
       return;
     }
 
-    const cacheControl = isHtml
-      ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
-      : "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400";
+    const cacheControl = isTxt
+      ? "no-cache"
+      : isHtml
+        ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+        : "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400";
 
     if (request.headers["if-none-match"] === etag) {
       response.writeHead(304, {
