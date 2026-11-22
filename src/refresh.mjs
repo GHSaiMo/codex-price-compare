@@ -1,6 +1,10 @@
-import { copyFile, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
+import { promisify } from "node:util";
+import { gzip as gzipCb } from "node:zlib";
 import { writeJsonAtomic } from "./fs-atomic.mjs";
+
+const gzipAsync = promisify(gzipCb);
 
 import {
   classifyProduct,
@@ -32,6 +36,7 @@ const STOCK_WATCH_PATH = "data/stock-watch.json";
 const PRICE_HISTORY_PATH = "data/price-history.json";
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
 const BACKUP_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+const BACKUP_DENSE_WINDOW_MS = 48 * 60 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 15 * 1000;
 const LDXP_MAX_SOURCES_PER_RUN = 10;
 const LDXP_DELAY_MIN_MS = 12 * 1000;
@@ -127,9 +132,11 @@ async function backupCurrentData(date = new Date()) {
   for (const name of ["products", "meta"]) {
     try {
       const source = new URL(`data/${name}.json`, root);
-      const filename = `${stamp}-${name}.json`;
+      const raw = await readFile(source);
+      const compressed = await gzipAsync(raw, { level: 6 });
+      const filename = `${stamp}-${name}.json.gz`;
       const target = new URL(filename, backupDir);
-      await copyFile(source, target);
+      await writeFile(target, compressed);
       backups[name] = `data/backups/${filename}`;
     } catch {
       // 首次刷新时可能还没有历史文件。
@@ -146,12 +153,22 @@ export function parseBackupFilenameDate(filename) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function parseBackupKind(filename) {
+  const stripped = String(filename || "")
+    .replace(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-/, "")
+    .replace(/\.gz$/, "");
+  return stripped || null;
+}
+
 export async function pruneExpiredBackups({
   dir = backupDir,
   now = new Date(),
   retentionMs = BACKUP_RETENTION_MS,
+  denseWindowMs = BACKUP_DENSE_WINDOW_MS,
 } = {}) {
-  const cutoff = now.getTime() - retentionMs;
+  const nowMs = now.getTime();
+  const cutoff = nowMs - retentionMs;
+  const denseCutoff = nowMs - denseWindowMs;
   let names = [];
   try {
     names = await readdir(dir);
@@ -160,16 +177,52 @@ export async function pruneExpiredBackups({
   }
 
   const removed = [];
+  const tieredGroups = new Map();
+
   for (const name of names) {
+    if (!name.endsWith(".json") && !name.endsWith(".json.gz")) continue;
     const createdAt = parseBackupFilenameDate(name);
-    if (!createdAt || createdAt.getTime() >= cutoff) continue;
-    try {
-      await unlink(new URL(name, dir));
-      removed.push(name);
-    } catch {
-      // 单个过期备份删除失败时继续清理其余文件。
+    if (!createdAt) continue;
+
+    const createdMs = createdAt.getTime();
+    if (createdMs < cutoff) {
+      try {
+        await unlink(new URL(name, dir));
+        removed.push(name);
+      } catch {
+        // 单个过期备份删除失败时继续清理其余文件。
+      }
+      continue;
+    }
+
+    if (createdMs >= denseCutoff) continue;
+
+    const utcDay = createdAt.toISOString().slice(0, 10);
+    const kind = parseBackupKind(name);
+    if (!kind) continue;
+    const groupKey = `${utcDay}:${kind}`;
+    let group = tieredGroups.get(groupKey);
+    if (!group) {
+      group = [];
+      tieredGroups.set(groupKey, group);
+    }
+    group.push({ name, createdMs });
+  }
+
+  for (const group of tieredGroups.values()) {
+    if (group.length <= 1) continue;
+    group.sort((a, b) => a.createdMs - b.createdMs || a.name.localeCompare(b.name));
+    for (let i = 1; i < group.length; i += 1) {
+      const { name } = group[i];
+      try {
+        await unlink(new URL(name, dir));
+        removed.push(name);
+      } catch {
+        // 单个旧备份删除失败时继续清理其余文件。
+      }
     }
   }
+
   return removed;
 }
 
@@ -671,7 +724,9 @@ export function reclassifyProductItem(item, rules, sources = null) {
   let sourceUrl = item.sourceUrl;
 
   if (sources && item.sourceId) {
-    const source = Array.isArray(sources) ? sources.find((s) => s.id === item.sourceId) : null;
+    const source = sources instanceof Map
+      ? sources.get(item.sourceId)
+      : (Array.isArray(sources) ? sources.find((s) => s.id === item.sourceId) : null);
     if (source) {
       if (!sourceUrl || /^https?:\/\/[^\/]+\/?$/i.test(sourceUrl)) {
         sourceUrl = source.url;
@@ -699,8 +754,11 @@ export function reclassifyProductItem(item, rules, sources = null) {
 
 export function reclassifyProductItems(items = [], rules = null, sources = null) {
   if (!rules) return items;
+  const sourceLookup = Array.isArray(sources)
+    ? new Map(sources.map((source) => [source.id, source]))
+    : sources;
   return items
-    .map((item) => reclassifyProductItem(item, rules, sources))
+    .map((item) => reclassifyProductItem(item, rules, sourceLookup))
     .filter(Boolean);
 }
 
@@ -1126,7 +1184,7 @@ export async function refreshProducts({ nextRefreshAt = null } = {}) {
     previousItems: previousProducts?.items || [],
     currentItems: items,
     failedSourceIds: staleSourceIds,
-    rules,
+    rules: null,
   });
   // 规则更新后统一重算，避免 skipped/stale 以外的旧 subtype 残留，并对齐商品链接
   const reclassifiedItems = reclassifyProductItems(mergedItems, rules, sourcesConfig.sources);

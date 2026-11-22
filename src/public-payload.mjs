@@ -22,21 +22,14 @@ const PUBLIC_PRODUCT_KEYS = [
   "brand",
   "category",
   "subtype",
-  "tags",
-  "durationDays",
-  "durationLabel",
   "title",
   "price",
-  "currency",
   "stockStatus",
   "stockCount",
   "url",
   "sourceId",
   "sourceName",
   "sourceUrl",
-  "sourceAdapter",
-  "sourceCategory",
-  "fetchedAt",
 ];
 
 export function isPublicStaticPath(pathname) {

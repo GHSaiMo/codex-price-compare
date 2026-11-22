@@ -1,4 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
+import { gunzipSync } from "node:zlib";
 import { writeJsonAtomic } from "./fs-atomic.mjs";
 
 const DEFAULT_HISTORY = { version: 1, items: {} };
@@ -125,7 +126,9 @@ export async function backfillHistoryFromBackups({
 
   let names = [];
   try {
-    names = (await readdir(backupDir)).filter((name) => name.endsWith("-products.json"));
+    names = (await readdir(backupDir)).filter(
+      (name) => name.endsWith("-products.json") || name.endsWith("-products.json.gz"),
+    );
   } catch {
     return data;
   }
@@ -139,7 +142,11 @@ export async function backfillHistoryFromBackups({
   for (const snapshot of picked) {
     let products;
     try {
-      products = JSON.parse(await readFile(new URL(snapshot.name, backupDir), "utf8"))?.items || [];
+      const raw = await readFile(new URL(snapshot.name, backupDir));
+      const text = snapshot.name.endsWith(".gz")
+        ? gunzipSync(raw).toString("utf8")
+        : raw.toString("utf8");
+      products = JSON.parse(text)?.items || [];
     } catch {
       continue;
     }

@@ -24,7 +24,7 @@ const documentTitle = document.querySelector("#documentTitle") || document.query
 
 const productsUrl = document.body.dataset.productsUrl || "data/products.json";
 const metaUrl = document.body.dataset.metaUrl || "data/meta.json";
-const DATA_RELOAD_INTERVAL_MS = 60 * 1000;
+const DATA_RELOAD_INTERVAL_MS = 3 * 60 * 1000;
 const MAX_VISIBLE_PRICE = 2000;
 const SHARE_VISIBLE_ITEMS = 5;
 const SHARE_IMAGE_WIDTH = 390;
@@ -202,8 +202,12 @@ function sortProducts(items) {
   return [...items].sort(compareGroupItems);
 }
 
-function matchesSearch(item, query = currentQuery) {
-  const tokens = String(query || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+function searchTokens(query = currentQuery) {
+  return String(query || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+}
+
+function matchesSearch(item, query = currentQuery, precomputedTokens = null) {
+  const tokens = precomputedTokens || searchTokens(query);
   if (tokens.length === 0) return true;
   const haystack = `${displayProductTitle(item.title)} ${item.sourceName || ""}`.toLowerCase();
   return tokens.every((token) => haystack.includes(token));
@@ -218,29 +222,37 @@ function canonicalSubtype(item) {
   return item?.subtype;
 }
 
-function matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock = true } = {}) {
-  const subtypeValues = currentSubtypeValues();
+function matchesCurrentSelection(
+  item,
+  { includeOutOfStock: allowOutOfStock = true, subtypeValues = null, tokens = null } = {},
+) {
+  const resolvedSubtypes = subtypeValues || currentSubtypeValues();
   const itemSubtype = canonicalSubtype(item);
   if (productBrand(item) !== currentMode) return false;
-  if (!subtypeValues.includes(itemSubtype)) return false;
+  if (!resolvedSubtypes.includes(itemSubtype)) return false;
   if (itemSubtype !== currentSubtype) return false;
   if (typeof item.price === "number" && item.price >= MAX_VISIBLE_PRICE) return false;
   if (!allowOutOfStock && item.stockStatus === "out_of_stock") return false;
   if (currentShopId && item.sourceId !== currentShopId) return false;
-  if (!matchesSearch(item)) return false;
+  if (!matchesSearch(item, currentQuery, tokens)) return false;
   return true;
 }
 
 function filterProducts(options = {}) {
   const allowOutOfStock = options.includeOutOfStock ?? includeOutOfStock.checked;
-  return allProducts.filter((item) => matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock }));
+  const subtypeValues = currentSubtypeValues();
+  const tokens = searchTokens();
+  return allProducts.filter((item) =>
+    matchesCurrentSelection(item, { includeOutOfStock: allowOutOfStock, subtypeValues, tokens }),
+  );
 }
 
 // 当前标签/模式下没有有货商品、但存在缺货商品时，自动打开“包含缺货”。
 function ensureIncludeOutOfStockFallback() {
   if (includeOutOfStock.checked) return false;
-  if (filterProducts({ includeOutOfStock: false }).length > 0) return false;
-  if (filterProducts({ includeOutOfStock: true }).length === 0) return false;
+  const all = filterProducts({ includeOutOfStock: true });
+  if (all.length === 0) return false;
+  if (all.some((item) => item.stockStatus !== "out_of_stock")) return false;
   includeOutOfStock.checked = true;
   return true;
 }
@@ -1176,10 +1188,15 @@ window.addEventListener("click", (event) => {
 
 window.addEventListener("scroll", syncBackToTop, { passive: true });
 
+let resizeSummaryFrame = 0;
 window.addEventListener(
   "resize",
   () => {
-    if (allProducts.length > 0) updateSummary();
+    if (allProducts.length === 0 || resizeSummaryFrame) return;
+    resizeSummaryFrame = requestAnimationFrame(() => {
+      resizeSummaryFrame = 0;
+      if (allProducts.length > 0) updateSummary();
+    });
   },
   { passive: true },
 );

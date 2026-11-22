@@ -4,6 +4,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { gzipSync } from "node:zlib";
 
 import {
   FallbackProxyContext,
@@ -698,7 +699,11 @@ const publicItem = toPublicProductItem({
 });
 assert.equal(publicItem.title, "ChatGPT Plus 成品号");
 assert.equal(publicItem.subtype, "plus");
-assert.equal(publicItem.fetchedAt, "2026-08-14T01:00:00.000Z");
+assert.equal(publicItem.sourceUrl, "https://pay.ldxp.cn/shop/test");
+assert.equal(publicItem.stockCount, 3);
+assert.equal(Object.hasOwn(publicItem, "fetchedAt"), false);
+assert.equal(Object.hasOwn(publicItem, "sourceAdapter"), false);
+assert.equal(Object.hasOwn(publicItem, "tags"), false);
 assert.equal(Object.hasOwn(publicItem, "raw"), false);
 assert.equal(Object.hasOwn(publicItem, "descriptionText"), false);
 assert.equal(Object.hasOwn(publicItem, "matchReasons"), false);
@@ -750,6 +755,32 @@ try {
   assert.deepEqual((await readdir(backupDir)).sort(), ["readme.txt", keepName].sort());
 } finally {
   await rm(backupDir, { recursive: true, force: true });
+}
+
+const tieredBackupDir = await mkdtemp(join(tmpdir(), "codex-price-compare-tiered-backups-"));
+try {
+  const expiredGz = "2026-07-01T00-00-00-000Z-products.json.gz";
+  const oldDayFirst = "2026-08-10T01-00-00-000Z-products.json.gz";
+  const oldDaySecond = "2026-08-10T09-00-00-000Z-products.json.gz";
+  const oldDayMetaFirst = "2026-08-10T01-00-00-000Z-meta.json";
+  const denseFirst = "2026-08-13T01-00-00-000Z-products.json.gz";
+  const denseSecond = "2026-08-13T09-00-00-000Z-products.json.gz";
+  for (const name of [expiredGz, oldDayFirst, oldDaySecond, oldDayMetaFirst, denseFirst, denseSecond]) {
+    await writeFile(join(tieredBackupDir, name), "{}\n");
+  }
+  const removed = await pruneExpiredBackups({
+    dir: pathToFileURL(`${tieredBackupDir}/`),
+    now: new Date("2026-08-14T00:00:00.000Z"),
+    retentionMs: 14 * 24 * 60 * 60 * 1000,
+    denseWindowMs: 48 * 60 * 60 * 1000,
+  });
+  assert.deepEqual(removed.sort(), [expiredGz, oldDaySecond].sort());
+  assert.deepEqual(
+    (await readdir(tieredBackupDir)).sort(),
+    [oldDayFirst, oldDayMetaFirst, denseFirst, denseSecond].sort(),
+  );
+} finally {
+  await rm(tieredBackupDir, { recursive: true, force: true });
 }
 
 const deadNow = new Date("2026-08-14T00:00:00.000Z");
@@ -980,16 +1011,24 @@ try {
   await writeFile(join(historyDir, "2026-08-10T00-00-00-000Z-products.json"), JSON.stringify({
     items: [{ id: "sku-1", price: 7, stockStatus: "out_of_stock", stockCount: 0 }],
   }));
+  await writeFile(
+    join(historyDir, "2026-08-12T00-00-00-000Z-products.json.gz"),
+    gzipSync(JSON.stringify({
+      items: [{ id: "sku-1", price: 8.5, stockStatus: "in_stock", stockCount: 5 }],
+    })),
+  );
   const filled = await backfillHistoryFromBackups({
     history: { version: 1, items: {} },
     backupDir: pathToFileURL(`${historyDir}/`),
     productIds: ["sku-1"],
     now: new Date("2026-08-14T00:00:00.000Z"),
   });
-  assert.equal(filled.items["sku-1"].points.length, 2);
+  assert.equal(filled.items["sku-1"].points.length, 3);
   assert.equal(filled.items["sku-1"].points[0].p, 9);
   assert.equal(filled.items["sku-1"].points[1].p, 7);
   assert.equal(filled.items["sku-1"].points[1].s, "out_of_stock");
+  assert.equal(filled.items["sku-1"].points[2].p, 8.5);
+  assert.equal(filled.items["sku-1"].points[2].c, 5);
 } finally {
   await rm(historyDir, { recursive: true, force: true });
 }

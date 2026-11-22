@@ -18,9 +18,36 @@ export function stripHtml(value) {
     .trim();
 }
 
-function includesTerm(haystack, term) {
-  const normalizedHaystack = String(haystack || "").toLowerCase();
-  const normalizedTerm = term.toLowerCase();
+let lastHaystackRaw = "";
+let lastHaystackLower = "";
+let prevHaystackRaw = "";
+let prevHaystackLower = "";
+const termLowerCache = new Map();
+
+function normalizeHaystack(haystack) {
+  const rawHaystack = typeof haystack === "string" ? haystack : String(haystack || "");
+  if (rawHaystack === lastHaystackRaw) return lastHaystackLower;
+  if (rawHaystack === prevHaystackRaw) return prevHaystackLower;
+  const normalized = rawHaystack.toLowerCase();
+  prevHaystackRaw = lastHaystackRaw;
+  prevHaystackLower = lastHaystackLower;
+  lastHaystackRaw = rawHaystack;
+  lastHaystackLower = normalized;
+  return normalized;
+}
+
+function normalizeTermLower(term) {
+  let cached = termLowerCache.get(term);
+  if (cached === undefined) {
+    cached = term.toLowerCase();
+    if (termLowerCache.size >= 4096) termLowerCache.clear();
+    termLowerCache.set(term, cached);
+  }
+  return cached;
+}
+
+function includesNormalizedTerm(normalizedHaystack, term) {
+  const normalizedTerm = normalizeTermLower(term);
   // go 需要完整词边界，避免 google / good 误命中。
   if (normalizedTerm === "go") {
     return /(^|[^a-z0-9])go(?=$|[^a-z0-9])/.test(normalizedHaystack);
@@ -44,14 +71,35 @@ function includesTerm(haystack, term) {
   return normalizedHaystack.includes(normalizedTerm);
 }
 
+function includesTerm(haystack, term) {
+  return includesNormalizedTerm(normalizeHaystack(haystack), term);
+}
+
 function matchedTerms(haystack, terms) {
-  return terms.filter((term) => includesTerm(haystack, term));
+  const normalizedHaystack = normalizeHaystack(haystack);
+  const matches = [];
+  for (let i = 0; i < terms.length; i += 1) {
+    const term = terms[i];
+    if (includesNormalizedTerm(normalizedHaystack, term)) {
+      matches.push(term);
+    }
+  }
+  return matches;
+}
+
+function hasAnyNormalizedTerm(normalizedHaystack, terms) {
+  for (let i = 0; i < terms.length; i += 1) {
+    if (includesNormalizedTerm(normalizedHaystack, terms[i])) return true;
+  }
+  return false;
 }
 
 function firstMatchedSubtype(haystack, subtypeTerms = {}) {
-  return Object.entries(subtypeTerms).find(([, terms]) => {
-    return matchedTerms(haystack, terms).length > 0;
-  })?.[0] || "unknown";
+  const normalizedHaystack = normalizeHaystack(haystack);
+  for (const [subtype, terms] of Object.entries(subtypeTerms)) {
+    if (hasAnyNormalizedTerm(normalizedHaystack, terms)) return subtype;
+  }
+  return "unknown";
 }
 
 function titleReasonTermsForSubtype(rules, subtype) {
@@ -832,22 +880,57 @@ export function classifyGmailProduct(titleText, descriptionText = "", rules = {}
   );
 }
 
-function classifyCodexProduct(titleText, descriptionText, rules) {
-  const combined = `${titleText} ${descriptionText}`.toLowerCase();
-  const titleOnly = titleText.toLowerCase();
-  const subtypeCombined = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(combined)));
-  const subtypeTitleOnly = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(titleOnly)));
-  const cleanedDescForNegation = stripHypotheticalPlusContext(descriptionText);
+function classifyCodexProduct(titleText, descriptionText, rules, precomputed = null) {
+  const titleOnly = precomputed ? precomputed.titleOnly : titleText.toLowerCase();
+  const titleExclusionMatches = precomputed?.titleExclusionCleared
+    ? []
+    : matchedTerms(titleOnly, rules.titleExclusionTerms || []);
+  if (titleExclusionMatches.length > 0) {
+    return buildResult(
+      "other",
+      "unknown",
+      0,
+      [],
+      titleExclusionMatches.slice(0, 2).map((term) => `命中标题排除词: ${term}`),
+    );
+  }
+
+  const combined = precomputed ? precomputed.combined : `${titleText} ${descriptionText}`.toLowerCase();
+  const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
+  if (exclusionMatches.length > 0) {
+    return buildResult(
+      "other",
+      "unknown",
+      0,
+      [],
+      exclusionMatches.slice(0, 2).map((term) => `命中排除词: ${term}`),
+    );
+  }
+
+  const anchorMatches = precomputed ? precomputed.anchorMatches : matchedTerms(combined, rules.anchorTerms || []);
   const freeUpgradePurposeMatch = matchFreeUpgradePurpose(titleOnly);
+  const cleanedDescForNegation = stripHypotheticalPlusContext(descriptionText);
   const nonPlusNegationMatch = matchNonPlusNegation(titleOnly) || matchNonPlusNegation(cleanedDescForNegation);
   const freeTitleHintMatch = Boolean(freeUpgradePurposeMatch || nonPlusNegationMatch);
-  const titleExclusionMatches = matchedTerms(titleOnly, rules.titleExclusionTerms || []);
-  const exclusionMatches = matchedTerms(combined, rules.exclusionTerms || []);
-  const anchorMatches = matchedTerms(combined, rules.anchorTerms || []);
+
+  if (anchorMatches.length === 0 && !freeTitleHintMatch) {
+    return buildResult("other", "unknown", 0, [], []);
+  }
+
   const titleAccountStateMatches = matchedTerms(titleOnly, rules.accountStateTerms || []);
-  const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
   const smsMatches = matchedTerms(titleOnly, rules.smsServiceTerms || []);
-  const codexMatches = matchedTerms(combined, rules.codexTerms || []);
+
+  if (isSmsServiceProduct(titleOnly, smsMatches, titleAccountStateMatches)) {
+    return buildResult(
+      "sms",
+      rules.smsSubtype || "codex_sms",
+      0.95,
+      ["codex", "sms"],
+      smsMatches.slice(0, 2).map((term) => `命中接码服务词: ${term}`),
+    );
+  }
+
+  const subtypeTitleOnly = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(titleOnly)));
   const rawExplicitTitleSubtype = explicitPlanSubtype(subtypeTitleOnly, rules.subtypeTerms, rules);
   const explicitTitleSubtype = (freeTitleHintMatch && rawExplicitTitleSubtype !== "pro")
     ? "free"
@@ -861,72 +944,57 @@ function classifyCodexProduct(titleText, descriptionText, rules) {
     : (titleOnlySubtype !== "unknown"
       ? titleOnlySubtype
       : firstMatchedSubtype(subtypeTitleOnly, rules.subtypeTerms));
-  const subtype = firstMatchedSubtype(subtypeCombined, rules.subtypeTerms);
 
-  if (titleExclusionMatches.length > 0 || exclusionMatches.length > 0) {
+  if (["free", "plus", "pro", "go"].includes(titleSubtype)) {
+    const reasons = [
+      ...(freeUpgradePurposeMatch ? [`命中Free用途词: ${freeUpgradePurposeMatch}`] : []),
+      ...(nonPlusNegationMatch ? [`命中非Plus词: ${nonPlusNegationMatch}`] : []),
+      ...anchorMatches.slice(0, 2).map((term) => `命中Codex锚点词: ${term}`),
+      ...matchedTerms(subtypeTitleOnly, titleReasonTermsForSubtype(rules, titleSubtype)).slice(0, 2).map((term) => `命中套餐词: ${term}`),
+    ];
+    return buildResult("codex", titleSubtype, 0.9, [titleSubtype], reasons);
+  }
+
+  if (smsMatches.length > 0 && titleAccountStateMatches.length === 0 && !hasSmsNegation(titleOnly) && !isFinishedAccountSmsMention(titleOnly)) {
     return buildResult(
-      "other",
-      "unknown",
-      0,
-      [],
-      [
-        ...titleExclusionMatches.slice(0, 2).map((term) => `命中标题排除词: ${term}`),
-        ...exclusionMatches.slice(0, 2).map((term) => `命中排除词: ${term}`),
-      ],
+      "sms",
+      rules.smsSubtype || "codex_sms",
+      0.95,
+      ["codex", "sms"],
+      smsMatches.slice(0, 2).map((term) => `命中接码服务词: ${term}`),
     );
   }
 
-  if (anchorMatches.length > 0 || freeTitleHintMatch) {
-    if (isSmsServiceProduct(titleOnly, smsMatches, titleAccountStateMatches)) {
-      return buildResult(
-        "sms",
-        rules.smsSubtype || "codex_sms",
-        0.95,
-        ["codex", "sms"],
-        smsMatches.slice(0, 2).map((term) => `命中接码服务词: ${term}`),
-      );
-    }
-
-    if (["free", "plus", "pro", "go"].includes(titleSubtype)) {
-      const reasons = [
-        ...(freeUpgradePurposeMatch ? [`命中Free用途词: ${freeUpgradePurposeMatch}`] : []),
-        ...(nonPlusNegationMatch ? [`命中非Plus词: ${nonPlusNegationMatch}`] : []),
-        ...anchorMatches.slice(0, 2).map((term) => `命中Codex锚点词: ${term}`),
-        ...matchedTerms(subtypeTitleOnly, titleReasonTermsForSubtype(rules, titleSubtype)).slice(0, 2).map((term) => `命中套餐词: ${term}`),
-      ];
-      return buildResult("codex", titleSubtype, 0.9, [titleSubtype], reasons);
-    }
-
-    if (smsMatches.length > 0 && titleAccountStateMatches.length === 0 && !hasSmsNegation(titleOnly) && !isFinishedAccountSmsMention(titleOnly)) {
-      return buildResult(
-        "sms",
-        rules.smsSubtype || "codex_sms",
-        0.95,
-        ["codex", "sms"],
-        smsMatches.slice(0, 2).map((term) => `命中接码服务词: ${term}`),
-      );
-    }
-
-    const reasons = [
-      ...anchorMatches.slice(0, 2).map((term) => `命中Codex锚点词: ${term}`),
-      ...codexMatches.filter((term) => !anchorMatches.includes(term)).slice(0, 2).map((term) => `命中Codex相关词: ${term}`),
-      ...accountStateMatches.slice(0, 2).map((term) => `命中账号状态词: ${term}`),
-    ];
-    return buildResult("codex", subtype, subtype === "unknown" ? 0.68 : 0.86, [subtype], reasons);
-  }
-
-  return buildResult("other", "unknown", 0, [], []);
+  const subtypeCombined = stripPlanPrerequisiteContext(stripTeamWarningContext(stripPlusUpgradeContext(combined)));
+  const subtype = firstMatchedSubtype(subtypeCombined, rules.subtypeTerms);
+  const accountStateMatches = matchedTerms(combined, rules.accountStateTerms || []);
+  const codexMatches = matchedTerms(combined, rules.codexTerms || []);
+  const reasons = [
+    ...anchorMatches.slice(0, 2).map((term) => `命中Codex锚点词: ${term}`),
+    ...codexMatches.filter((term) => !anchorMatches.includes(term)).slice(0, 2).map((term) => `命中Codex相关词: ${term}`),
+    ...accountStateMatches.slice(0, 2).map((term) => `命中账号状态词: ${term}`),
+  ];
+  return buildResult("codex", subtype, subtype === "unknown" ? 0.68 : 0.86, [subtype], reasons);
 }
+
+const manualMatchTextCache = new Map();
 
 function normalizeManualMatchText(str) {
-  return String(str || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const raw = typeof str === "string" ? str : String(str || "");
+  let cached = manualMatchTextCache.get(raw);
+  if (cached === undefined) {
+    cached = raw.replace(/\s+/g, " ").trim().toLowerCase();
+    if (manualMatchTextCache.size >= 4096) manualMatchTextCache.clear();
+    manualMatchTextCache.set(raw, cached);
+  }
+  return cached;
 }
 
-export function matchManualOverride(title, rules = {}, context = {}) {
+export function matchManualOverride(title, rules = {}, context = {}, precomputedTitleText = null) {
   const manualOverrides = rules?.manualOverrides;
   if (!manualOverrides || typeof manualOverrides !== "object") return null;
 
-  const titleText = stripHtml(title);
+  const titleText = precomputedTitleText !== null ? precomputedTitleText : stripHtml(title);
   const normalizedTitle = normalizeManualMatchText(titleText);
   const url = context?.url ? String(context.url).trim() : "";
   const id = context?.id ? String(context.id).trim() : "";
@@ -1012,13 +1080,12 @@ export function matchManualOverride(title, rules = {}, context = {}) {
 }
 
 export function classifyProduct(title, description = "", rules = {}, context = {}) {
-  const manualResult = matchManualOverride(title, rules, context);
+  const titleText = stripHtml(title);
+  const manualResult = matchManualOverride(title, rules, context, titleText);
   if (manualResult) {
     return manualResult;
   }
 
-  const titleText = stripHtml(title);
-  const descriptionText = stripHtml(description);
   const titleOnly = titleText.toLowerCase();
   const titleExclusionMatches = matchedTerms(titleOnly, rules.titleExclusionTerms || []);
   if (titleExclusionMatches.length > 0) {
@@ -1051,22 +1118,34 @@ export function classifyProduct(title, description = "", rules = {}, context = {
     );
   }
 
-  const combined = `${titleText} ${descriptionText}`.toLowerCase();
-  // Grok / Gemini 只看标题锚点，防止描述链接/域名把无关商品拉进分类。
-  const grokAnchorMatches = matchedTerms(titleOnly, rules.grokAnchorTerms || []);
-  const geminiAnchorMatches = matchedTerms(titleOnly, rules.geminiAnchorTerms || []);
-  const codexAnchorMatches = matchedTerms(combined, rules.anchorTerms || []);
+  const descriptionText = stripHtml(description);
+  let combined = null;
+  let codexAnchorMatches = null;
+  const getCombined = () => {
+    if (combined === null) combined = `${titleText} ${descriptionText}`.toLowerCase();
+    return combined;
+  };
+  const getCodexAnchors = () => {
+    if (codexAnchorMatches === null) {
+      codexAnchorMatches = matchedTerms(getCombined(), rules.anchorTerms || []);
+    }
+    return codexAnchorMatches;
+  };
 
-  if (grokAnchorMatches.length > 0) {
+  // Grok / Gemini 只看标题锚点，防止描述链接/域名把无关商品拉进分类。
+  const hasGrokAnchor = hasAnyNormalizedTerm(titleOnly, rules.grokAnchorTerms || []);
+  const hasGeminiAnchor = hasAnyNormalizedTerm(titleOnly, rules.geminiAnchorTerms || []);
+
+  if (hasGrokAnchor) {
     const grokResult = classifyGrokProduct(titleText, descriptionText, rules);
     if (grokResult.category !== "other") return grokResult;
-    if (codexAnchorMatches.length === 0 && geminiAnchorMatches.length === 0) return grokResult;
+    if (getCodexAnchors().length === 0 && !hasGeminiAnchor) return grokResult;
   }
 
-  if (geminiAnchorMatches.length > 0) {
+  if (hasGeminiAnchor) {
     const geminiResult = classifyGeminiProduct(titleText, descriptionText, rules);
     if (geminiResult.category !== "other") return geminiResult;
-    if (codexAnchorMatches.length === 0) return geminiResult;
+    if (getCodexAnchors().length === 0) return geminiResult;
   }
 
   const gmailResult = classifyGmailProduct(titleText, descriptionText, rules);
@@ -1075,7 +1154,12 @@ export function classifyProduct(title, description = "", rules = {}, context = {
   }
 
   return finalizeCodexPlanResult(
-    classifyCodexProduct(titleText, descriptionText, rules),
+    classifyCodexProduct(titleText, descriptionText, rules, {
+      titleOnly,
+      combined: getCombined(),
+      titleExclusionCleared: true,
+      anchorMatches: getCodexAnchors(),
+    }),
     titleOnly,
     rules,
   );
