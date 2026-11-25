@@ -446,6 +446,13 @@
       "url": "https://aibuji.com/"
     },
     {
+      "id": "acg-dimosky",
+      "name": "AI 能量小店",
+      "adapter": "acg",
+      "enabled": true,
+      "url": "https://dimosky.com/"
+    },
+    {
       "id": "acg-aisou",
       "name": "Aisou智充",
       "adapter": "acg",
@@ -711,9 +718,11 @@
       "id": "16688-s402946",
       "name": "凌小创ai",
       "adapter": "16688",
-      "enabled": true,
+      "enabled": false,
       "url": "https://www.16688.com.cn/shop/S402946",
-      "token": "S402946"
+      "token": "S402946",
+      "disabledAt": "2026-11-24T15:30:47.569Z",
+      "disabledReason": "店铺不存在或已关闭"
     }
   ]
 }
